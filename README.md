@@ -55,7 +55,8 @@ install.packages(c("httr", "haven", "dplyr"))
   
 ## Full Documentation
 View the Full Documentation
-NHANES CBC and Demographic Data Download & Merge Guide (Quarto HTML)
+
+[**NHANES CBC and Demographic Data Download & Merge Guide (Quarto HTML)**](https://simonaseno.github.io/NHANES/NhanesDownloadScripts.html)
 
 This guide walks through the full workflow for downloading, labeling, and merging NHANES CBC and DEMO datasets across cycles 1999–2018 using R and Quarto.
 
