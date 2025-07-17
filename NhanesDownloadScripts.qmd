@@ -1,0 +1,199 @@
+---
+title: "R Script for Automated NHANES CBC & Demographic Data Download and Merger (Pre Pandemic Data Sets)"
+author: "Dr. Simon Aseno, MPH"
+date: today
+format: html
+---
+
+## **Overview of the NHANES CBC and Demographic Data Pipeline (1999–2018)**
+
+This document outlines a scripted workflow designed to automate the download, labeling, and combination of NHANES Complete Blood Count (CBC) and Demographic (DEMO) datasets for analysis across the 1999–2018 cycles.
+
+The NHANES program operates in two-year survey cycles, and this pipeline focuses on the ten continuous pre-pandemic cycles from 1999–2000 through 2017–2018. While there are ten official cycles during this time, the CBC dataset includes **eleven files**. This is because the 2001–2002 cycle includes **two separate CBC data files**—`L25_B.XPT` and `L25_2_B.XPT`—each capturing different subsets of hematologic information. Both are included to ensure a complete representation of the cycle’s data.
+
+Each downloaded file is clearly labeled using a custom naming convention that encodes the cycle, year range, and file type (e.g., `cbc_C1_2001_2002`), making the resulting datasets easier to trace and interpret. After downloading, the CBC and DEMO files are merged using the participant identifier `SEQN`, resulting in a unified dataset that links individual lab measurements with demographic attributes.
+
+This pipeline is ideal for researchers conducting time trend analyses, biomarker surveillance, or demographic stratification studies using NHANES data.
+
+### Setup
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+### Load Required Packages
+
+This section ensures all the required R packages are installed and loaded. If any of the packages are missing from your environment, the script automatically installs them before loading. This design supports ease of use and reproducibility.
+
+The required packages include:
+
+-   **`httr`** – for HTTP requests and file downloads
+
+-   **`haven`** – for reading NHANES `.xpt` data files
+
+-   **`dplyr`** – for data wrangling and transformation
+
+<!-- -->
+
+-   **`rvest`** – for web scraping (used in extended functionality)
+
+This setup guarantees the pipeline can run seamlessly on new environments without requiring manual installation.
+
+```{r packages}
+required_packages <- c("httr", "haven", "dplyr", "rvest")
+
+for (pkg in required_packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg)
+  }
+  library(pkg, character.only = TRUE)
+}
+
+
+
+```
+
+### Download & Combine CBC Data (1999–2018)
+
+```{r download-cbc}
+cbc_files <- list(
+  "LAB25"    = list(label = "cbc_B_1999_2000", year = "1999"),
+  "L25_B"    = list(label = "cbc_C1_2001_2002", year = "2001"),
+  "L25_2_B"  = list(label = "cbc_C2_2001_2002", year = "2001"),
+  "L25_C"    = list(label = "cbc_D_2003_2004", year = "2003"),
+  "CBC_D"    = list(label = "cbc_E_2005_2006", year = "2005"),
+  "CBC_E"    = list(label = "cbc_F_2007_2008", year = "2007"),
+  "CBC_F"    = list(label = "cbc_G_2009_2010", year = "2009"),
+  "CBC_G"    = list(label = "cbc_H_2011_2012", year = "2011"),
+  "CBC_H"    = list(label = "cbc_I_2013_2014", year = "2013"),
+  "CBC_I"    = list(label = "cbc_J_2015_2016", year = "2015"),
+  "CBC_J"    = list(label = "cbc_K_2017_2018", year = "2017")
+)
+
+base_url <- "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/"
+
+download_cbc_datasets <- function(file_map, save_dir = "nhanes_cbc") {
+  dir.create(save_dir, showWarnings = FALSE)
+  cbc_list <- list()
+
+  for (file in names(file_map)) {
+    file_info <- file_map[[file]]
+    file_url <- paste0(base_url, file_info$year, "/DataFiles/", file, ".xpt")
+    dest_path <- file.path(save_dir, paste0(file, ".xpt"))
+
+    message("Downloading: ", file_url)
+    resp <- GET(file_url, write_disk(dest_path, overwrite = TRUE))
+
+    if (status_code(resp) == 200) {
+      tryCatch({
+        df <- read_xpt(dest_path)
+        df$Cycle <- file_info$label
+        df$Source_File <- paste0(file, ".xpt")
+        cbc_list[[file_info$label]] <- df
+      }, error = function(e) {
+        warning("Could not read: ", file)
+      })
+    } else {
+      warning("Failed to download: ", file_url)
+    }
+  }
+
+  combined_cbc <- bind_rows(cbc_list)
+  return(combined_cbc)
+}
+
+cbc_data <- download_cbc_datasets(cbc_files)
+saveRDS(cbc_data, "cbc_data_combined_1999_2018.rds")
+write.csv(cbc_data, "cbc_data_combined_1999_2018.csv", row.names = FALSE)
+```
+
+### Download & Combine Demographic Data (1999–2018)
+
+```{r download-demo}
+demo_files <- list(
+  "DEMO"    = list(label = "demo_A_1999_2000", year = "1999"),
+  "DEMO_B"  = list(label = "demo_B_2001_2002", year = "2001"),
+  "DEMO_C"  = list(label = "demo_C_2003_2004", year = "2003"),
+  "DEMO_D"  = list(label = "demo_D_2005_2006", year = "2005"),
+  "DEMO_E"  = list(label = "demo_E_2007_2008", year = "2007"),
+  "DEMO_F"  = list(label = "demo_F_2009_2010", year = "2009"),
+  "DEMO_G"  = list(label = "demo_G_2011_2012", year = "2011"),
+  "DEMO_H"  = list(label = "demo_H_2013_2014", year = "2013"),
+  "DEMO_I"  = list(label = "demo_I_2015_2016", year = "2015"),
+  "DEMO_J"  = list(label = "demo_J_2017_2018", year = "2017")
+)
+
+download_demo_datasets <- function(file_map, save_dir = "nhanes_demo") {
+  dir.create(save_dir, showWarnings = FALSE)
+  demo_list <- list()
+
+  for (file in names(file_map)) {
+    file_info <- file_map[[file]]
+    file_url <- paste0(base_url, file_info$year, "/DataFiles/", file, ".xpt")
+    dest_path <- file.path(save_dir, paste0(file, ".xpt"))
+
+    message("Downloading: ", file_url)
+    resp <- GET(file_url, write_disk(dest_path, overwrite = TRUE))
+
+    if (status_code(resp) == 200) {
+      tryCatch({
+        df <- read_xpt(dest_path)
+        df$Cycle <- file_info$label
+        df$Source_File <- paste0(file, ".xpt")
+        demo_list[[file_info$label]] <- df
+      }, error = function(e) {
+        warning("Could not read: ", file)
+      })
+    } else {
+      warning("Failed to download: ", file_url)
+    }
+  }
+
+  combined_demo <- bind_rows(demo_list)
+  return(combined_demo)
+}
+
+demo_data <- download_demo_datasets(demo_files)
+saveRDS(demo_data, "demo_data_combined_1999_2018.rds")
+write.csv(demo_data, "demo_data_combined_1999_2018.csv", row.names = FALSE)
+```
+
+### Merge CBC and Demographic Data by SEQN
+
+```{r merge-data}
+cbc_data <- readRDS("cbc_data_combined_1999_2018.rds")
+demo_data <- readRDS("demo_data_combined_1999_2018.rds")
+
+cbc_demo_combined <- inner_join(cbc_data, demo_data, by = "SEQN")
+
+# Save merged file
+saveRDS(cbc_demo_combined, "cbc_demo_merged_1999_2018.rds")
+write.csv(cbc_demo_combined, "cbc_demo_merged_1999_2018.csv", row.names = FALSE)
+
+# Preview
+head(cbc_demo_combined)
+```
+
+------------------------------------------------------------------------
+
+**Done!** You now have a fully automated, reproducible pipeline for NHANES CBC + DEMO dataset preparation.
+
+### Suggested Citation
+
+Aseno, S. (2025). *NHANES CBC and Demographic Data Downloader: A Structured Ingestion Pipeline for Pre-Pandemic Trend Analysis (1999–2018)*. Custom R-based script for automated data acquisition, labeling, and merging of NHANES Complete Blood Count and Demographic datasets. Version 1.0. Available upon request or use with attribution.
+
+### License
+
+This project is licensed under the **Creative Commons Attribution 4.0 International (CC BY 4.0)** License.
+
+You are free to:
+
+-   **Share** — copy and redistribute the material in any medium or format
+
+-   **Adapt** — remix, transform, and build upon the material for any purpose, even commercially
+
+Under the following terms:
+
+-   **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+View the full license here: <https://creativecommons.org/licenses/by/4.0/>
