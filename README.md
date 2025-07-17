@@ -21,15 +21,19 @@ These scripts automate the data retrieval process and structure outputs for imme
 
 ```
 
-NHANES Data Project/
-├── NhanesDownloadScripts.qmd        # The main Quarto script
-├── NhanesDownloadScripts.html       # Rendered HTML output
-├── cbc_data_combined_1999_2018.csv
-├── cbc_data_combined_1999_2018.rds
-├── demo_data_combined_1999_2018.csv
-├── demo_data_combined_1999_2018.rds
-├── README.md
+Project Structure
 
+NHANES Data Project/
+├── NhanesDownloadScripts.qmd # Combined Quarto script for CBC & DEMO download
+├── NhanesDownloadScripts.html # Rendered Quarto output (for publication or sharing)
+├── cbc_data_combined_1999_2018.csv # Final combined CBC data (CSV)
+├── cbc_data_combined_1999_2018.rds # Final combined CBC data (RDS)
+├── demo_data_combined_1999_2018.csv # Final combined DEMO data (CSV)
+├── demo_data_combined_1999_2018.rds # Final combined DEMO data (RDS)
+├── cbc_demo_merged_1999_2018.csv # Optional CBC+DEMO merged file (CSV)
+├── cbc_demo_merged_1999_2018.rds # Optional CBC+DEMO merged file (RDS)
+├── LICENSE # MIT license
+├── README.md # This documentation
 
 ````
 
