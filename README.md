@@ -21,16 +21,33 @@ These scripts automate the data retrieval process and structure outputs for imme
 
 ```
 
-nhanes\_project/
-├── nhanes\_data/                        # Downloaded CBC datasets
-├── nhanes\_demo/                        # Downloaded DEMO datasets
-├── cbc\_downloader.R                    # Script to process CBC datasets
-├── demo\_downloader.R                   # Script to process DEMO datasets
-├── cbc\_data\_combined\_1999\_2018.rds     # Final combined CBC file (.rds)
-├── demo\_data\_combined\_1999\_2018.rds    # Final combined DEMO file (.rds)
-├── cbc\_data\_combined\_1999\_2018.csv     # Final combined CBC file (.csv)
-├── demo\_data\_combined\_1999\_2018.csv    # Final combined DEMO file (.csv)
-├── README.md                           # Project documentation
+nhanes_project/
+├── nhanes_data/                        
+│   └── Individual .xpt files downloaded for CBC datasets across NHANES cycles
+│
+├── nhanes_demo/                        
+│   └── Individual .xpt files downloaded for DEMO datasets across NHANES cycles
+│
+├── cbc_downloader.R                    
+│   └── R script that automates download, labeling, and merging of CBC datasets
+│
+├── demo_downloader.R                   
+│   └── R script that automates download, labeling, and merging of DEMO datasets
+│
+├── cbc_data_combined_1999_2018.rds     
+│   └── Final combined CBC dataset saved in RDS format for fast loading
+│
+├── demo_data_combined_1999_2018.rds    
+│   └── Final combined DEMO dataset saved in RDS format
+│
+├── cbc_data_combined_1999_2018.csv     
+│   └── Final combined CBC dataset exported to CSV format for broad compatibility
+│
+├── demo_data_combined_1999_2018.csv    
+│   └── Final combined DEMO dataset exported to CSV format
+│
+├── README.md                           
+    └── Project documentation and usage guide
 
 ````
 
