@@ -21,33 +21,15 @@ These scripts automate the data retrieval process and structure outputs for imme
 
 ```
 
-nhanes_project/
-├── nhanes_data/                        
-│   └── Individual .xpt files downloaded for CBC datasets across NHANES cycles
-│
-├── nhanes_demo/                        
-│   └── Individual .xpt files downloaded for DEMO datasets across NHANES cycles
-│
-├── cbc_downloader.R                    
-│   └── R script that automates download, labeling, and merging of CBC datasets
-│
-├── demo_downloader.R                   
-│   └── R script that automates download, labeling, and merging of DEMO datasets
-│
-├── cbc_data_combined_1999_2018.rds     
-│   └── Final combined CBC dataset saved in RDS format for fast loading
-│
-├── demo_data_combined_1999_2018.rds    
-│   └── Final combined DEMO dataset saved in RDS format
-│
-├── cbc_data_combined_1999_2018.csv     
-│   └── Final combined CBC dataset exported to CSV format for broad compatibility
-│
-├── demo_data_combined_1999_2018.csv    
-│   └── Final combined DEMO dataset exported to CSV format
-│
-├── README.md                           
-    └── Project documentation and usage guide
+NHANES Data Project/
+├── NhanesDownloadScripts.qmd        # The main Quarto script
+├── NhanesDownloadScripts.html       # Rendered HTML output
+├── cbc_data_combined_1999_2018.csv
+├── cbc_data_combined_1999_2018.rds
+├── demo_data_combined_1999_2018.csv
+├── demo_data_combined_1999_2018.rds
+├── README.md
+
 
 ````
 
