@@ -47,17 +47,17 @@ install.packages(c("httr", "haven", "dplyr"))
 
 ### 2. Run the Download Scripts
 
-* To download and process **CBC datasets**, run:
+* To download and process **both CBC and Demographic datasets**, run:
 
   ```r
-  source("cbc_downloader.R")
+  source("NhanesDownloadScripts.qmd")
   ```
+  
+## Full Documentation
+View the Full Documentation
+NHANES CBC and Demographic Data Download & Merge Guide (Quarto HTML)
 
-* To download and process **DEMO datasets**, run:
-
-  ```r
-  source("demo_downloader.R")
-  ```
+This guide walks through the full workflow for downloading, labeling, and merging NHANES CBC and DEMO datasets across cycles 1999–2018 using R and Quarto.
 
 ## Applications
 
