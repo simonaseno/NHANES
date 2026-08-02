@@ -116,6 +116,23 @@ not affiliated with or endorsed by CDC/NCHS.
 - Citation metadata: [`CITATION.cff`](CITATION.cff)
 - Bugs and component requests: [GitHub Issues](https://github.com/simonaseno/NHANES/issues)
 
+## Usage and site analytics
+
+Maintainers with push access can review the repository's rolling traffic under
+[Insights → Traffic](https://github.com/simonaseno/NHANES/graphs/traffic). GitHub
+reports repository visitors and views, clones, referring sites, and popular
+content for the previous 14 days. This is useful for repository discovery, but
+it is not a long-term analytics record for the GitHub Pages website.
+
+For page-level website analytics, the recommended next step is a lightweight,
+privacy-focused Plausible Analytics account for
+`simonaseno.github.io/NHANES/`. Quarto supports the complete Plausible tracking
+snippet through the `website: plausible-analytics` setting in `_quarto.yml`.
+The site-specific snippet must come from the maintainer's Plausible dashboard;
+no placeholder tracker is committed because it would not collect valid data.
+Google Analytics is also supported by Quarto, but requires a measurement ID and
+may require cookie-consent handling depending on the applicable privacy rules.
+
 ## License
 
 The project code and documentation are licensed under the [MIT License](LICENSE).
