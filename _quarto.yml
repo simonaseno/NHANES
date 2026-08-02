@@ -4,23 +4,54 @@ project:
   render:
     - index.qmd
     - NhanesDownloadScripts.qmd
+  resources:
+    - .github/social-preview.jpg
 
 website:
   title: "NHANES Data Pipeline"
+  description: "A validated, reproducible R pipeline for public-use NHANES data."
   site-url: "https://simonaseno.github.io/NHANES/"
   repo-url: "https://github.com/simonaseno/NHANES"
   repo-actions: [source, issue]
+  image: ".github/social-preview.jpg"
+  open-graph:
+    locale: en_US
+    site-name: "NHANES Data Pipeline"
+  twitter-card: true
   navbar:
+    pinned: true
+    background: "#06283D"
+    foreground: light
+    search: true
     left:
       - href: index.qmd
-        text: Home
+        text: Overview
       - href: NhanesDownloadScripts.qmd
-        text: CBC + Demographics Guide
+        text: Data guide
+    right:
+      - icon: github
+        href: https://github.com/simonaseno/NHANES
+        aria-label: "View the NHANES Data Pipeline on GitHub"
+  page-footer:
+    border: false
+    background: "#041F30"
+    foreground: light
+    left: "© 2026 Simon Aseno · MIT licensed"
+    center: "Built for transparent, reproducible population-health research."
+    right:
+      - text: "Source"
+        href: https://github.com/simonaseno/NHANES
+      - text: "Report an issue"
+        href: https://github.com/simonaseno/NHANES/issues
 
 format:
   html:
     theme: cosmo
+    css: styles.css
     toc: true
+    smooth-scroll: true
+    code-copy: true
+    anchor-sections: true
     link-external-newwindow: true
 
 execute:

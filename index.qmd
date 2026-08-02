@@ -1,31 +1,174 @@
 ---
 title: "NHANES Data Pipeline"
-subtitle: "Validated, reproducible acquisition for scientific analysis"
+description: "Validated, reproducible acquisition for scientific analysis"
+image: ".github/social-preview.jpg"
+page-layout: full
 format:
   html:
     toc: false
+    title-block-banner: false
 ---
 
-This open R project provides a manifest-driven foundation for downloading,
-validating, harmonizing, and documenting public-use NHANES data.
+::: {.nhanes-hero}
+::: {.hero-copy}
+<p class="eyebrow">Open-source scientific infrastructure</p>
 
-The current release covers Complete Blood Count and Demographics from 1999–2000
-through 2017–2018, with explicit protection against accidental use of the
-unweighted 2001–2002 second-exam convenience sample.
+# Build NHANES analyses on data you can trace.
 
-## Start here
+Download, validate, and prepare public-use NHANES data with explicit scientific
+guardrails—from official CDC files to provenance-rich research assets.
 
-- Read the [CBC and Demographics data guide](NhanesDownloadScripts.qmd).
-- Review the [source code](https://github.com/simonaseno/NHANES).
-- Inspect the [source catalog](https://github.com/simonaseno/NHANES/blob/main/config/nhanes_files.csv).
-- Report a problem or request a component through
-  [GitHub Issues](https://github.com/simonaseno/NHANES/issues).
+::: {.hero-actions}
+[Explore the data guide](NhanesDownloadScripts.qmd){.btn .btn-primary .btn-lg}
+[View the source code](https://github.com/simonaseno/NHANES){.btn .btn-outline-light .btn-lg}
+:::
 
-## Design principles
+<p class="hero-note">Reproducible · Validated · Open</p>
+:::
 
-- Official CDC sources only.
-- Fail-fast source and schema validation.
-- Explicit record granularity and merge contracts.
-- Separate scientific harmonization from generic acquisition.
-- Reproducible versions, provenance hashes, and automated checks.
-- Citation-ready releases rather than unversioned generated data.
+::: {.hero-visual}
+![](.github/social-preview.jpg){.preview-image .hero-image fig-alt="Diagram of the NHANES data pipeline, from blood-cell observations through validated tables and analysis outputs."}
+<p class="visual-caption">A transparent path from source files to scientific analysis.</p>
+:::
+:::
+
+::: {.metric-band}
+::: {.metric}
+<strong>10</strong>
+<span>continuous survey cycles</span>
+:::
+::: {.metric}
+<strong>1999–2018</strong>
+<span>current release coverage</span>
+:::
+::: {.metric}
+<strong>2</strong>
+<span>validated core components</span>
+:::
+::: {.metric}
+<strong>Open</strong>
+<span>MIT-licensed R workflow</span>
+:::
+:::
+
+::: {.site-section .section-intro}
+<p class="eyebrow eyebrow-dark">Purpose-built for scientific reuse</p>
+
+## From public files to defensible research data
+
+The pipeline makes the decisions between download and analysis visible,
+testable, and reviewable. Each layer answers a different reproducibility
+question.
+:::
+
+::: {.workflow-grid}
+::: {.workflow-card .card-blue}
+<span class="step-number">01</span>
+
+### Acquire
+
+Retrieve declared files directly from official CDC/NCHS sources using a
+reviewed, version-controlled catalog.
+:::
+
+::: {.workflow-card .card-cyan}
+<span class="step-number">02</span>
+
+### Validate
+
+Stop early when source dimensions, schemas, participant keys, or merge
+contracts do not match expectations.
+:::
+
+::: {.workflow-card .card-teal}
+<span class="step-number">03</span>
+
+### Harmonize
+
+Keep component-specific scientific rules separate from generic acquisition so
+important survey distinctions remain explicit.
+:::
+
+::: {.workflow-card .card-coral}
+<span class="step-number">04</span>
+
+### Document
+
+Record retrieval times, source URLs, file hashes, dimensions, validation
+results, and release versions for later review.
+:::
+:::
+
+::: {.site-section}
+::: {.feature-layout}
+::: {.feature-copy}
+<p class="eyebrow eyebrow-dark">Protection by design</p>
+
+## Scientific meaning is part of the pipeline
+
+The 2001–2002 second CBC examination is a convenience sample without survey
+weights. This project preserves those repeat observations separately instead
+of silently appending them to the representative primary examination data.
+
+That safeguard prevents **557 duplicate participants** from entering the
+combined CBC-demographic output unnoticed.
+
+[Read the scientific rationale](NhanesDownloadScripts.qmd#cbc-first-and-second-examinations){.text-link}
+:::
+
+::: {.feature-panel}
+<p class="panel-kicker">What the checks protect</p>
+
+- Source availability and expected row counts
+- Participant-key uniqueness by cycle
+- Record-level and merge-granularity contracts
+- Primary versus repeat examination roles
+- Reproducible provenance and output validation
+:::
+:::
+:::
+
+::: {.site-section}
+<p class="eyebrow eyebrow-dark">Designed to expand</p>
+
+## A foundation for more NHANES components
+
+::: {.principle-grid}
+::: {.principle-card}
+### Manifest-driven
+
+New source files begin as reviewed catalog entries—not URLs buried inside
+analysis notebooks.
+:::
+
+::: {.principle-card}
+### Component-aware
+
+Each component receives its own granularity, harmonization, eligibility, and
+weighting review.
+:::
+
+::: {.principle-card}
+### Citation-ready
+
+Versioned releases, provenance hashes, and explicit source documentation make
+reuse easier to describe and audit.
+:::
+:::
+:::
+
+::: {.cta-band}
+::: {.cta-copy}
+<p class="eyebrow">Start with the current release</p>
+
+## Explore CBC and Demographics across ten continuous cycles.
+
+Follow the reproducible workflow, inspect the source catalog, or suggest the
+next NHANES component for the project.
+:::
+
+::: {.cta-actions}
+[Open the data guide](NhanesDownloadScripts.qmd){.btn .btn-light .btn-lg}
+[Request a component](https://github.com/simonaseno/NHANES/issues/new){.btn .btn-outline-light .btn-lg}
+:::
+:::
