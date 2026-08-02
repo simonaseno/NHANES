@@ -1,7 +1,7 @@
 ---
 title: "NHANES Data Pipeline"
 description: "Validated, reproducible acquisition for scientific analysis"
-image: ".github/social-preview.jpg"
+image: "assets/nhanes-pipeline.jpg"
 page-layout: full
 format:
   html:
@@ -27,7 +27,7 @@ guardrails—from official CDC files to provenance-rich research assets.
 :::
 
 ::: {.hero-visual}
-![](.github/social-preview.jpg){.preview-image .hero-image fig-alt="Diagram of the NHANES data pipeline, from blood-cell observations through validated tables and analysis outputs."}
+![](assets/nhanes-pipeline.jpg){.preview-image .hero-image fig-alt="Diagram of the NHANES data pipeline, from blood-cell observations through validated tables and analysis outputs."}
 <p class="visual-caption">A transparent path from source files to scientific analysis.</p>
 :::
 :::
