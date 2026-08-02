@@ -12,9 +12,9 @@ without regard to record structure or sampling design.
 - [x] Reproducible R environment and local tests
 - [x] CI, scheduled source refresh, release artifacts, and documentation deployment
 - [x] Repository social-preview asset prepared under `.github/`
+- [x] Corrected GitHub About description/homepage and scientific repository topics
 - [ ] First versioned GitHub/Zenodo release and DOI
-- [ ] Apply repository topics, social preview, and corrected GitHub About metadata
-  after GitHub authentication is restored
+- [ ] Upload `.github/social-preview.jpg` through GitHub repository settings
 
 ## Phase 2: modern release periods
 
