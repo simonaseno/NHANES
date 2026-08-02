@@ -1,6 +1,9 @@
 project:
   type: website
   output-dir: _site
+  render:
+    - index.qmd
+    - NhanesDownloadScripts.qmd
 
 website:
   title: "NHANES Data Pipeline"
