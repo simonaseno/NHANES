@@ -1,1 +1,27 @@
 .DS_Store
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+renv/library/
+renv/local/
+renv/staging/
+
+# Downloaded source data and regenerated research artifacts
+data/raw/
+data/derived/
+data/legacy/
+artifacts/
+release-artifacts/
+nhanes_cbc/
+nhanes_demo/
+
+# Legacy/generated root outputs (existing tracked files are handled separately)
+*_combined_1999_2018.csv
+*_combined_1999_2018.rds
+*_merged_1999_2018.csv
+*_merged_1999_2018.rds
+
+# Quarto build products
+_site/
+/.quarto/

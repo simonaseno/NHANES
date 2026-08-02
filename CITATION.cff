@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this pipeline, please cite the versioned software release and the original CDC/NCHS data files."
+type: software
+title: "NHANES CBC and Demographics Pipeline in R"
+version: 0.2.0
+date-released: 2026-08-02
+authors:
+  - family-names: Aseno
+    given-names: Simon
+url: "https://github.com/simonaseno/NHANES"
+repository-code: "https://github.com/simonaseno/NHANES"
+license: MIT
+keywords:
+  - NHANES
+  - epidemiology
+  - public health
+  - survey data
+  - reproducible research

@@ -1,0 +1,19 @@
+Package: nhanespipeline
+Type: Project
+Title: Reproducible NHANES Data Acquisition and Validation
+Version: 0.2.0
+Authors@R: person("Simon", "Aseno", role = c("aut", "cre"))
+Description: A manifest-driven R pipeline for acquiring, validating, and
+    preparing public-use National Health and Nutrition Examination Survey data.
+License: MIT
+Encoding: UTF-8
+Depends:
+    R (>= 4.1)
+Imports:
+    digest,
+    dplyr,
+    haven,
+    httr,
+    knitr
+Suggests:
+    renv

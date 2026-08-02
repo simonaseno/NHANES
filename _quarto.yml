@@ -1,0 +1,24 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "NHANES Data Pipeline"
+  site-url: "https://simonaseno.github.io/NHANES/"
+  repo-url: "https://github.com/simonaseno/NHANES"
+  repo-actions: [source, issue]
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: NhanesDownloadScripts.qmd
+        text: CBC + Demographics Guide
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    link-external-newwindow: true
+
+execute:
+  freeze: auto

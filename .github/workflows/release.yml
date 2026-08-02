@@ -1,0 +1,34 @@
+name: Build versioned data release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-renv@v2
+      - name: Rebuild and validate release data
+        run: >-
+          Rscript scripts/run_pipeline.R
+          --cache-dir=data/raw
+          --output-dir=release-artifacts
+          --refresh=true
+          --write-csv=false
+      - name: Package release data
+        run: tar -czf nhanes-validated-${{ github.ref_name }}.tar.gz release-artifacts
+      - name: Publish GitHub release artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: nhanes-validated-${{ github.ref_name }}.tar.gz
