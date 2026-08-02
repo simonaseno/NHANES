@@ -1,0 +1,31 @@
+---
+title: "NHANES Data Pipeline"
+subtitle: "Validated, reproducible acquisition for scientific analysis"
+format:
+  html:
+    toc: false
+---
+
+This open R project provides a manifest-driven foundation for downloading,
+validating, harmonizing, and documenting public-use NHANES data.
+
+The current release covers Complete Blood Count and Demographics from 1999–2000
+through 2017–2018, with explicit protection against accidental use of the
+unweighted 2001–2002 second-exam convenience sample.
+
+## Start here
+
+- Read the [CBC and Demographics data guide](NhanesDownloadScripts.qmd).
+- Review the [source code](https://github.com/simonaseno/NHANES).
+- Inspect the [source catalog](https://github.com/simonaseno/NHANES/blob/main/config/nhanes_files.csv).
+- Report a problem or request a component through
+  [GitHub Issues](https://github.com/simonaseno/NHANES/issues).
+
+## Design principles
+
+- Official CDC sources only.
+- Fail-fast source and schema validation.
+- Explicit record granularity and merge contracts.
+- Separate scientific harmonization from generic acquisition.
+- Reproducible versions, provenance hashes, and automated checks.
+- Citation-ready releases rather than unversioned generated data.

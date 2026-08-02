@@ -1,94 +1,129 @@
-# NHANES Scripted Data Downloader
+# NHANES CBC and Demographics Pipeline in R
 
-This repository contains reproducible R scripts to download, rename, and combine **NHANES** (National Health and Nutrition Examination Survey) datasets across multiple survey cycles from **1999 to 2018**. The focus is on two key data categories:
+[![R pipeline checks](https://github.com/simonaseno/NHANES/actions/workflows/ci.yml/badge.svg)](https://github.com/simonaseno/NHANES/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-- **Complete Blood Count (CBC) datasets**
-- **Demographics (DEMO) datasets**
+A reproducible, manifest-driven pipeline for downloading and preparing public-use
+National Health and Nutrition Examination Survey (NHANES) data. The current
+validated scope is Complete Blood Count (CBC) and Demographics for the ten
+continuous cycles from 1999–2000 through 2017–2018.
 
-These scripts automate the data retrieval process and structure outputs for immediate use in public health research, teaching, or modeling workflows.
+The project is designed to grow to additional NHANES components without mixing
+data acquisition, component-specific scientific decisions, and analysis code.
 
-## Project Overview
+## Important scientific scope
 
-- **Language:** R  
-- **R Version:** 4.0 or later  
-- **License:** MIT  
-- **Estimated Output Size:**  
-  - Combined CBC Data: ~20–30 MB (.rds), ~60–80 MB (.csv)  
-  - Combined DEMO Data: ~10–15 MB (.rds), ~30–50 MB (.csv)  
-- **Last Updated:** July 2025
+- Continuous NHANES cycles are repeated cross-sectional samples, not a
+  longitudinal cohort.
+- The 2001–2002 second-exam CBC file (`L25_2_B`) is an unweighted convenience
+  sample. It is saved separately and is never appended to the primary analytic
+  CBC table.
+- The pipeline carries survey design and weight variables from DEMO, but the
+  appropriate analytic weight depends on the variables and cycles used. It does
+  not silently invent a universal weight.
+- Researchers must verify variable and laboratory-method comparability across
+  cycles before fitting trends.
 
-## Repository Contents
+See the [CDC NHANES tutorials](https://wwwn.cdc.gov/nchs/nhanes/tutorials/)
+and the component documentation before analysis.
 
+## Quick start
+
+Requirements: R 4.1 or newer and the packages recorded in `renv.lock`.
+
+```bash
+Rscript -e 'renv::restore()'
+Rscript scripts/run_pipeline.R
 ```
 
-Project Structure
+By default, raw XPT files are cached under `data/raw/` and validated RDS outputs
+are written under `data/derived/`. Add `--write-csv=true` only when CSV copies
+are needed.
 
-NHANES Data Project/
-├── NhanesDownloadScripts.qmd # Combined Quarto script for CBC & DEMO download
-├── NhanesDownloadScripts.html # Rendered Quarto output (for publication or sharing)
-├── cbc_data_combined_1999_2018.csv # Final combined CBC data (CSV)
-├── cbc_data_combined_1999_2018.rds # Final combined CBC data (RDS)
-├── demo_data_combined_1999_2018.csv # Final combined DEMO data (CSV)
-├── demo_data_combined_1999_2018.rds # Final combined DEMO data (RDS)
-├── cbc_demo_merged_1999_2018.csv # Optional CBC+DEMO merged file (CSV)
-├── cbc_demo_merged_1999_2018.rds # Optional CBC+DEMO merged file (RDS)
-├── LICENSE # MIT license
-├── README.md # This documentation
+```bash
+Rscript scripts/run_pipeline.R \
+  --cache-dir=data/raw \
+  --output-dir=data/derived \
+  --refresh=true \
+  --write-csv=false
+```
 
-````
+Run local checks with:
 
-## Setup Instructions
+```bash
+Rscript tests/run_tests.R
+```
 
-### 1. Install Required Packages
+## Validated outputs
 
-```r
-install.packages(c("httr", "haven", "dplyr"))
-````
+| Output | Unit of observation | Notes |
+|---|---|---|
+| `cbc_primary_1999_2018.rds` | One row per participant | Primary MEC CBC only |
+| `cbc_second_exam_2001_2002.rds` | One row per repeat participant | Convenience sample; no survey weights |
+| `demographics_1999_2018.rds` | One row per participant | Includes design and weight variables |
+| `cbc_demographics_1999_2018.rds` | One row per primary-CBC participant | Joined on `SEQN` and cycle |
+| `provenance.csv` | One row per source file | URL, size, SHA-256, retrieval time, dimensions |
+| `validation.csv` | One row per output | Rows, columns, unique participants |
 
-### 2. Run the Download Scripts
+The former root-level `*_combined_1999_2018.*` files are legacy v1 artifacts and
+are not distributed from the current source tree. They remain recoverable from
+the v1 history, but should not be used for new analyses: the old CBC and merged
+files include 557 second-exam records as extra rows.
 
-* To download and process **both CBC and Demographic datasets**, run:
+## How the project scales
 
-  ```r
-  source("NhanesDownloadScripts.qmd")
-  ```
-  
-## Full Documentation
-View the Full Documentation
+Source files are declared in [`config/nhanes_files.csv`](config/nhanes_files.csv).
+Each row records the official cycle, component, source URL, record level, merge
+key, expected row count, and analytic role. To add another NHANES component:
 
-[**NHANES CBC and Demographic Data Download & Merge Guide (Quarto HTML)**](https://simonaseno.github.io/NHANES/NhanesDownloadScripts.html)
+1. Add and review its catalog rows.
+2. Define its record granularity and valid key; never assume one row per person.
+3. Add component-specific validation and harmonization.
+4. Add tests before permitting any cross-component merge.
+5. Document the applicable survey weight and comparability limitations.
 
-This guide walks through the full workflow for downloading, labeling, and merging NHANES CBC and DEMO datasets across cycles 1999–2018 using R and Quarto.
+Acquisition is generic; scientific harmonization is intentionally explicit.
 
-## Applications
+## Automated pull/push flow
 
-This project supports a range of use cases, including:
+- `ci.yml` tests every branch and pull request.
+- `data-refresh.yml` periodically pulls source files from CDC, validates them,
+  and uploads derived data as a workflow artifact without committing data.
+- `pages.yml` builds and deploys the Quarto documentation.
+- `release.yml` rebuilds validated data for version tags and publishes it as a
+  release artifact.
+- `scripts/sync_branch.sh` safely updates a clean local branch from `origin/main`.
+- `scripts/publish_branch.sh` tests and pushes a clean feature branch, then opens
+  or reports its draft pull request.
 
-* Exploratory data analysis on health indicators
-* Teaching data wrangling and preprocessing in R
-* Building longitudinal models across NHANES cycles
-* Prepping structured inputs for machine learning tasks
-* Supporting grant proposals with ready-to-use national health data
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch workflow.
+The staged expansion plan is maintained in [ROADMAP.md](ROADMAP.md).
 
-## Data Source
+## Data and artifact policy
 
-All data are retrieved from the official NHANES public access portal:
-[https://wwwn.cdc.gov/nchs/nhanes/](https://wwwn.cdc.gov/nchs/nhanes/)
+Raw CDC files and regenerated datasets are intentionally ignored by Git. Stable
+research outputs should be attached to a versioned GitHub release and archived
+with a DOI provider such as Zenodo. The source catalog and provenance manifest
+make every release auditable.
+
+NHANES data originate from the
+[CDC/NCHS public-use portal](https://wwwn.cdc.gov/nchs/nhanes/). This project is
+not affiliated with or endorsed by CDC/NCHS.
+
+## Documentation, citation, and support
+
+- Documentation: <https://simonaseno.github.io/NHANES/>
+- Citation metadata: [`CITATION.cff`](CITATION.cff)
+- Bugs and component requests: [GitHub Issues](https://github.com/simonaseno/NHANES/issues)
 
 ## License
 
-This project is released under the MIT License.
-You are free to use, modify, and distribute this code with appropriate attribution.
+The project code and documentation are licensed under the [MIT License](LICENSE).
+CDC source data remain subject to their official public-use documentation and
+data-use terms.
 
-## Author
+## Maintainer
 
-**Simon Aseno**
-Public Health & Data Science Consultant
-GitHub: [github.com/simonaseno](https://github.com/simonaseno)
-Medium: [medium.com/@sbaseno](https://medium.com/@sbaseno)
+Simon Aseno, MPH — Public Health & Data Science Consultant
 
-
----
-
-*This repository is part of a broader initiative to improve public access to health data and empower researchers, educators, and policymakers with clean and reproducible tools.*
-
+[GitHub](https://github.com/simonaseno) · [Medium](https://medium.com/@sbaseno)

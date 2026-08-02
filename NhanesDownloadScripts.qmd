@@ -1,199 +1,126 @@
 ---
-title: "R Script for Automated NHANES CBC & Demographic Data Download and Merger (Pre Pandemic Data Sets)"
-author: "Dr. Simon Aseno, MPH"
-date: today
-format: html
+title: "NHANES CBC and Demographics Data Guide"
+author: "Simon Aseno, MPH"
+date: last-modified
+format:
+  html:
+    toc: true
+    code-fold: false
+execute:
+  eval: false
 ---
 
-## **Overview of the NHANES CBC and Demographic Data Pipeline (1999–2018)**
+## Purpose
 
-This document outlines a scripted workflow designed to automate the download, labeling, and combination of NHANES Complete Blood Count (CBC) and Demographic (DEMO) datasets for analysis across the 1999–2018 cycles.
+This project downloads, validates, and prepares public-use NHANES Complete Blood
+Count (CBC) and Demographics data for the ten continuous cycles from 1999–2000
+through 2017–2018. Acquisition is driven by a reviewed source catalog, and the
+scientific rules are implemented in testable R functions rather than embedded in
+this document.
 
-The NHANES program operates in two-year survey cycles, and this pipeline focuses on the ten continuous pre-pandemic cycles from 1999–2000 through 2017–2018. While there are ten official cycles during this time, the CBC dataset includes **eleven files**. This is because the 2001–2002 cycle includes **two separate CBC data files**—`L25_B.XPT` and `L25_2_B.XPT`—each capturing different subsets of hematologic information. Both are included to ensure a complete representation of the cycle’s data.
+## Reproducible execution
 
-Each downloaded file is clearly labeled using a custom naming convention that encodes the cycle, year range, and file type (e.g., `cbc_C1_2001_2002`), making the resulting datasets easier to trace and interpret. After downloading, the CBC and DEMO files are merged using the participant identifier `SEQN`, resulting in a unified dataset that links individual lab measurements with demographic attributes.
+Restore the recorded environment and run the pipeline from the repository root:
 
-This pipeline is ideal for researchers conducting time trend analyses, biomarker surveillance, or demographic stratification studies using NHANES data.
-
-### Setup
-
-```{r setup}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```{bash}
+Rscript -e 'renv::restore()'
+Rscript scripts/run_pipeline.R --refresh=true --write-csv=false
 ```
 
-### Load Required Packages
+The executable entry point sources the modules under `R/`. Quarto renders this
+guide but does not install packages, download data, or overwrite research outputs.
 
-This section ensures all the required R packages are installed and loaded. If any of the packages are missing from your environment, the script automatically installs them before loading. This design supports ease of use and reproducibility.
+## Source catalog
 
-The required packages include:
+Every upstream file is declared in `config/nhanes_files.csv`. The catalog records:
 
--   **`httr`** – for HTTP requests and file downloads
+- the official release cycle and file identifier;
+- the direct CDC HTTPS URL;
+- expected row count;
+- record level and merge key;
+- exam and analytic role.
 
--   **`haven`** – for reading NHANES `.xpt` data files
+An upstream row-count change stops the pipeline so the CDC revision can be
+reviewed instead of silently changing a research dataset.
 
--   **`dplyr`** – for data wrangling and transformation
+## CBC first and second examinations
 
-<!-- -->
+The 2001–2002 `L25_B` file contains the primary CBC examination. `L25_2_B`
+contains repeat measurements from a second examination. CDC documents the second
+exam as a convenience sample without survey weights.
 
--   **`rvest`** – for web scraping (used in extended functionality)
+The legacy v1 workflow appended these files by rows, creating 557 duplicate
+participants in the combined CBC and CBC-demographic outputs. Version 0.2 keeps:
 
-This setup guarantees the pipeline can run seamlessly on new environments without requiring manual installation.
+- `cbc_primary_1999_2018`: primary CBC observations used for representative
+  analyses when paired with the appropriate design and weights;
+- `cbc_second_exam_2001_2002`: supplementary repeat observations for methods
+  that explicitly account for repeat measures and the nonprobability subsample.
 
-```{r packages}
-required_packages <- c("httr", "haven", "dplyr", "rvest")
+The second-exam observations are never silently included in population trends.
 
-for (pkg in required_packages) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    install.packages(pkg)
-  }
-  library(pkg, character.only = TRUE)
-}
+Official documentation:
+<https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2001/DataFiles/L25_2_B.htm>
 
+## Merge contract
 
+Primary person-level CBC and Demographics are each required to be unique on
+`SEQN + cycle`. Every CBC key must exist in Demographics. The protected left join
+must preserve the CBC row count and key uniqueness.
 
-```
+These checks are deliberately component-specific. Some other NHANES files have
+multiple records per participant and must not be merged until their granularity
+has been modeled appropriately.
 
-### Download & Combine CBC Data (1999–2018)
+## Survey design and weights
 
-```{r download-cbc}
-cbc_files <- list(
-  "LAB25"    = list(label = "cbc_B_1999_2000", year = "1999"),
-  "L25_B"    = list(label = "cbc_C1_2001_2002", year = "2001"),
-  "L25_2_B"  = list(label = "cbc_C2_2001_2002", year = "2001"),
-  "L25_C"    = list(label = "cbc_D_2003_2004", year = "2003"),
-  "CBC_D"    = list(label = "cbc_E_2005_2006", year = "2005"),
-  "CBC_E"    = list(label = "cbc_F_2007_2008", year = "2007"),
-  "CBC_F"    = list(label = "cbc_G_2009_2010", year = "2009"),
-  "CBC_G"    = list(label = "cbc_H_2011_2012", year = "2011"),
-  "CBC_H"    = list(label = "cbc_I_2013_2014", year = "2013"),
-  "CBC_I"    = list(label = "cbc_J_2015_2016", year = "2015"),
-  "CBC_J"    = list(label = "cbc_K_2017_2018", year = "2017")
-)
+NHANES is a complex, multistage probability sample. Valid population estimates
+generally require:
 
-base_url <- "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/"
+- the weight appropriate to the least inclusive analytic component;
+- strata (`SDMVSTRA`) and primary sampling units (`SDMVPSU`);
+- adjusted weights when compatible cycles are combined;
+- domain-analysis methods rather than deleting sampled records prematurely;
+- review of eligibility, nonresponse, and laboratory-method changes.
 
-download_cbc_datasets <- function(file_map, save_dir = "nhanes_cbc") {
-  dir.create(save_dir, showWarnings = FALSE)
-  cbc_list <- list()
+This pipeline preserves design variables but does not select a universal weight,
+because the correct choice depends on each analysis. Consult the
+[NHANES weighting tutorial](https://wwwn.cdc.gov/nchs/nhanes/tutorials/weighting.aspx)
+before estimating population quantities.
 
-  for (file in names(file_map)) {
-    file_info <- file_map[[file]]
-    file_url <- paste0(base_url, file_info$year, "/DataFiles/", file, ".xpt")
-    dest_path <- file.path(save_dir, paste0(file, ".xpt"))
+## Provenance and validation
 
-    message("Downloading: ", file_url)
-    resp <- GET(file_url, write_disk(dest_path, overwrite = TRUE))
+Each run produces:
 
-    if (status_code(resp) == 200) {
-      tryCatch({
-        df <- read_xpt(dest_path)
-        df$Cycle <- file_info$label
-        df$Source_File <- paste0(file, ".xpt")
-        cbc_list[[file_info$label]] <- df
-      }, error = function(e) {
-        warning("Could not read: ", file)
-      })
-    } else {
-      warning("Failed to download: ", file_url)
-    }
-  }
+- `provenance.csv`, containing source URLs, retrieval time, byte size, SHA-256,
+  and imported dimensions;
+- `validation.csv`, containing output dimensions, participant counts, and
+  duplicate-participant counts;
+- compressed RDS datasets, with CSV copies only when requested.
 
-  combined_cbc <- bind_rows(cbc_list)
-  return(combined_cbc)
-}
+CI runs synthetic tests on every pull request. A separate scheduled workflow
+performs the network-dependent CDC refresh so temporary upstream availability
+does not make ordinary code review unreliable.
 
-cbc_data <- download_cbc_datasets(cbc_files)
-saveRDS(cbc_data, "cbc_data_combined_1999_2018.rds")
-write.csv(cbc_data, "cbc_data_combined_1999_2018.csv", row.names = FALSE)
-```
+## Expanding to more NHANES components
 
-### Download & Combine Demographic Data (1999–2018)
+Adding catalog rows is only the acquisition step. Each new component also needs:
 
-```{r download-demo}
-demo_files <- list(
-  "DEMO"    = list(label = "demo_A_1999_2000", year = "1999"),
-  "DEMO_B"  = list(label = "demo_B_2001_2002", year = "2001"),
-  "DEMO_C"  = list(label = "demo_C_2003_2004", year = "2003"),
-  "DEMO_D"  = list(label = "demo_D_2005_2006", year = "2005"),
-  "DEMO_E"  = list(label = "demo_E_2007_2008", year = "2007"),
-  "DEMO_F"  = list(label = "demo_F_2009_2010", year = "2009"),
-  "DEMO_G"  = list(label = "demo_G_2011_2012", year = "2011"),
-  "DEMO_H"  = list(label = "demo_H_2013_2014", year = "2013"),
-  "DEMO_I"  = list(label = "demo_I_2015_2016", year = "2015"),
-  "DEMO_J"  = list(label = "demo_J_2017_2018", year = "2017")
-)
+1. record-level and key validation;
+2. a variable harmonization crosswalk;
+3. eligibility and missing-data documentation;
+4. survey-weight guidance;
+5. tests for every merge or reshape;
+6. review of differences across survey cycles.
 
-download_demo_datasets <- function(file_map, save_dir = "nhanes_demo") {
-  dir.create(save_dir, showWarnings = FALSE)
-  demo_list <- list()
+This separation makes the repository extensible without implying that all NHANES
+files can be safely combined through one generic join.
 
-  for (file in names(file_map)) {
-    file_info <- file_map[[file]]
-    file_url <- paste0(base_url, file_info$year, "/DataFiles/", file, ".xpt")
-    dest_path <- file.path(save_dir, paste0(file, ".xpt"))
+## Citation and license
 
-    message("Downloading: ", file_url)
-    resp <- GET(file_url, write_disk(dest_path, overwrite = TRUE))
+Use the version-specific citation exposed by `CITATION.cff`, cite the original
+CDC/NCHS files, and report the pipeline version and provenance manifest used in
+the analysis.
 
-    if (status_code(resp) == 200) {
-      tryCatch({
-        df <- read_xpt(dest_path)
-        df$Cycle <- file_info$label
-        df$Source_File <- paste0(file, ".xpt")
-        demo_list[[file_info$label]] <- df
-      }, error = function(e) {
-        warning("Could not read: ", file)
-      })
-    } else {
-      warning("Failed to download: ", file_url)
-    }
-  }
-
-  combined_demo <- bind_rows(demo_list)
-  return(combined_demo)
-}
-
-demo_data <- download_demo_datasets(demo_files)
-saveRDS(demo_data, "demo_data_combined_1999_2018.rds")
-write.csv(demo_data, "demo_data_combined_1999_2018.csv", row.names = FALSE)
-```
-
-### Merge CBC and Demographic Data by SEQN
-
-```{r merge-data}
-cbc_data <- readRDS("cbc_data_combined_1999_2018.rds")
-demo_data <- readRDS("demo_data_combined_1999_2018.rds")
-
-cbc_demo_combined <- inner_join(cbc_data, demo_data, by = "SEQN")
-
-# Save merged file
-saveRDS(cbc_demo_combined, "cbc_demo_merged_1999_2018.rds")
-write.csv(cbc_demo_combined, "cbc_demo_merged_1999_2018.csv", row.names = FALSE)
-
-# Preview
-head(cbc_demo_combined)
-```
-
-------------------------------------------------------------------------
-
-**Done!** You now have a fully automated, reproducible pipeline for NHANES CBC + DEMO dataset preparation.
-
-### Suggested Citation
-
-Aseno, S. (2025). *NHANES CBC and Demographic Data Downloader: A Structured Ingestion Pipeline for Pre-Pandemic Trend Analysis (1999–2018)*. Custom R-based script for automated data acquisition, labeling, and merging of NHANES Complete Blood Count and Demographic datasets. Version 1.0. Available upon request or use with attribution.
-
-### License
-
-This project is licensed under the **Creative Commons Attribution 4.0 International (CC BY 4.0)** License.
-
-You are free to:
-
--   **Share** — copy and redistribute the material in any medium or format
-
--   **Adapt** — remix, transform, and build upon the material for any purpose, even commercially
-
-Under the following terms:
-
--   **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
-
-View the full license here: <https://creativecommons.org/licenses/by/4.0/>
+The project code and documentation use the MIT License. CDC data remain governed
+by their official public-use documentation and terms.
