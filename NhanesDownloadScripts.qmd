@@ -22,7 +22,7 @@ this document.
 
 Restore the recorded environment and run the pipeline from the repository root:
 
-```{bash}
+```bash
 Rscript -e 'renv::restore()'
 Rscript scripts/run_pipeline.R --refresh=true --write-csv=false
 ```
