@@ -1,0 +1,79 @@
+[
+  {
+    "objectID": "NhanesDownloadScripts.html",
+    "href": "NhanesDownloadScripts.html",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "",
+    "text": "This project downloads, validates, and prepares public-use NHANES Complete Blood Count (CBC) and Demographics data for the ten continuous cycles from 1999–2000 through 2017–2018. Acquisition is driven by a reviewed source catalog, and the scientific rules are implemented in testable R functions rather than embedded in this document."
+  },
+  {
+    "objectID": "NhanesDownloadScripts.html#purpose",
+    "href": "NhanesDownloadScripts.html#purpose",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "",
+    "text": "This project downloads, validates, and prepares public-use NHANES Complete Blood Count (CBC) and Demographics data for the ten continuous cycles from 1999–2000 through 2017–2018. Acquisition is driven by a reviewed source catalog, and the scientific rules are implemented in testable R functions rather than embedded in this document."
+  },
+  {
+    "objectID": "NhanesDownloadScripts.html#reproducible-execution",
+    "href": "NhanesDownloadScripts.html#reproducible-execution",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "Reproducible execution",
+    "text": "Reproducible execution\nRestore the recorded environment and run the pipeline from the repository root:\nRscript -e 'renv::restore()'\nRscript scripts/run_pipeline.R --refresh=true --write-csv=false\nThe executable entry point sources the modules under R/. Quarto renders this guide but does not install packages, download data, or overwrite research outputs."
+  },
+  {
+    "objectID": "NhanesDownloadScripts.html#source-catalog",
+    "href": "NhanesDownloadScripts.html#source-catalog",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "Source catalog",
+    "text": "Source catalog\nEvery upstream file is declared in config/nhanes_files.csv. The catalog records:\n\nthe official release cycle and file identifier;\nthe direct CDC HTTPS URL;\nexpected row count;\nrecord level and merge key;\nexam and analytic role.\n\nAn upstream row-count change stops the pipeline so the CDC revision can be reviewed instead of silently changing a research dataset."
+  },
+  {
+    "objectID": "NhanesDownloadScripts.html#cbc-first-and-second-examinations",
+    "href": "NhanesDownloadScripts.html#cbc-first-and-second-examinations",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "CBC first and second examinations",
+    "text": "CBC first and second examinations\nThe 2001–2002 L25_B file contains the primary CBC examination. L25_2_B contains repeat measurements from a second examination. CDC documents the second exam as a convenience sample without survey weights.\nThe legacy v1 workflow appended these files by rows, creating 557 duplicate participants in the combined CBC and CBC-demographic outputs. Version 0.2 keeps:\n\ncbc_primary_1999_2018: primary CBC observations used for representative analyses when paired with the appropriate design and weights;\ncbc_second_exam_2001_2002: supplementary repeat observations for methods that explicitly account for repeat measures and the nonprobability subsample.\n\nThe second-exam observations are never silently included in population trends.\nOfficial documentation: https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2001/DataFiles/L25_2_B.htm"
+  },
+  {
+    "objectID": "NhanesDownloadScripts.html#merge-contract",
+    "href": "NhanesDownloadScripts.html#merge-contract",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "Merge contract",
+    "text": "Merge contract\nPrimary person-level CBC and Demographics are each required to be unique on SEQN + cycle. Every CBC key must exist in Demographics. The protected left join must preserve the CBC row count and key uniqueness.\nThese checks are deliberately component-specific. Some other NHANES files have multiple records per participant and must not be merged until their granularity has been modeled appropriately."
+  },
+  {
+    "objectID": "NhanesDownloadScripts.html#survey-design-and-weights",
+    "href": "NhanesDownloadScripts.html#survey-design-and-weights",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "Survey design and weights",
+    "text": "Survey design and weights\nNHANES is a complex, multistage probability sample. Valid population estimates generally require:\n\nthe weight appropriate to the least inclusive analytic component;\nstrata (SDMVSTRA) and primary sampling units (SDMVPSU);\nadjusted weights when compatible cycles are combined;\ndomain-analysis methods rather than deleting sampled records prematurely;\nreview of eligibility, nonresponse, and laboratory-method changes.\n\nThis pipeline preserves design variables but does not select a universal weight, because the correct choice depends on each analysis. Consult the NHANES weighting tutorial before estimating population quantities."
+  },
+  {
+    "objectID": "NhanesDownloadScripts.html#provenance-and-validation",
+    "href": "NhanesDownloadScripts.html#provenance-and-validation",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "Provenance and validation",
+    "text": "Provenance and validation\nEach run produces:\n\nprovenance.csv, containing source URLs, retrieval time, byte size, SHA-256, and imported dimensions;\nvalidation.csv, containing output dimensions, participant counts, and duplicate-participant counts;\ncompressed RDS datasets, with CSV copies only when requested.\n\nCI runs synthetic tests on every pull request. A separate scheduled workflow performs the network-dependent CDC refresh so temporary upstream availability does not make ordinary code review unreliable."
+  },
+  {
+    "objectID": "NhanesDownloadScripts.html#expanding-to-more-nhanes-components",
+    "href": "NhanesDownloadScripts.html#expanding-to-more-nhanes-components",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "Expanding to more NHANES components",
+    "text": "Expanding to more NHANES components\nAdding catalog rows is only the acquisition step. Each new component also needs:\n\nrecord-level and key validation;\na variable harmonization crosswalk;\neligibility and missing-data documentation;\nsurvey-weight guidance;\ntests for every merge or reshape;\nreview of differences across survey cycles.\n\nThis separation makes the repository extensible without implying that all NHANES files can be safely combined through one generic join."
+  },
+  {
+    "objectID": "NhanesDownloadScripts.html#citation-and-license",
+    "href": "NhanesDownloadScripts.html#citation-and-license",
+    "title": "NHANES CBC and Demographics Data Guide",
+    "section": "Citation and license",
+    "text": "Citation and license\nUse the version-specific citation exposed by CITATION.cff, cite the original CDC/NCHS files, and report the pipeline version and provenance manifest used in the analysis.\nThe project code and documentation use the MIT License. CDC data remain governed by their official public-use documentation and terms.\n\nNHANES Data Pipeline\nNHANES Data Pipeline\nOverview\n/index.html\nData guide\n/NhanesDownloadScripts.html\nhttps://github.com/simonaseno/NHANES\n\n© 2026 Simon Aseno · MIT licensed\n\n\nBuilt for transparent, reproducible population-health research.\n\n\nSource\n\n\nReport an issue\n\n\n\nNHANES CBC and Demographics Data Guide – NHANES Data Pipeline\nNHANES CBC and Demographics Data Guide – NHANES Data Pipeline\nNHANES CBC and Demographics Data Guide – NHANES Data Pipeline\nNHANES Data Pipeline\nA validated, reproducible R pipeline for public-use NHANES data.\nA validated, reproducible R pipeline for public-use NHANES data.\nA validated, reproducible R pipeline for public-use NHANES data."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "NHANES Data Pipeline",
+    "section": "",
+    "text": "Open-source scientific infrastructure\n      NHANES data you can trace, validate, and reuse.\n      A reproducible R pipeline that turns official CDC/NCHS public-use files into documented research assets—with scientific decisions kept visible at every step.\n      \n        Read the data guide\n        View on GitHub\n      \n      \n        Official CDC sources\n        Automated validation\n        MIT licensed\n      \n    \n\n    \n      \n      From public-use source files to defensible scientific analysis.\n    \n  \n\n\n\n  \n    \n      \n        Transparent from the beginning\n        Repository activity\n      \n      A dated snapshot of verifiable GitHub data—not estimated or seeded counters.\n    \n\n    \n      \n        Public since\n        Jul 17, 2025\n        Repository creation date\n      \n      \n        Current version\n        v0.2.0\n        Software citation metadata\n      \n      \n        Repository views\n        1\n        1 unique · trailing 14 days\n      \n      \n        Repository clones\n        7\n        6 unique · trailing 14 days\n      \n      \n        GitHub stars\n        0\n        Public repository count\n      \n      \n        Release downloads\n        —\n        No GitHub release published yet\n      \n    \n\n    Snapshot verified August 2, 2026. GitHub traffic covers repository activity for the available 14-day window; it does not measure visits to this documentation website.\n  \n\n\n\n  \n    \n      A reviewable workflow\n      Four deliberate steps from source to science\n      Each layer has a clear responsibility, so data acquisition never hides scientific assumptions.\n    \n\n    \n      \n        01\n        Acquire\n        Retrieve declared files directly from official CDC/NCHS sources through a reviewed catalog.\n      \n      \n        02\n        Validate\n        Stop when row counts, schemas, participant keys, or merge contracts differ from expectations.\n      \n      \n        03\n        Harmonize\n        Apply component-specific scientific rules without burying them inside generic download code.\n      \n      \n        04\n        Document\n        Record sources, retrieval times, hashes, dimensions, validation results, and release versions.\n      \n    \n  \n\n\n\n  \n    \n      Protection by design\n      Scientific meaning belongs in the pipeline.\n      The 2001–2002 second CBC examination is a convenience sample without survey weights. This project preserves those observations separately instead of silently appending them to the representative primary examination data.\n      That safeguard prevents 557 duplicate participants from entering the combined CBC-demographic output unnoticed.\n      Read the scientific rationale →\n    \n\n    \n      Current validated coverage\n      10continuous survey cycles\n      1999–2018release period\n      2core components: CBC and Demographics\n    \n  \n\n\n\n  \n    \n      Designed to expand carefully\n      A foundation for more NHANES components\n    \n\n    \n      \n        Manifest-driven\n        New files begin as reviewed catalog entries—not URLs buried inside analysis notebooks.\n      \n      \n        Component-aware\n        Every component receives its own granularity, harmonization, eligibility, and weighting review.\n      \n      \n        Citation-ready\n        Versioned metadata and provenance make every research release easier to describe and audit.\n      \n    \n  \n\n\n\n  \n    \n      Start with the current release\n      Explore CBC and Demographics across ten cycles.\n      Follow the reproducible workflow or suggest the next NHANES component for the project.\n    \n    \n      Open the data guide\n      Request a component"
+  }
+]
