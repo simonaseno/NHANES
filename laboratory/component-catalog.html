@@ -1,0 +1,2305 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Explore validated, developing, planned, and research-stage laboratory components within NHANES Laboratory Data with R.">
+
+<title>Laboratory Component Catalog – NHANES Laboratory Data with R</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-3abfc5276e5e2c6766accf7a4a663956.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="Laboratory Component Catalog – NHANES Laboratory Data with R">
+<meta property="og:description" content="Explore validated, developing, planned, and research-stage laboratory components within NHANES Laboratory Data with R.">
+<meta property="og:image" content="https://simonaseno.github.io/NHANES/laboratory/assets/nhanes-pipeline.jpg">
+<meta property="og:site_name" content="NHANES Laboratory Data with R">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="Laboratory Component Catalog – NHANES Laboratory Data with R">
+<meta name="twitter:description" content="Explore validated, developing, planned, and research-stage laboratory components within NHANES Laboratory Data with R.">
+<meta name="twitter:image" content="https://simonaseno.github.io/NHANES/laboratory/assets/nhanes-pipeline.jpg">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">NHANES Laboratory Data with R</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-overview" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Overview</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-overview">    
+        <li>
+    <a class="dropdown-item" href="../index.html">
+ <span class="dropdown-text">Site overview</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-understanding-nhanes" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Understanding NHANES</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-understanding-nhanes">    
+        <li>
+    <a class="dropdown-item" href="../foundations/index.html">
+ <span class="dropdown-text">Start here</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../foundations/data-structure.html">
+ <span class="dropdown-text">NHANES data structure</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../foundations/survey-design.html">
+ <span class="dropdown-text">Survey design</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../foundations/survey-weights.html">
+ <span class="dropdown-text">Survey weights</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../foundations/combining-cycles.html">
+ <span class="dropdown-text">Combining cycles</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-laboratory-data" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Laboratory data</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-laboratory-data">    
+        <li>
+    <a class="dropdown-item" href="../laboratory/index.html">
+ <span class="dropdown-text">Laboratory data overview</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../laboratory/component-catalog.html">
+ <span class="dropdown-text">Component catalog</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-pipelines" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Pipelines</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-pipelines">    
+        <li>
+    <a class="dropdown-item" href="../pipelines/index.html">
+ <span class="dropdown-text">Pipeline catalog</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../pipelines/cbc-demographics/index.html">
+ <span class="dropdown-text">CBC and Demographic pipeline</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-courses" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Courses</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-courses">    
+        <li>
+    <a class="dropdown-item" href="../tutorials/index.html">
+ <span class="dropdown-text">Course catalog</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorial/index.html">
+ <span class="dropdown-text">CBC and Demographic pipeline course</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="../NhanesDownloadScripts.html"> 
+<span class="menu-text">Project architecture</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES"> <i class="bi bi-github" role="img" aria-label="View the project on GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../laboratory/component-catalog.html">Laboratory component catalog</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../laboratory/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Laboratory data overview</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../laboratory/component-catalog.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Laboratory component catalog</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Available pipelines</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../pipelines/cbc-demographics/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">CBC and Demographic data</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Related foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../foundations/data-structure.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NHANES data structure</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../foundations/survey-weights.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Survey weights</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../foundations/combining-cycles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Combining cycles</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul class="collapse">
+  <li><a href="#catalog-purpose" id="toc-catalog-purpose" class="nav-link active" data-scroll-target="#catalog-purpose">Catalog purpose</a></li>
+  <li><a href="#status-definitions" id="toc-status-definitions" class="nav-link" data-scroll-target="#status-definitions">Status definitions</a></li>
+  <li><a href="#explore-the-component-catalog" id="toc-explore-the-component-catalog" class="nav-link" data-scroll-target="#explore-the-component-catalog">Explore the component catalog</a></li>
+  <li><a href="#current-validated-pipeline" id="toc-current-validated-pipeline" class="nav-link" data-scroll-target="#current-validated-pipeline">Current validated pipeline</a></li>
+  <li><a href="#component-onboarding-pathway" id="toc-component-onboarding-pathway" class="nav-link" data-scroll-target="#component-onboarding-pathway">Component onboarding pathway</a></li>
+  <li><a href="#component-onboarding-requirements" id="toc-component-onboarding-requirements" class="nav-link" data-scroll-target="#component-onboarding-requirements">Component onboarding requirements</a></li>
+  <li><a href="#proposed-repository-pattern" id="toc-proposed-repository-pattern" class="nav-link" data-scroll-target="#proposed-repository-pattern">Proposed repository pattern</a></li>
+  <li><a href="#how-development-priorities-are-selected" id="toc-how-development-priorities-are-selected" class="nav-link" data-scroll-target="#how-development-priorities-are-selected">How development priorities are selected</a></li>
+  <li><a href="#requesting-a-component" id="toc-requesting-a-component" class="nav-link" data-scroll-target="#requesting-a-component">Requesting a component</a></li>
+  <li><a href="#catalog-limitations" id="toc-catalog-limitations" class="nav-link" data-scroll-target="#catalog-limitations">Catalog limitations</a></li>
+  <li><a href="#navigate-the-laboratory-section" id="toc-navigate-the-laboratory-section" class="nav-link" data-scroll-target="#navigate-the-laboratory-section">Navigate the laboratory section</a></li>
+  <li><a href="#page-summary" id="toc-page-summary" class="nav-link" data-scroll-target="#page-summary">Page summary</a></li>
+  </ul>
+<div class="toc-actions"><ul class="collapse"><li><a href="https://github.com/simonaseno/NHANES/blob/main/laboratory/component-catalog.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Laboratory Component Catalog</h1>
+<p class="subtitle lead">Current, planned, and research-stage NHANES laboratory pipelines</p>
+</div>
+
+<div>
+  <div class="description">
+    Explore validated, developing, planned, and research-stage laboratory components within NHANES Laboratory Data with R.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<style>
+.catalog-hero {
+  position: relative;
+  overflow: hidden;
+  margin: 1rem 0 2.25rem;
+  padding: 2.8rem 1.6rem;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle at 88% 10%,
+      rgba(75, 221, 194, 0.24),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 8% 90%,
+      rgba(87, 145, 187, 0.20),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      #071a27,
+      #0d3342 58%,
+      #145b62
+    );
+  color: #ffffff;
+  box-shadow: 0 16px 38px rgba(7, 26, 39, 0.24);
+}
+
+.catalog-hero::after {
+  content: "";
+  position: absolute;
+  top: -85px;
+  right: -65px;
+  width: 235px;
+  height: 235px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 26px rgba(255, 255, 255, 0.04),
+    0 0 0 52px rgba(255, 255, 255, 0.025);
+}
+
+.catalog-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 920px;
+}
+
+.catalog-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #d8fffa;
+  font-size: 0.87rem;
+  font-weight: 760;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.catalog-hero h2 {
+  max-width: 880px;
+  margin: 0;
+  color: #ffffff !important;
+  font-size: clamp(2.2rem, 5vw, 4.4rem);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+.catalog-hero p {
+  max-width: 820px;
+  margin: 1.2rem 0 0;
+  color: #e3f4f5 !important;
+  font-size: 1.13rem;
+  line-height: 1.7;
+}
+
+.catalog-summary-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(170px, 1fr)
+    );
+  gap: 0.9rem;
+  margin-top: 1.8rem;
+}
+
+.catalog-summary-card {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+}
+
+.catalog-summary-card strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #ffffff;
+  font-size: 1.15rem;
+}
+
+.catalog-summary-card span {
+  color: #cce8e8;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.catalog-intro {
+  max-width: 860px;
+  margin-bottom: 1.5rem;
+  color: #4b5563;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(210px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2.25rem;
+}
+
+.status-card {
+  padding: 1.2rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgba(17, 34, 51, 0.05);
+}
+
+.status-card h3 {
+  margin: 0 0 0.45rem;
+  color: #102b3a;
+  font-size: 1.08rem;
+}
+
+.status-card p {
+  margin: 0;
+  color: #566270;
+  line-height: 1.55;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.34rem 0.68rem;
+  border-radius: 999px;
+  font-size: 0.83rem;
+  font-weight: 780;
+}
+
+.status-validated {
+  background: #e7f6ef;
+  color: #16643f;
+}
+
+.status-development {
+  background: #eaf1fb;
+  color: #245b94;
+}
+
+.status-planned {
+  background: #f2eefb;
+  color: #6545a3;
+}
+
+.status-research {
+  background: #fff2df;
+  color: #925400;
+}
+
+.status-unassessed {
+  background: #eef1f4;
+  color: #4c5966;
+}
+
+.catalog-filter-shell {
+  margin: 1.5rem 0 2.5rem;
+  padding: 1.35rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 18px;
+  background: #f7fbfb;
+}
+
+.catalog-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-bottom: 1.25rem;
+}
+
+.catalog-filter-button {
+  padding: 0.7rem 1rem;
+  border: 2px solid #0d5961;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0d5961;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.catalog-filter-button:hover,
+.catalog-filter-button.active {
+  background: #0d5961;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.component-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(285px, 1fr)
+    );
+  gap: 1rem;
+}
+
+.component-card {
+  display: block;
+  padding: 1.25rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgba(17, 34, 51, 0.05);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.component-card:hover {
+  transform: translateY(-3px);
+  border-color: #35a99a;
+  box-shadow: 0 10px 22px rgba(17, 34, 51, 0.10);
+}
+
+.component-card[hidden] {
+  display: none !important;
+}
+
+.component-card h3 {
+  margin: 0.7rem 0 0.5rem;
+  color: #102b3a;
+  font-size: 1.14rem;
+}
+
+.component-card p {
+  margin: 0 0 0.8rem;
+  color: #566270;
+  line-height: 1.55;
+}
+
+.component-meta {
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #e3e8ed;
+}
+
+.component-meta strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #0d5961;
+  font-size: 0.9rem;
+}
+
+.component-meta span {
+  color: #566270;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.validated-feature {
+  margin: 1.5rem 0 2.4rem;
+  padding: 1.55rem;
+  border: 1px solid #cfdce3;
+  border-left: 7px solid #0d5961;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(13, 89, 97, 0.09),
+      transparent 42%
+    ),
+    #ffffff;
+}
+
+.validated-feature h3 {
+  margin-top: 0;
+  color: #102b3a;
+  font-size: 1.45rem;
+}
+
+.validated-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(210px, 1fr)
+    );
+  gap: 0.9rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.validated-item {
+  padding: 1rem;
+  border-radius: 11px;
+  background: #f4f8f9;
+}
+
+.validated-item strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #0d5961;
+}
+
+.validated-item span {
+  color: #566270;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.onboarding-path {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+  gap: 0.8rem;
+  margin: 1.5rem 0 2.25rem;
+}
+
+.onboarding-step {
+  position: relative;
+  padding: 1.1rem;
+  border: 1px solid #d8e0e7;
+  border-radius: 14px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.onboarding-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  margin-bottom: 0.7rem;
+  border-radius: 50%;
+  background: #0d5961;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.onboarding-step strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #102b3a;
+}
+
+.onboarding-step span {
+  color: #566270;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.onboarding-step:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 50%;
+  right: -0.65rem;
+  z-index: 2;
+  transform: translateY(-50%);
+  color: #35a99a;
+  font-size: 1.3rem;
+  font-weight: 900;
+}
+
+.requirement-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(240px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2.25rem;
+}
+
+.requirement-card {
+  padding: 1.25rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgba(17, 34, 51, 0.05);
+}
+
+.requirement-card h3 {
+  margin: 0 0 0.6rem;
+  color: #102b3a;
+  font-size: 1.08rem;
+}
+
+.requirement-card p,
+.requirement-card li {
+  color: #566270;
+  line-height: 1.55;
+}
+
+.requirement-card ul {
+  margin-bottom: 0;
+  padding-left: 1.1rem;
+}
+
+.priority-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(220px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2.2rem;
+}
+
+.priority-card {
+  padding: 1.15rem;
+  border-radius: 13px;
+  background: #102b3a;
+  color: #ffffff;
+}
+
+.priority-card strong {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #ffffff;
+}
+
+.priority-card span {
+  color: #d4e7e9;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.catalog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 2rem 0;
+}
+
+.catalog-action {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 49px;
+  padding: 0.82rem 1.2rem;
+  border: 2px solid #0d5961;
+  border-radius: 9px;
+  background: #0d5961 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 760;
+  text-decoration: none !important;
+}
+
+.catalog-action:hover {
+  background: #ffffff !important;
+  color: #0d5961 !important;
+  -webkit-text-fill-color: #0d5961 !important;
+}
+
+.catalog-action-secondary {
+  background: #ffffff !important;
+  color: #0d5961 !important;
+  -webkit-text-fill-color: #0d5961 !important;
+}
+
+.catalog-action-secondary:hover {
+  background: #0d5961 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+@media (max-width: 900px) {
+  .onboarding-path {
+    grid-template-columns: 1fr;
+  }
+
+  .onboarding-step:not(:last-child)::after {
+    content: "↓";
+    top: auto;
+    right: 50%;
+    bottom: -1.05rem;
+    transform: translateX(50%);
+  }
+}
+
+@media (max-width: 640px) {
+  .catalog-hero {
+    padding: 2.4rem 1rem;
+  }
+
+  .catalog-filter-buttons {
+    flex-direction: column;
+  }
+
+  .catalog-filter-button {
+    width: 100%;
+  }
+
+  .catalog-actions {
+    flex-direction: column;
+  }
+
+  .catalog-action {
+    width: 100%;
+  }
+}
+</style>
+<section class="catalog-hero">
+  <div class="catalog-hero-content">
+
+    <div class="catalog-eyebrow">
+      Laboratory roadmap · scientific review · reproducible pipelines
+    </div>
+
+    <h2 class="anchored">
+      A laboratory component enters the catalog before it becomes a trusted pipeline.
+    </h2>
+
+    <p>
+      This catalog separates validated implementations from components that are
+      under development, planned, or still require scientific investigation.
+      A listing signals analytical interest—not automatic readiness for use.
+    </p>
+
+    <div class="catalog-summary-grid">
+
+      <div class="catalog-summary-card">
+        <strong>1 validated</strong>
+        <span>Implemented and documented pipeline</span>
+      </div>
+
+      <div class="catalog-summary-card">
+        <strong>5 planned</strong>
+        <span>Included in the current roadmap</span>
+      </div>
+
+      <div class="catalog-summary-card">
+        <strong>9 research-stage</strong>
+        <span>Require methodological review</span>
+      </div>
+
+      <div class="catalog-summary-card">
+        <strong>8 onboarding domains</strong>
+        <span>Required before implementation</span>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+<section id="catalog-purpose" class="level1">
+<h1>Catalog purpose</h1>
+<p>The catalog distinguishes:</p>
+<ul>
+<li>implemented pipelines;</li>
+<li>active development work;</li>
+<li>planned components;</li>
+<li>components requiring scientific review;</li>
+<li>components not yet formally assessed.</li>
+</ul>
+<p>A component’s presence in the catalog does not mean that its pipeline has already been validated.</p>
+</section>
+<section id="status-definitions" class="level1">
+<h1>Status definitions</h1>
+<div class="status-grid">
+
+  <div class="status-card">
+    <span class="status-badge status-validated">
+      Validated
+    </span>
+    <h3 class="anchored" data-anchor-id="status-definitions">Release-ready</h3>
+    <p>
+      Implemented, tested, documented, and included in a formal release.
+    </p>
+  </div>
+
+  <div class="status-card">
+    <span class="status-badge status-development">
+      In development
+    </span>
+    <h3 class="anchored">Actively being built</h3>
+    <p>
+      Coding, validation, scientific review, or documentation is underway.
+    </p>
+  </div>
+
+  <div class="status-card">
+    <span class="status-badge status-planned">
+      Planned
+    </span>
+    <h3 class="anchored">Accepted into the roadmap</h3>
+    <p>
+      Included in future development plans but not yet implemented.
+    </p>
+  </div>
+
+  <div class="status-card">
+    <span class="status-badge status-research">
+      Research required
+    </span>
+    <h3 class="anchored">Scientific review needed</h3>
+    <p>
+      Eligibility, methods, weights, record structure, or harmonization require further investigation.
+    </p>
+  </div>
+
+  <div class="status-card">
+    <span class="status-badge status-unassessed">
+      Not yet assessed
+    </span>
+    <h3 class="anchored">Scope not yet reviewed</h3>
+    <p>
+      The component has not undergone formal technical or scientific assessment.
+    </p>
+  </div>
+
+</div>
+</section>
+<section id="explore-the-component-catalog" class="level1">
+<h1>Explore the component catalog</h1>
+<p>Use the filters to focus on components by development status.</p>
+<div class="catalog-filter-shell">
+
+  <div class="catalog-filter-buttons" role="group" aria-label="Filter laboratory components by status">
+
+    <button type="button" class="catalog-filter-button active" data-filter="all">
+      Show all
+    </button>
+
+    <button type="button" class="catalog-filter-button" data-filter="validated">
+      Validated
+    </button>
+
+    <button type="button" class="catalog-filter-button" data-filter="planned">
+      Planned
+    </button>
+
+    <button type="button" class="catalog-filter-button" data-filter="research">
+      Research required
+    </button>
+
+  </div>
+
+  <div class="component-grid">
+
+    <article class="component-card" data-status="validated">
+      <span class="status-badge status-validated">
+        Validated
+      </span>
+
+      <h3 class="anchored" data-anchor-id="explore-the-component-catalog">Complete Blood Count</h3>
+
+      <p>
+        Hemoglobin, hematocrit, erythrocyte indices, leukocyte measurements,
+        and platelet variables linked to Demographic records.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, survey design, pregnancy, and health variables
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Repeat examination, instrument comparability, and person-level uniqueness
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="planned">
+      <span class="status-badge status-planned">
+        Planned
+      </span>
+
+      <h3 class="anchored">Glycohemoglobin</h3>
+
+      <p>
+        Glycemic-status measurements interpreted alongside diabetes history,
+        glucose variables, and medication use.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, diabetes questionnaire, glucose, and medications
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Assay comparability, diagnosis context, and age eligibility
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="research">
+      <span class="status-badge status-research">
+        Research required
+      </span>
+
+      <h3 class="anchored">Fasting Plasma Glucose</h3>
+
+      <p>
+        Fasting glucose measurements requiring careful review of session,
+        fasting duration, eligibility, and subsample design.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, fasting variables, and diabetes questionnaire
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Fasting duration, morning subsample, and fasting weight
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="planned">
+      <span class="status-badge status-planned">
+        Planned
+      </span>
+
+      <h3 class="anchored">Total Cholesterol</h3>
+
+      <p>
+        Lipid measurements interpreted with examination, medication,
+        and method-comparability information.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, examinations, and medication data
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Method comparability and age eligibility
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="planned">
+      <span class="status-badge status-planned">
+        Planned
+      </span>
+
+      <h3 class="anchored">HDL Cholesterol</h3>
+
+      <p>
+        High-density lipoprotein measurements across changing laboratory platforms.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, examinations, and medication data
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Method comparability and changing laboratory platforms
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="research">
+      <span class="status-badge status-research">
+        Research required
+      </span>
+
+      <h3 class="anchored">LDL Cholesterol</h3>
+
+      <p>
+        Low-density lipoprotein results that may be measured, derived,
+        or restricted to fasting participants.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, fasting variables, and medication data
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Derived versus measured values and fasting subsample
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="research">
+      <span class="status-badge status-research">
+        Research required
+      </span>
+
+      <h3 class="anchored">Triglycerides</h3>
+
+      <p>
+        Lipid measurements affected by fasting eligibility and subsample weighting.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, fasting variables, and medication data
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Fasting eligibility and fasting subsample weights
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="planned">
+      <span class="status-badge status-planned">
+        Planned
+      </span>
+
+      <h3 class="anchored">Urine Albumin</h3>
+
+      <p>
+        Urinary albumin measurements interpreted with urine creatinine
+        and kidney-related variables.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, urine creatinine, and kidney variables
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Detection limits, dilution, and urine collection
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="planned">
+      <span class="status-badge status-planned">
+        Planned
+      </span>
+
+      <h3 class="anchored">Urine Creatinine</h3>
+
+      <p>
+        Urinary creatinine measurements supporting dilution adjustment
+        and albumin-creatinine analysis.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, urine albumin, and kidney variables
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Dilution correction and unit consistency
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="planned">
+      <span class="status-badge status-planned">
+        Planned
+      </span>
+
+      <h3 class="anchored">Standard Biochemistry Profile</h3>
+
+      <p>
+        A multi-analyte chemistry pipeline spanning several biological systems.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics and examination variables
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Multiple analytes, changing platforms, and changing methods
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="research">
+      <span class="status-badge status-research">
+        Research required
+      </span>
+
+      <h3 class="anchored">Iron Status</h3>
+
+      <p>
+        Iron-related biomarkers requiring integrated interpretation with
+        inflammation and dietary context.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, dietary data, and inflammation markers
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Biomarker interpretation and method changes
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="research">
+      <span class="status-badge status-research">
+        Research required
+      </span>
+
+      <h3 class="anchored">Vitamin Biomarkers</h3>
+
+      <p>
+        Nutrition biomarkers interpreted alongside dietary intake,
+        supplement use, and assay history.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, dietary data, and supplement data
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Assay changes, supplement use, and fasting status
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="research">
+      <span class="status-badge status-research">
+        Research required
+      </span>
+
+      <h3 class="anchored">Heavy Metals</h3>
+
+      <p>
+        Blood or urine metal measurements affected by matrix,
+        detection limits, and subsample design.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics and subsample-specific weights
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Detection limits, biological matrix, and subsample design
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="research">
+      <span class="status-badge status-research">
+        Research required
+      </span>
+
+      <h3 class="anchored">PFAS and Environmental Chemicals</h3>
+
+      <p>
+        Environmental biomarkers with changing analyte panels,
+        detection limits, and specialized weighting requirements.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics and subsample-specific weights
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Changing analyte panels, detection limits, and specialized weights
+        </span>
+      </div>
+    </article>
+
+    <article class="component-card" data-status="research">
+      <span class="status-badge status-research">
+        Research required
+      </span>
+
+      <h3 class="anchored">Infectious-Disease Serology</h3>
+
+      <p>
+        Serologic variables requiring careful interpretation of
+        assay thresholds, immunity, exposure, and vaccination context.
+      </p>
+
+      <div class="component-meta">
+        <strong>Supporting data</strong>
+        <span>
+          Demographics, vaccination, and questionnaire variables
+        </span>
+      </div>
+
+      <div class="component-meta">
+        <strong>Major analytical concerns</strong>
+        <span>
+          Assay interpretation, age eligibility, and thresholds
+        </span>
+      </div>
+    </article>
+
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const buttons =
+    document.querySelectorAll(
+      ".catalog-filter-button"
+    );
+
+  const cards =
+    document.querySelectorAll(
+      ".component-card"
+    );
+
+  buttons.forEach(
+    function (button) {
+      button.addEventListener(
+        "click",
+        function () {
+          const selectedFilter =
+            button.getAttribute(
+              "data-filter"
+            );
+
+          buttons.forEach(
+            function (item) {
+              item.classList.remove(
+                "active"
+              );
+            }
+          );
+
+          button.classList.add(
+            "active"
+          );
+
+          cards.forEach(
+            function (card) {
+              const status =
+                card.getAttribute(
+                  "data-status"
+                );
+
+              const showCard =
+                selectedFilter === "all" ||
+                status === selectedFilter;
+
+              card.hidden =
+                !showCard;
+            }
+          );
+        }
+      );
+    }
+  );
+})();
+</script>
+</section>
+<section id="current-validated-pipeline" class="level1">
+<h1>Current validated pipeline</h1>
+<section class="validated-feature">
+
+  <span class="status-badge status-validated">
+    Validated
+  </span>
+
+  <h3 class="anchored" data-anchor-id="current-validated-pipeline">
+    Complete Blood Count and Demographics
+  </h3>
+
+  <p>
+    The CBC and Demographic pipeline is the current validated implementation
+    and serves as the reference architecture for future laboratory components.
+  </p>
+
+  <div class="validated-grid">
+
+    <div class="validated-item">
+      <strong>Coverage</strong>
+      <span>1999–2000 through 2017–2018</span>
+    </div>
+
+    <div class="validated-item">
+      <strong>Number of cycles</strong>
+      <span>10 two-year cycles</span>
+    </div>
+
+    <div class="validated-item">
+      <strong>Primary record level</strong>
+      <span>One primary CBC examination per person and cycle</span>
+    </div>
+
+    <div class="validated-item">
+      <strong>Supporting file</strong>
+      <span>Demographics</span>
+    </div>
+
+    <div class="validated-item">
+      <strong>Composite key</strong>
+      <span><code>survey_cycle + SEQN</code></span>
+    </div>
+
+    <div class="validated-item">
+      <strong>Repeat-examination policy</strong>
+      <span>Preserve separately</span>
+    </div>
+
+    <div class="validated-item">
+      <strong>Main implementation language</strong>
+      <span>R</span>
+    </div>
+
+    <div class="validated-item">
+      <strong>Primary output</strong>
+      <span>Validated CBC-Demographics dataset</span>
+    </div>
+
+  </div>
+
+  <div class="catalog-actions">
+
+    <a class="catalog-action" href="../pipelines/cbc-demographics/index.html">
+      Open the validated CBC pipeline →
+    </a>
+
+  </div>
+
+</section>
+</section>
+<section id="component-onboarding-pathway" class="level1">
+<h1>Component onboarding pathway</h1>
+<p>Every new component should pass through four broad stages.</p>
+<div class="onboarding-path">
+
+  <div class="onboarding-step">
+    <div class="onboarding-step-number">1</div>
+    <strong>Scope</strong>
+    <span>
+      Define the component, cycles, research purpose, and analytical population.
+    </span>
+  </div>
+
+  <div class="onboarding-step">
+    <div class="onboarding-step-number">2</div>
+    <strong>Scientific review</strong>
+    <span>
+      Assess eligibility, methods, units, record structure, and weights.
+    </span>
+  </div>
+
+  <div class="onboarding-step">
+    <div class="onboarding-step-number">3</div>
+    <strong>Implementation</strong>
+    <span>
+      Build manifests, crosswalks, scripts, validation rules, and outputs.
+    </span>
+  </div>
+
+  <div class="onboarding-step">
+    <div class="onboarding-step-number">4</div>
+    <strong>Release</strong>
+    <span>
+      Test, document, review, publish, and assign validated status.
+    </span>
+  </div>
+
+</div>
+</section>
+<section id="component-onboarding-requirements" class="level1">
+<h1>Component onboarding requirements</h1>
+<div class="requirement-grid">
+
+  <div class="requirement-card">
+    <h3 class="anchored" data-anchor-id="component-onboarding-requirements">1. Source manifest</h3>
+    <p>Minimum fields:</p>
+    <ul>
+      <li><code>component</code></li>
+      <li><code>survey_cycle</code></li>
+      <li><code>file_name</code></li>
+      <li><code>source_url</code></li>
+      <li><code>record_level</code></li>
+      <li><code>expected_key</code></li>
+      <li><code>analytic_role</code></li>
+    </ul>
+  </div>
+
+  <div class="requirement-card">
+    <h3 class="anchored">2. Variable crosswalk</h3>
+    <p>Minimum fields:</p>
+    <ul>
+      <li><code>survey_cycle</code></li>
+      <li><code>source_variable</code></li>
+      <li><code>harmonized_variable</code></li>
+      <li><code>label</code></li>
+      <li><code>unit</code></li>
+      <li><code>method</code></li>
+      <li><code>decision</code></li>
+      <li><code>notes</code></li>
+    </ul>
+  </div>
+
+  <div class="requirement-card">
+    <h3 class="anchored">3. Eligibility review</h3>
+    <ul>
+      <li>eligible ages;</li>
+      <li>sex restrictions;</li>
+      <li>pregnancy restrictions;</li>
+      <li>examination requirements;</li>
+      <li>fasting requirements;</li>
+      <li>subsample selection;</li>
+      <li>collection-session restrictions.</li>
+    </ul>
+  </div>
+
+  <div class="requirement-card">
+    <h3 class="anchored">4. Laboratory-method review</h3>
+    <ul>
+      <li>specimen type;</li>
+      <li>instrument;</li>
+      <li>method;</li>
+      <li>laboratory;</li>
+      <li>detection limits;</li>
+      <li>quality-control notes;</li>
+      <li>corrections;</li>
+      <li>comparability decisions.</li>
+    </ul>
+  </div>
+
+  <div class="requirement-card">
+    <h3 class="anchored">5. Weight guidance</h3>
+    <ul>
+      <li>candidate interview or MEC weight;</li>
+      <li>specialized subsample weight;</li>
+      <li>multi-cycle construction;</li>
+      <li>exclusions;</li>
+      <li>limitations.</li>
+    </ul>
+  </div>
+
+  <div class="requirement-card">
+    <h3 class="anchored">6. Record-level contract</h3>
+    <ul>
+      <li>one record per participant;</li>
+      <li>multiple records per participant;</li>
+      <li>repeat examinations;</li>
+      <li>replicate measurements;</li>
+      <li>specimen-level records.</li>
+    </ul>
+  </div>
+
+  <div class="requirement-card">
+    <h3 class="anchored">7. Validation rules</h3>
+    <ul>
+      <li>source-file existence;</li>
+      <li>HTTP success;</li>
+      <li>expected variables;</li>
+      <li>expected key;</li>
+      <li>key uniqueness where required;</li>
+      <li>cycle consistency;</li>
+      <li>row-count review;</li>
+      <li>missingness review;</li>
+      <li>join-contract testing.</li>
+    </ul>
+  </div>
+
+  <div class="requirement-card">
+    <h3 class="anchored">8. Required outputs</h3>
+    <ul>
+      <li>processed RDS;</li>
+      <li>optional CSV;</li>
+      <li>provenance manifest;</li>
+      <li>validation summary;</li>
+      <li>duplicate report;</li>
+      <li>unresolved-conflict report;</li>
+      <li>package-version record;</li>
+      <li>session information.</li>
+    </ul>
+  </div>
+
+</div>
+</section>
+<section id="proposed-repository-pattern" class="level1">
+<h1>Proposed repository pattern</h1>
+<pre class="text"><code>pipelines/
+├── cbc-demographics/
+│   ├── index.qmd
+│   ├── source-manifest.csv
+│   ├── variable-crosswalk.csv
+│   ├── weight-guidance.qmd
+│   └── scripts/
+├── glycohemoglobin/
+├── urine-albumin-creatinine/
+├── lipids/
+└── environmental-biomarkers/</code></pre>
+</section>
+<section id="how-development-priorities-are-selected" class="level1">
+<h1>How development priorities are selected</h1>
+<div class="priority-grid">
+
+  <div class="priority-card">
+    <strong>Public-health relevance</strong>
+    <span>
+      Does the component support important clinical, epidemiological, or policy questions?
+    </span>
+  </div>
+
+  <div class="priority-card">
+    <strong>Cycle availability</strong>
+    <span>
+      Is the component available across enough cycles to support useful analysis?
+    </span>
+  </div>
+
+  <div class="priority-card">
+    <strong>Methodological complexity</strong>
+    <span>
+      Are methods, eligibility, weights, and harmonization manageable?
+    </span>
+  </div>
+
+  <div class="priority-card">
+    <strong>Learner demand</strong>
+    <span>
+      Is there clear educational or analytical interest in the component?
+    </span>
+  </div>
+
+  <div class="priority-card">
+    <strong>Architectural fit</strong>
+    <span>
+      Can the component use or extend the current pipeline structure?
+    </span>
+  </div>
+
+  <div class="priority-card">
+    <strong>Documentation quality</strong>
+    <span>
+      Are official files, methods, eligibility notes, and weight guidance available?
+    </span>
+  </div>
+
+  <div class="priority-card">
+    <strong>Scientific collaboration</strong>
+    <span>
+      Is suitable subject-matter expertise available for review?
+    </span>
+  </div>
+
+</div>
+</section>
+<section id="requesting-a-component" class="level1">
+<h1>Requesting a component</h1>
+<p>Before proposing a new laboratory pipeline, identify:</p>
+<ul>
+<li>the desired laboratory component;</li>
+<li>the survey cycles;</li>
+<li>the primary research question;</li>
+<li>required supporting variables;</li>
+<li>the intended population;</li>
+<li>whether weighted national inference is required.</li>
+</ul>
+<p>Requests may be submitted through the project’s GitHub issue tracker.</p>
+</section>
+<section id="catalog-limitations" class="level1">
+<h1>Catalog limitations</h1>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>This catalog is a roadmap, not an analytical authorization
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>It does not replace:</p>
+<ul>
+<li>official NHANES component documentation;</li>
+<li>laboratory methods documentation;</li>
+<li>analytical guidelines;</li>
+<li>current release notes;</li>
+<li>cycle-specific scientific review;</li>
+<li>expert judgment.</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="navigate-the-laboratory-section" class="level1">
+<h1>Navigate the laboratory section</h1>
+<div class="catalog-actions">
+
+  <a class="catalog-action catalog-action-secondary" href="index.html">
+    Return to laboratory overview
+  </a>
+
+  <a class="catalog-action" href="../pipelines/cbc-demographics/index.html">
+    Open the validated CBC pipeline →
+  </a>
+
+  <a class="catalog-action catalog-action-secondary" href="../foundations/index.html">
+    Review NHANES foundations
+  </a>
+
+</div>
+</section>
+<section id="page-summary" class="level1">
+<h1>Page summary</h1>
+<p>A component becomes a validated pipeline only after it has passed through:</p>
+<pre class="text"><code>scope definition
+scientific review
+source mapping
+variable harmonization
+weight selection
+record-level validation
+reproducibility testing
+documentation
+release review</code></pre>
+<p>The catalog therefore distinguishes between:</p>
+<pre class="text"><code>interest
+planning
+research
+implementation
+validation</code></pre>
+<p>That distinction protects users from treating an analytical roadmap as a finished scientific product.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/simonaseno\.github\.io\/NHANES\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<div style="color: #ffffff !important; font-size: 0.82rem; line-height: 1.25;">
+<div style="color: #ffffff !important; font-weight: 700; margin: 0 0 0.1rem 0;">
+<pre><code>NHANES Laboratory Data with R</code></pre>
+</div>
+<div style="color: #ffffff !important; margin: 0 0 0.08rem 0;">
+<pre><code>© 2026 Simon Aseno</code></pre>
+</div>
+<div style="color: #e2edf2 !important; margin: 0;">
+<pre><code>Open-source project · MIT License</code></pre>
+</div>
+</div>
+</div>   
+    <div class="nav-footer-center">
+<div style="max-width: 620px; margin: 0 auto; color: #ffffff !important; text-align: center; font-size: 0.74rem; line-height: 1.35;">
+<div style="color: #ffffff !important; font-weight: 600; margin: 0 0 0.25rem 0;">
+<pre><code>Reproducible R workflows and free education for NHANES laboratory data.</code></pre>
+</div>
+<div style="color: #e2edf2 !important; margin: 0;">
+<pre><code>This independent educational and open-source project is not affiliated
+with, endorsed by, or an official publication of the Centers for Disease
+Control and Prevention or the National Center for Health Statistics.
+Project materials, interpretations, code, and any errors are the
+responsibility of the author and do not represent the official views of
+any employer, institution, government agency, or affiliated organization.</code></pre>
+</div>
+</div>
+<div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/simonaseno/NHANES/blob/main/laboratory/component-catalog.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES">
+<p>GitHub</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES/blob/main/LICENSE">
+<p>MIT License</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES/issues">
+<p>Report an issue</p>
+</a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

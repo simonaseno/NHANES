@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="The first implemented component in the broader NHANES Laboratory Data Pipeline in R.">
+
+<title>NHANES CBC and Demographic Data Pipeline in R – NHANES Laboratory Data with R</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-3abfc5276e5e2c6766accf7a4a663956.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+<link rel="stylesheet" href="../../styles.css">
+<meta property="og:title" content="NHANES CBC and Demographic Data Pipeline in R – NHANES Laboratory Data with R">
+<meta property="og:description" content="The first implemented component in the broader NHANES Laboratory Data Pipeline in R.">
+<meta property="og:image" content="https://simonaseno.github.io/NHANES/pipelines/cbc-demographics/assets/nhanes-pipeline.jpg">
+<meta property="og:site_name" content="NHANES Laboratory Data with R">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="NHANES CBC and Demographic Data Pipeline in R – NHANES Laboratory Data with R">
+<meta name="twitter:description" content="The first implemented component in the broader NHANES Laboratory Data Pipeline in R.">
+<meta name="twitter:image" content="https://simonaseno.github.io/NHANES/pipelines/cbc-demographics/assets/nhanes-pipeline.jpg">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">NHANES Laboratory Data with R</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-overview" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Overview</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-overview">    
+        <li>
+    <a class="dropdown-item" href="../../index.html">
+ <span class="dropdown-text">Site overview</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-understanding-nhanes" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Understanding NHANES</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-understanding-nhanes">    
+        <li>
+    <a class="dropdown-item" href="../../foundations/index.html">
+ <span class="dropdown-text">Start here</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../foundations/data-structure.html">
+ <span class="dropdown-text">NHANES data structure</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../foundations/survey-design.html">
+ <span class="dropdown-text">Survey design</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../foundations/survey-weights.html">
+ <span class="dropdown-text">Survey weights</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../foundations/combining-cycles.html">
+ <span class="dropdown-text">Combining cycles</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-laboratory-data" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Laboratory data</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-laboratory-data">    
+        <li>
+    <a class="dropdown-item" href="../../laboratory/index.html">
+ <span class="dropdown-text">Laboratory data overview</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../laboratory/component-catalog.html">
+ <span class="dropdown-text">Component catalog</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-pipelines" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Pipelines</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-pipelines">    
+        <li>
+    <a class="dropdown-item" href="../../pipelines/index.html">
+ <span class="dropdown-text">Pipeline catalog</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../pipelines/cbc-demographics/index.html">
+ <span class="dropdown-text">CBC and Demographic pipeline</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-courses" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Courses</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-courses">    
+        <li>
+    <a class="dropdown-item" href="../../tutorials/index.html">
+ <span class="dropdown-text">Course catalog</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorial/index.html">
+ <span class="dropdown-text">CBC and Demographic pipeline course</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="../../NhanesDownloadScripts.html"> 
+<span class="menu-text">Project architecture</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES"> <i class="bi bi-github" role="img" aria-label="View the project on GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../pipelines/cbc-demographics/index.html">Available pipelines</a></li><li class="breadcrumb-item"><a href="../../pipelines/cbc-demographics/index.html">CBC and Demographic data</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../laboratory/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Laboratory data overview</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../laboratory/component-catalog.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Laboratory component catalog</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Available pipelines</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../pipelines/cbc-demographics/index.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">CBC and Demographic data</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Related foundations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../foundations/data-structure.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NHANES data structure</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../foundations/survey-weights.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Survey weights</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../foundations/combining-cycles.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Combining cycles</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#why-cbc-was-selected-first" id="toc-why-cbc-was-selected-first" class="nav-link active" data-scroll-target="#why-cbc-was-selected-first">Why CBC was selected first</a></li>
+  <li><a href="#current-coverage" id="toc-current-coverage" class="nav-link" data-scroll-target="#current-coverage">Current coverage</a></li>
+  <li><a href="#pipeline-architecture" id="toc-pipeline-architecture" class="nav-link" data-scroll-target="#pipeline-architecture">Pipeline architecture</a></li>
+  <li><a href="#cbc-source-file-structure" id="toc-cbc-source-file-structure" class="nav-link" data-scroll-target="#cbc-source-file-structure">CBC source-file structure</a></li>
+  <li><a href="#demographic-source-file-structure" id="toc-demographic-source-file-structure" class="nav-link" data-scroll-target="#demographic-source-file-structure">Demographic source-file structure</a></li>
+  <li><a href="#the-20012002-second-examination" id="toc-the-20012002-second-examination" class="nav-link" data-scroll-target="#the-20012002-second-examination">The 2001–2002 second examination</a></li>
+  <li><a href="#duplicate-risk-in-the-legacy-approach" id="toc-duplicate-risk-in-the-legacy-approach" class="nav-link" data-scroll-target="#duplicate-risk-in-the-legacy-approach">Duplicate risk in the legacy approach</a></li>
+  <li><a href="#current-duplicate-policy" id="toc-current-duplicate-policy" class="nav-link" data-scroll-target="#current-duplicate-policy">Current duplicate policy</a></li>
+  <li><a href="#why-the-second-examination-is-retained" id="toc-why-the-second-examination-is-retained" class="nav-link" data-scroll-target="#why-the-second-examination-is-retained">Why the second examination is retained</a></li>
+  <li><a href="#merge-contract" id="toc-merge-contract" class="nav-link" data-scroll-target="#merge-contract">Merge contract</a></li>
+  <li><a href="#why-the-cycle-belongs-in-the-key" id="toc-why-the-cycle-belongs-in-the-key" class="nav-link" data-scroll-target="#why-the-cycle-belongs-in-the-key">Why the cycle belongs in the key</a></li>
+  <li><a href="#protected-merge" id="toc-protected-merge" class="nav-link" data-scroll-target="#protected-merge">Protected merge</a></li>
+  <li><a href="#pre-merge-anti-joins" id="toc-pre-merge-anti-joins" class="nav-link" data-scroll-target="#pre-merge-anti-joins">Pre-merge anti-joins</a></li>
+  <li><a href="#row-preservation-validation" id="toc-row-preservation-validation" class="nav-link" data-scroll-target="#row-preservation-validation">Row-preservation validation</a></li>
+  <li><a href="#readable-labels" id="toc-readable-labels" class="nav-link" data-scroll-target="#readable-labels">Readable labels</a></li>
+  <li><a href="#survey-design-variables" id="toc-survey-design-variables" class="nav-link" data-scroll-target="#survey-design-variables">Survey-design variables</a></li>
+  <li><a href="#core-outputs" id="toc-core-outputs" class="nav-link" data-scroll-target="#core-outputs">Core outputs</a></li>
+  <li><a href="#exploratory-analysis" id="toc-exploratory-analysis" class="nav-link" data-scroll-target="#exploratory-analysis">Exploratory analysis</a></li>
+  <li><a href="#validation-requirements" id="toc-validation-requirements" class="nav-link" data-scroll-target="#validation-requirements">Validation requirements</a></li>
+  <li><a href="#known-limitations" id="toc-known-limitations" class="nav-link" data-scroll-target="#known-limitations">Known limitations</a></li>
+  <li><a href="#learning-and-technical-resources" id="toc-learning-and-technical-resources" class="nav-link" data-scroll-target="#learning-and-technical-resources">Learning and technical resources</a></li>
+  <li><a href="#future-development" id="toc-future-development" class="nav-link" data-scroll-target="#future-development">Future development</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/simonaseno/NHANES/blob/main/pipelines/cbc-demographics/index.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../pipelines/cbc-demographics/index.html">Available pipelines</a></li><li class="breadcrumb-item"><a href="../../pipelines/cbc-demographics/index.html">CBC and Demographic data</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">NHANES CBC and Demographic Data Pipeline in R</h1>
+<p class="subtitle lead">Validated acquisition, separation, integration, and documentation for 1999–2018</p>
+</div>
+
+<div>
+  <div class="description">
+    The first implemented component in the broader NHANES Laboratory Data Pipeline in R.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Pipeline scope
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This pipeline processes:</p>
+<ul>
+<li>primary Complete Blood Count data;</li>
+<li>Demographic data;</li>
+<li>ten continuous NHANES cycles;</li>
+<li>1999–2000 through 2017–2018;</li>
+<li>participant and survey-cycle metadata;</li>
+<li>survey-design variables;</li>
+<li>repeat-examination audit records;</li>
+<li>validation and provenance outputs.</li>
+</ul>
+</div>
+</div>
+<section id="why-cbc-was-selected-first" class="level2">
+<h2 class="anchored" data-anchor-id="why-cbc-was-selected-first">Why CBC was selected first</h2>
+<p>CBC data provide a strong foundation for demonstrating:</p>
+<ul>
+<li>multi-cycle acquisition;</li>
+<li>variable continuity;</li>
+<li>person-level laboratory records;</li>
+<li>integration with Demographics;</li>
+<li>duplicate investigation;</li>
+<li>repeat-examination handling;</li>
+<li>exploratory trend analysis.</li>
+</ul>
+<p>CBC results are also broadly relevant across:</p>
+<ul>
+<li>anemia;</li>
+<li>infection and inflammation;</li>
+<li>hematologic abnormalities;</li>
+<li>platelet disorders;</li>
+<li>nutritional status;</li>
+<li>population-health monitoring.</li>
+</ul>
+</section>
+<section id="current-coverage" class="level2">
+<h2 class="anchored" data-anchor-id="current-coverage">Current coverage</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Attribute</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Laboratory component</td>
+<td>Complete Blood Count</td>
+</tr>
+<tr class="even">
+<td>Supporting component</td>
+<td>Demographics</td>
+</tr>
+<tr class="odd">
+<td>First cycle</td>
+<td>1999–2000</td>
+</tr>
+<tr class="even">
+<td>Final cycle</td>
+<td>2017–2018</td>
+</tr>
+<tr class="odd">
+<td>Continuous cycles</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>CBC source files</td>
+<td>11 source files, including a second-exam file</td>
+</tr>
+<tr class="odd">
+<td>Demographic source files</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>Primary key</td>
+<td><code>survey_cycle + SEQN</code></td>
+</tr>
+<tr class="odd">
+<td>Primary language</td>
+<td>R</td>
+</tr>
+<tr class="even">
+<td>Raw format</td>
+<td>SAS transport <code>.xpt</code></td>
+</tr>
+<tr class="odd">
+<td>Main processed format</td>
+<td><code>.rds</code></td>
+</tr>
+<tr class="even">
+<td>Shareable format</td>
+<td>Optional <code>.csv</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="pipeline-architecture" class="level2">
+<h2 class="anchored" data-anchor-id="pipeline-architecture">Pipeline architecture</h2>
+<pre class="mermaid"><code>flowchart TD
+    A[CBC source manifest] --&gt; B[Download CBC XPT files]
+    C[Demographic source manifest] --&gt; D[Download DEMO XPT files]
+    B --&gt; E[Read and label CBC records]
+    D --&gt; F[Read and label Demographic records]
+    E --&gt; G[Separate primary and second examination]
+    G --&gt; H[Validate CBC keys]
+    F --&gt; I[Validate Demographic keys]
+    H --&gt; J[Join on survey_cycle + SEQN]
+    I --&gt; J
+    J --&gt; K[Validate row preservation]
+    K --&gt; L[Create processed outputs]
+    L --&gt; M[Exploratory analysis]</code></pre>
+</section>
+<section id="cbc-source-file-structure" class="level2">
+<h2 class="anchored" data-anchor-id="cbc-source-file-structure">CBC source-file structure</h2>
+<p>The primary source sequence includes historical naming differences.</p>
+<p>Examples include:</p>
+<ul>
+<li><code>LAB25</code>;</li>
+<li><code>L25_B</code>;</li>
+<li><code>L25_C</code>;</li>
+<li><code>CBC_D</code>;</li>
+<li>later <code>CBC_</code> files.</li>
+</ul>
+<p>The file name changes do not by themselves establish variable comparability.</p>
+<p>Each source entry must include:</p>
+<ul>
+<li>survey cycle;</li>
+<li>release directory;</li>
+<li>file name;</li>
+<li>analytic role;</li>
+<li>expected record level.</li>
+</ul>
+</section>
+<section id="demographic-source-file-structure" class="level2">
+<h2 class="anchored" data-anchor-id="demographic-source-file-structure">Demographic source-file structure</h2>
+<p>Demographics files are generally named:</p>
+<ul>
+<li><code>DEMO</code>;</li>
+<li><code>DEMO_B</code>;</li>
+<li><code>DEMO_C</code>;</li>
+<li>continuing through later cycle suffixes.</li>
+</ul>
+<p>They provide supporting information such as:</p>
+<ul>
+<li><code>SEQN</code>;</li>
+<li>age;</li>
+<li>sex;</li>
+<li>race and Hispanic origin;</li>
+<li>interview and MEC weights;</li>
+<li><code>SDMVSTRA</code>;</li>
+<li><code>SDMVPSU</code>;</li>
+<li>other demographic variables.</li>
+</ul>
+</section>
+<section id="the-20012002-second-examination" class="level2">
+<h2 class="anchored" data-anchor-id="the-20012002-second-examination">The 2001–2002 second examination</h2>
+<p>The 2001–2002 release contains:</p>
+<pre class="text"><code>L25_B.xpt
+L25_2_B.xpt</code></pre>
+<p><code>L25_B</code> contains the primary CBC examination.</p>
+<p><code>L25_2_B</code> contains a second CBC examination and includes variables such as:</p>
+<ul>
+<li>days between examinations;</li>
+<li>second-exam white blood cell count;</li>
+<li>second-exam red blood cell count;</li>
+<li>second-exam hemoglobin;</li>
+<li>second-exam hematocrit;</li>
+<li>second-exam platelet count.</li>
+</ul>
+<p>The second-exam variables use distinct names such as:</p>
+<pre class="text"><code>LB2HGB
+LB2HCT
+LB2RBCSI
+LB2PLTSI</code></pre>
+<p>They are not simply another release of the primary person-level CBC data.</p>
+</section>
+<section id="duplicate-risk-in-the-legacy-approach" class="level2">
+<h2 class="anchored" data-anchor-id="duplicate-risk-in-the-legacy-approach">Duplicate risk in the legacy approach</h2>
+<p>A row-binding approach such as:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  l25_b,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  l25_2_b</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>can create multiple rows for the same participant and cycle.</p>
+<p>That would violate the intended person-level key:</p>
+<pre class="text"><code>survey_cycle + SEQN</code></pre>
+</section>
+<section id="current-duplicate-policy" class="level2">
+<h2 class="anchored" data-anchor-id="current-duplicate-policy">Current duplicate policy</h2>
+<p>The pipeline:</p>
+<ol type="1">
+<li>reads the primary examination;</li>
+<li>reads the second examination;</li>
+<li>identifies shared participant identifiers;</li>
+<li>preserves the second examination separately;</li>
+<li>excludes it from the primary person-level CBC dataset;</li>
+<li>creates a repeat-examination audit;</li>
+<li>prevents silent inclusion in population-trend summaries.</li>
+</ol>
+<p>Primary output:</p>
+<pre class="text"><code>cbc_primary_1999_2018</code></pre>
+<p>Supplementary output:</p>
+<pre class="text"><code>cbc_second_exam_2001_2002</code></pre>
+</section>
+<section id="why-the-second-examination-is-retained" class="level2">
+<h2 class="anchored" data-anchor-id="why-the-second-examination-is-retained">Why the second examination is retained</h2>
+<p>The second-exam data may be scientifically useful for:</p>
+<ul>
+<li>within-person variability;</li>
+<li>repeatability;</li>
+<li>measurement reliability;</li>
+<li>short-term biological variation;</li>
+<li>method-comparison studies.</li>
+</ul>
+<p>It should not be discarded merely because it does not belong in the primary person-level trend dataset.</p>
+</section>
+<section id="merge-contract" class="level2">
+<h2 class="anchored" data-anchor-id="merge-contract">Merge contract</h2>
+<p>Both primary CBC and Demographics must be unique on:</p>
+<pre class="text"><code>survey_cycle + SEQN</code></pre>
+<p>CBC key validation:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>cbc_key_check <span class="ot">&lt;-</span> cbc_primary <span class="sc">|&gt;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">count</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    survey_cycle,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    SEQN,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">name =</span> <span class="st">"occurrences"</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    occurrences <span class="sc">&gt;</span> <span class="dv">1</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Demographic key validation:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>demo_key_check <span class="ot">&lt;-</span> demo_data <span class="sc">|&gt;</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">count</span>(</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    survey_cycle,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    SEQN,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">name =</span> <span class="st">"occurrences"</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    occurrences <span class="sc">&gt;</span> <span class="dv">1</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The pipeline proceeds only when the intended key contract is satisfied.</p>
+</section>
+<section id="why-the-cycle-belongs-in-the-key" class="level2">
+<h2 class="anchored" data-anchor-id="why-the-cycle-belongs-in-the-key">Why the cycle belongs in the key</h2>
+<p>A multi-cycle dataset should not depend on an undocumented assumption that <code>SEQN</code> is globally unique across every release.</p>
+<p>Using:</p>
+<pre class="text"><code>survey_cycle + SEQN</code></pre>
+<p>makes the cycle relationship explicit.</p>
+<p>It also supports:</p>
+<ul>
+<li>cycle-level validation;</li>
+<li>provenance;</li>
+<li>debugging;</li>
+<li>future compatibility;</li>
+<li>safe joins.</li>
+</ul>
+</section>
+<section id="protected-merge" class="level2">
+<h2 class="anchored" data-anchor-id="protected-merge">Protected merge</h2>
+<p>Conceptual merge:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>cbc_demo_merged <span class="ot">&lt;-</span> cbc_primary <span class="sc">|&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">inner_join</span>(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    demo_data,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="fu">c</span>(</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>      <span class="st">"survey_cycle"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">"SEQN"</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">relationship =</span> <span class="st">"one-to-one"</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The actual relationship must be established by the validation checks before the strict join is run.</p>
+</section>
+<section id="pre-merge-anti-joins" class="level2">
+<h2 class="anchored" data-anchor-id="pre-merge-anti-joins">Pre-merge anti-joins</h2>
+<p>CBC records without Demographics:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>cbc_without_demo <span class="ot">&lt;-</span> cbc_primary <span class="sc">|&gt;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">anti_join</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    demo_data,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="fu">c</span>(</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>      <span class="st">"survey_cycle"</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">"SEQN"</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Demographic records without CBC:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>demo_without_cbc <span class="ot">&lt;-</span> demo_data <span class="sc">|&gt;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">anti_join</span>(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    cbc_primary,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="fu">c</span>(</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>      <span class="st">"survey_cycle"</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">"SEQN"</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The second anti-join is expected to contain many records because not every Demographic participant necessarily has a valid CBC record.</p>
+<p>The first anti-join requires careful review because each CBC record should ordinarily link to its participant’s Demographic record.</p>
+</section>
+<section id="row-preservation-validation" class="level2">
+<h2 class="anchored" data-anchor-id="row-preservation-validation">Row-preservation validation</h2>
+<p>After the join:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nrow</span>(cbc_demo_merged) <span class="sc">==</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nrow</span>(cbc_primary)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Also validate uniqueness:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>merged_key_check <span class="ot">&lt;-</span> cbc_demo_merged <span class="sc">|&gt;</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">count</span>(</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    survey_cycle,</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    SEQN,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">name =</span> <span class="st">"occurrences"</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    occurrences <span class="sc">&gt;</span> <span class="dv">1</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Expected result:</p>
+<pre class="text"><code>0 duplicate merged keys</code></pre>
+</section>
+<section id="readable-labels" class="level2">
+<h2 class="anchored" data-anchor-id="readable-labels">Readable labels</h2>
+<p>Original coded variables are preserved.</p>
+<p>Readable variables are added:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>cbc_demo_merged <span class="ot">&lt;-</span> cbc_demo_merged <span class="sc">|&gt;</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">sex =</span> dplyr<span class="sc">::</span><span class="fu">case_when</span>(</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>      RIAGENDR <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> <span class="st">"Male"</span>,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>      RIAGENDR <span class="sc">==</span> <span class="dv">2</span> <span class="sc">~</span> <span class="st">"Female"</span>,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_years =</span> RIDAGEYR</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="survey-design-variables" class="level2">
+<h2 class="anchored" data-anchor-id="survey-design-variables">Survey-design variables</h2>
+<p>The merged dataset preserves variables needed for later design-based analysis, including:</p>
+<pre class="text"><code>WTINT2YR
+WTMEC2YR
+SDMVSTRA
+SDMVPSU</code></pre>
+<p>For 1999–2002, supplied four-year weights may also be required for combined-cycle inference.</p>
+<p>The pipeline does not assign one universal analysis weight because the correct choice depends on:</p>
+<ul>
+<li>variables included;</li>
+<li>eligible sample;</li>
+<li>analysis period;</li>
+<li>whether a specialized subsample is used.</li>
+</ul>
+</section>
+<section id="core-outputs" class="level2">
+<h2 class="anchored" data-anchor-id="core-outputs">Core outputs</h2>
+<p>Recommended processed data:</p>
+<pre class="text"><code>data/processed/
+├── cbc_primary_1999_2018.rds
+├── cbc_second_exam_2001_2002.rds
+├── demographics_1999_2018.rds
+└── cbc_demographics_1999_2018.rds</code></pre>
+<p>Recommended validation outputs:</p>
+<pre class="text"><code>outputs/validation/
+├── source_summary.csv
+├── key_validation.csv
+├── merge_validation.csv
+├── unmatched_cbc_records.csv
+├── package_versions.csv
+└── session_info.txt</code></pre>
+<p>Recommended duplicate outputs:</p>
+<pre class="text"><code>outputs/duplicate-reports/
+├── shared_second_exam_participants.csv
+├── exact_duplicate_rows.csv
+└── unresolved_conflicts.csv</code></pre>
+</section>
+<section id="exploratory-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="exploratory-analysis">Exploratory analysis</h2>
+<p>The beginner tutorial creates a descriptive hemoglobin summary:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>hemoglobin_summary <span class="ot">&lt;-</span> cbc_demo_merged <span class="sc">|&gt;</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span><span class="fu">is.na</span>(LBXHGB),</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="sc">!</span><span class="fu">is.na</span>(sex)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    survey_cycle,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    sex</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">participants =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">mean_hemoglobin =</span> <span class="fu">mean</span>(</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>      LBXHGB,</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">na.rm =</span> <span class="cn">TRUE</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">sd_hemoglobin =</span> stats<span class="sc">::</span><span class="fu">sd</span>(</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>      LBXHGB,</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">na.rm =</span> <span class="cn">TRUE</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">median_hemoglobin =</span> stats<span class="sc">::</span><span class="fu">median</span>(</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>      LBXHGB,</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">na.rm =</span> <span class="cn">TRUE</span></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Exploratory does not mean nationally representative
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The unweighted summary describes the analytical records.</p>
+<p>Formal NHANES population estimates require:</p>
+<ul>
+<li>the correct component weight;</li>
+<li>combined-cycle weighting;</li>
+<li><code>SDMVSTRA</code>;</li>
+<li><code>SDMVPSU</code>;</li>
+<li>a complex-survey analysis.</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="validation-requirements" class="level2">
+<h2 class="anchored" data-anchor-id="validation-requirements">Validation requirements</h2>
+<p>The CBC pipeline is considered analysis-ready only when:</p>
+<ul class="task-list">
+<li><label><input type="checkbox">every declared source is accounted for;</label></li>
+<li><label><input type="checkbox">failed downloads are reported;</label></li>
+<li><label><input type="checkbox">every primary file contains <code>SEQN</code>;</label></li>
+<li><label><input type="checkbox">cycle metadata are present;</label></li>
+<li><label><input type="checkbox">the second examination is separate;</label></li>
+<li><label><input type="checkbox">primary CBC keys are unique;</label></li>
+<li><label><input type="checkbox">Demographic keys are unique;</label></li>
+<li><label><input type="checkbox">CBC records link to Demographics;</label></li>
+<li><label><input type="checkbox">the join preserves primary CBC row counts;</label></li>
+<li><label><input type="checkbox">merged keys remain unique;</label></li>
+<li><label><input type="checkbox">validation reports are saved;</label></li>
+<li><label><input type="checkbox">package and session information are recorded.</label></li>
+</ul>
+</section>
+<section id="known-limitations" class="level2">
+<h2 class="anchored" data-anchor-id="known-limitations">Known limitations</h2>
+<p>The pipeline does not by itself resolve:</p>
+<ul>
+<li>clinical interpretation;</li>
+<li>causal inference;</li>
+<li>every historical method change;</li>
+<li>all possible age or pregnancy exclusions;</li>
+<li>specialized disease definitions;</li>
+<li>the correct weight for every research question;</li>
+<li>complex-survey trend modeling.</li>
+</ul>
+<p>Those decisions belong in the analysis protocol.</p>
+</section>
+<section id="learning-and-technical-resources" class="level2">
+<h2 class="anchored" data-anchor-id="learning-and-technical-resources">Learning and technical resources</h2>
+<p><a href="../../tutorial/index.html" class="button button-primary">Start the beginner CBC tutorial</a></p>
+<p><a href="../../NhanesDownloadScripts.html" class="button button-secondary">Read the technical guide</a></p>
+<p><a href="../../foundations/survey-weights.html">Learn about survey weights</a></p>
+<p><a href="../../foundations/combining-cycles.html">Learn about combining cycles</a></p>
+</section>
+<section id="future-development" class="level2">
+<h2 class="anchored" data-anchor-id="future-development">Future development</h2>
+<p>The CBC pipeline provides an architectural starting point for:</p>
+<ul>
+<li>glycohemoglobin;</li>
+<li>urine albumin and creatinine;</li>
+<li>lipids;</li>
+<li>standard biochemistry;</li>
+<li>environmental biomarkers.</li>
+</ul>
+<p>Each future component will retain the shared reproducibility framework while implementing its own scientific rules.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/simonaseno\.github\.io\/NHANES\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<div style="color: #ffffff !important; font-size: 0.82rem; line-height: 1.25;">
+<div style="color: #ffffff !important; font-weight: 700; margin: 0 0 0.1rem 0;">
+<pre><code>NHANES Laboratory Data with R</code></pre>
+</div>
+<div style="color: #ffffff !important; margin: 0 0 0.08rem 0;">
+<pre><code>© 2026 Simon Aseno</code></pre>
+</div>
+<div style="color: #e2edf2 !important; margin: 0;">
+<pre><code>Open-source project · MIT License</code></pre>
+</div>
+</div>
+</div>   
+    <div class="nav-footer-center">
+<div style="max-width: 620px; margin: 0 auto; color: #ffffff !important; text-align: center; font-size: 0.74rem; line-height: 1.35;">
+<div style="color: #ffffff !important; font-weight: 600; margin: 0 0 0.25rem 0;">
+<pre><code>Reproducible R workflows and free education for NHANES laboratory data.</code></pre>
+</div>
+<div style="color: #e2edf2 !important; margin: 0;">
+<pre><code>This independent educational and open-source project is not affiliated
+with, endorsed by, or an official publication of the Centers for Disease
+Control and Prevention or the National Center for Health Statistics.
+Project materials, interpretations, code, and any errors are the
+responsibility of the author and do not represent the official views of
+any employer, institution, government agency, or affiliated organization.</code></pre>
+</div>
+</div>
+<div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/simonaseno/NHANES/blob/main/pipelines/cbc-demographics/index.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES">
+<p>GitHub</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES/blob/main/LICENSE">
+<p>MIT License</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES/issues">
+<p>Report an issue</p>
+</a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

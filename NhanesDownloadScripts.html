@@ -6,10 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Simon Aseno, MPH">
-<meta name="dcterms.date" content="2026-08-05">
+<meta name="description" content="A technical reference for the repository structure, reproducible execution, modular R design, source catalogs, validation contracts, provenance, outputs, continuous integration, versioning, and extension of the NHANES Laboratory Data with R project.">
 
-<title>NHANES CBC and Demographics Data Guide – NHANES Data Pipeline</title>
+<title>Project Architecture – NHANES Laboratory Data with R</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -81,7 +80,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-7164ac15fac84eb1248f3de9b802584a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-3abfc5276e5e2c6766accf7a4a663956.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -113,13 +112,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <link rel="stylesheet" href="styles.css">
-<meta property="og:title" content="NHANES CBC and Demographics Data Guide – NHANES Data Pipeline">
-<meta property="og:description" content="A validated, reproducible R pipeline for public-use NHANES data.">
+<meta property="og:title" content="Project Architecture – NHANES Laboratory Data with R">
+<meta property="og:description" content="A technical reference for the repository structure, reproducible execution, modular R design, source catalogs, validation contracts, provenance, outputs, continuous integration, versioning, and extension of the NHANES Laboratory Data with R project.">
 <meta property="og:image" content="https://simonaseno.github.io/NHANES/assets/nhanes-pipeline.jpg">
-<meta property="og:site_name" content="NHANES Data Pipeline">
+<meta property="og:site_name" content="NHANES Laboratory Data with R">
 <meta property="og:locale" content="en_US">
-<meta name="twitter:title" content="NHANES CBC and Demographics Data Guide – NHANES Data Pipeline">
-<meta name="twitter:description" content="A validated, reproducible R pipeline for public-use NHANES data.">
+<meta name="twitter:title" content="Project Architecture – NHANES Laboratory Data with R">
+<meta name="twitter:description" content="A technical reference for the repository structure, reproducible execution, modular R design, source catalogs, validation contracts, provenance, outputs, continuous integration, versioning, and extension of the NHANES Laboratory Data with R project.">
 <meta name="twitter:image" content="https://simonaseno.github.io/NHANES/assets/nhanes-pipeline.jpg">
 <meta name="twitter:card" content="summary_large_image">
 </head>
@@ -132,7 +131,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">NHANES Data Pipeline</span>
+    <span class="navbar-title">NHANES Laboratory Data with R</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -141,18 +140,97 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
-  <li class="nav-item">
-    <a class="nav-link" href="./index.html"> 
-<span class="menu-text">Overview</span></a>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-overview" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Overview</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-overview">    
+        <li>
+    <a class="dropdown-item" href="./index.html">
+ <span class="dropdown-text">Site overview</span></a>
   </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-understanding-nhanes" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Understanding NHANES</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-understanding-nhanes">    
+        <li>
+    <a class="dropdown-item" href="./foundations/index.html">
+ <span class="dropdown-text">Start here</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./foundations/data-structure.html">
+ <span class="dropdown-text">NHANES data structure</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./foundations/survey-design.html">
+ <span class="dropdown-text">Survey design</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./foundations/survey-weights.html">
+ <span class="dropdown-text">Survey weights</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./foundations/combining-cycles.html">
+ <span class="dropdown-text">Combining cycles</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-laboratory-data" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Laboratory data</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-laboratory-data">    
+        <li>
+    <a class="dropdown-item" href="./laboratory/index.html">
+ <span class="dropdown-text">Laboratory data overview</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./laboratory/component-catalog.html">
+ <span class="dropdown-text">Component catalog</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-pipelines" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Pipelines</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-pipelines">    
+        <li>
+    <a class="dropdown-item" href="./pipelines/index.html">
+ <span class="dropdown-text">Pipeline catalog</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./pipelines/cbc-demographics/index.html">
+ <span class="dropdown-text">CBC and Demographic pipeline</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-courses" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Courses</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-courses">    
+        <li>
+    <a class="dropdown-item" href="./tutorials/index.html">
+ <span class="dropdown-text">Course catalog</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./tutorial/index.html">
+ <span class="dropdown-text">CBC and Demographic pipeline course</span></a>
+  </li>  
+    </ul>
+  </li>
   <li class="nav-item">
     <a class="nav-link active" href="./NhanesDownloadScripts.html" aria-current="page"> 
-<span class="menu-text">Data guide</span></a>
+<span class="menu-text">Project architecture</span></a>
   </li>  
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/simonaseno/NHANES"> <i class="bi bi-github" role="img" aria-label="View the NHANES Data Pipeline on GitHub">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES"> <i class="bi bi-github" role="img" aria-label="View the project on GitHub">
 </i> 
 <span class="menu-text"></span></a>
   </li>  
@@ -171,44 +249,59 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">On this page</h2>
    
-  <ul>
-  <li><a href="#purpose" id="toc-purpose" class="nav-link active" data-scroll-target="#purpose">Purpose</a></li>
-  <li><a href="#reproducible-execution" id="toc-reproducible-execution" class="nav-link" data-scroll-target="#reproducible-execution">Reproducible execution</a></li>
-  <li><a href="#source-catalog" id="toc-source-catalog" class="nav-link" data-scroll-target="#source-catalog">Source catalog</a></li>
-  <li><a href="#cbc-first-and-second-examinations" id="toc-cbc-first-and-second-examinations" class="nav-link" data-scroll-target="#cbc-first-and-second-examinations">CBC first and second examinations</a></li>
-  <li><a href="#merge-contract" id="toc-merge-contract" class="nav-link" data-scroll-target="#merge-contract">Merge contract</a></li>
-  <li><a href="#survey-design-and-weights" id="toc-survey-design-and-weights" class="nav-link" data-scroll-target="#survey-design-and-weights">Survey design and weights</a></li>
-  <li><a href="#provenance-and-validation" id="toc-provenance-and-validation" class="nav-link" data-scroll-target="#provenance-and-validation">Provenance and validation</a></li>
-  <li><a href="#expanding-to-more-nhanes-components" id="toc-expanding-to-more-nhanes-components" class="nav-link" data-scroll-target="#expanding-to-more-nhanes-components">Expanding to more NHANES components</a></li>
-  <li><a href="#citation-and-license" id="toc-citation-and-license" class="nav-link" data-scroll-target="#citation-and-license">Citation and license</a></li>
+  <ul class="collapse">
+  <li><a href="#purpose-of-this-page" id="toc-purpose-of-this-page" class="nav-link active" data-scroll-target="#purpose-of-this-page">Purpose of this page</a></li>
+  <li><a href="#the-project-architecture" id="toc-the-project-architecture" class="nav-link" data-scroll-target="#the-project-architecture">The project architecture</a></li>
+  <li><a href="#repository-structure" id="toc-repository-structure" class="nav-link" data-scroll-target="#repository-structure">Repository structure</a></li>
+  <li><a href="#what-each-layer-does" id="toc-what-each-layer-does" class="nav-link" data-scroll-target="#what-each-layer-does">What each layer does</a></li>
+  <li><a href="#website-and-pipeline-execution-are-separate" id="toc-website-and-pipeline-execution-are-separate" class="nav-link" data-scroll-target="#website-and-pipeline-execution-are-separate">Website and pipeline execution are separate</a></li>
+  <li><a href="#reproducible-software-environment" id="toc-reproducible-software-environment" class="nav-link" data-scroll-target="#reproducible-software-environment">Reproducible software environment</a></li>
+  <li><a href="#configuration-driven-acquisition" id="toc-configuration-driven-acquisition" class="nav-link" data-scroll-target="#configuration-driven-acquisition">Configuration-driven acquisition</a></li>
+  <li><a href="#modular-r-architecture" id="toc-modular-r-architecture" class="nav-link" data-scroll-target="#modular-r-architecture">Modular R architecture</a></li>
+  <li><a href="#why-modularity-matters" id="toc-why-modularity-matters" class="nav-link" data-scroll-target="#why-modularity-matters">Why modularity matters</a></li>
+  <li><a href="#validation-contracts" id="toc-validation-contracts" class="nav-link" data-scroll-target="#validation-contracts">Validation contracts</a></li>
+  <li><a href="#component-specific-validation" id="toc-component-specific-validation" class="nav-link" data-scroll-target="#component-specific-validation">Component-specific validation</a></li>
+  <li><a href="#provenance-and-source-integrity" id="toc-provenance-and-source-integrity" class="nav-link" data-scroll-target="#provenance-and-source-integrity">Provenance and source integrity</a></li>
+  <li><a href="#file-hashes" id="toc-file-hashes" class="nav-link" data-scroll-target="#file-hashes">File hashes</a></li>
+  <li><a href="#raw-and-processed-data-must-remain-separate" id="toc-raw-and-processed-data-must-remain-separate" class="nav-link" data-scroll-target="#raw-and-processed-data-must-remain-separate">Raw and processed data must remain separate</a></li>
+  <li><a href="#output-management-rules" id="toc-output-management-rules" class="nav-link" data-scroll-target="#output-management-rules">Output-management rules</a></li>
+  <li><a href="#rds-and-csv-outputs" id="toc-rds-and-csv-outputs" class="nav-link" data-scroll-target="#rds-and-csv-outputs">RDS and CSV outputs</a>
+  <ul class="collapse">
+  <li><a href="#rds" id="toc-rds" class="nav-link" data-scroll-target="#rds">RDS</a></li>
+  <li><a href="#csv" id="toc-csv" class="nav-link" data-scroll-target="#csv">CSV</a></li>
+  </ul></li>
+  <li><a href="#controlled-execution" id="toc-controlled-execution" class="nav-link" data-scroll-target="#controlled-execution">Controlled execution</a></li>
+  <li><a href="#continuous-integration" id="toc-continuous-integration" class="nav-link" data-scroll-target="#continuous-integration">Continuous integration</a></li>
+  <li><a href="#scheduled-refreshes" id="toc-scheduled-refreshes" class="nav-link" data-scroll-target="#scheduled-refreshes">Scheduled refreshes</a></li>
+  <li><a href="#versioning-and-releases" id="toc-versioning-and-releases" class="nav-link" data-scroll-target="#versioning-and-releases">Versioning and releases</a></li>
+  <li><a href="#citation" id="toc-citation" class="nav-link" data-scroll-target="#citation">Citation</a></li>
+  <li><a href="#licensing" id="toc-licensing" class="nav-link" data-scroll-target="#licensing">Licensing</a></li>
+  <li><a href="#extending-the-repository" id="toc-extending-the-repository" class="nav-link" data-scroll-target="#extending-the-repository">Extending the repository</a></li>
+  <li><a href="#contributor-checklist" id="toc-contributor-checklist" class="nav-link" data-scroll-target="#contributor-checklist">Contributor checklist</a></li>
+  <li><a href="#where-to-find-analytical-guidance" id="toc-where-to-find-analytical-guidance" class="nav-link" data-scroll-target="#where-to-find-analytical-guidance">Where to find analytical guidance</a></li>
+  <li><a href="#page-summary" id="toc-page-summary" class="nav-link" data-scroll-target="#page-summary">Page summary</a></li>
   </ul>
-<div class="toc-actions"><ul><li><a href="https://github.com/simonaseno/NHANES/blob/main/NhanesDownloadScripts.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+<div class="toc-actions"><ul class="collapse"><li><a href="https://github.com/simonaseno/NHANES/blob/main/NhanesDownloadScripts.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">NHANES CBC and Demographics Data Guide</h1>
+<h1 class="title">Project Architecture</h1>
+<p class="subtitle lead">How the educational site, R infrastructure, validation system, and generated outputs work together</p>
 </div>
 
+<div>
+  <div class="description">
+    A technical reference for the repository structure, reproducible execution, modular R design, source catalogs, validation contracts, provenance, outputs, continuous integration, versioning, and extension of the NHANES Laboratory Data with R project.
+  </div>
+</div>
 
 
 <div class="quarto-title-meta">
 
-    <div>
-    <div class="quarto-title-meta-heading">Author</div>
-    <div class="quarto-title-meta-contents">
-             <p>Simon Aseno, MPH </p>
-          </div>
-  </div>
     
-    <div>
-    <div class="quarto-title-meta-heading">Published</div>
-    <div class="quarto-title-meta-contents">
-      <p class="date">August 5, 2026</p>
-    </div>
-  </div>
   
     
   </div>
@@ -218,84 +311,1106 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="purpose" class="level2">
-<h2 class="anchored" data-anchor-id="purpose">Purpose</h2>
-<p>This project downloads, validates, and prepares public-use NHANES Complete Blood Count (CBC) and Demographics data for the ten continuous cycles from 1999–2000 through 2017–2018. Acquisition is driven by a reviewed source catalog, and the scientific rules are implemented in testable R functions rather than embedded in this document.</p>
+<style>
+.architecture-hero {
+  position: relative;
+  overflow: hidden;
+  margin: 1rem 0 2.3rem;
+  padding: 2.8rem 1.6rem;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle at 88% 16%,
+      rgba(77, 208, 187, 0.22),
+      transparent 27%
+    ),
+    radial-gradient(
+      circle at 8% 88%,
+      rgba(68, 120, 170, 0.18),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      #081923,
+      #123447 58%,
+      #165c65
+    );
+  color: #ffffff;
+  box-shadow: 0 16px 38px rgba(7, 26, 39, 0.23);
+}
+
+.architecture-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 920px;
+}
+
+.architecture-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.42rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #d9fffa;
+  font-size: 0.88rem;
+  font-weight: 760;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.architecture-hero h2 {
+  max-width: 860px;
+  margin: 0;
+  color: #ffffff !important;
+  font-size: clamp(2.3rem, 5.4vw, 4.5rem);
+  line-height: 1.03;
+  letter-spacing: -0.04em;
+}
+
+.architecture-hero p {
+  max-width: 840px;
+  margin: 1.2rem 0 0;
+  color: #e4f4f5 !important;
+  font-size: 1.13rem;
+  line-height: 1.7;
+}
+
+.architecture-layer-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.8rem 0 0;
+}
+
+.architecture-layer {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.architecture-layer strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #ffffff;
+}
+
+.architecture-layer span {
+  color: #d1e8e9;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.architecture-map {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    );
+  gap: 0.75rem;
+  margin: 1.5rem 0 2.4rem;
+}
+
+.architecture-step {
+  position: relative;
+  padding: 1.05rem 0.8rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 13px;
+  background: #f8fbfb;
+  text-align: center;
+}
+
+.architecture-step strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #113244;
+}
+
+.architecture-step span {
+  color: #566270;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.architecture-step:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 50%;
+  right: -0.63rem;
+  z-index: 3;
+  transform: translateY(-50%);
+  color: #23a493;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.architecture-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(240px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2.4rem;
+}
+
+.architecture-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.3rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(17, 34, 51, 0.06);
+}
+
+.architecture-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(
+    90deg,
+    #0d5961,
+    #35b6a4
+  );
+}
+
+.architecture-card-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  margin-bottom: 0.8rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: #102b3a;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.architecture-card h3 {
+  margin: 0 0 0.5rem;
+  color: #102b3a;
+  font-size: 1.16rem;
+}
+
+.architecture-card p {
+  margin: 0;
+  color: #566270;
+  line-height: 1.55;
+}
+
+.architecture-code-map {
+  margin: 1.5rem 0 2.4rem;
+  padding: 1.4rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 17px;
+  background: #f7fbfb;
+}
+
+.architecture-code-map pre {
+  margin-bottom: 0;
+}
+
+.architecture-contract {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(230px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2.4rem;
+}
+
+.contract-card {
+  padding: 1.2rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.contract-card h3 {
+  margin-top: 0;
+  color: #0d5961;
+}
+
+.contract-card p {
+  margin-bottom: 0;
+  color: #566270;
+  line-height: 1.55;
+}
+
+.architecture-rule {
+  margin: 1rem 0;
+  padding: 1rem 1.1rem;
+  border-left: 5px solid #238b7e;
+  border-radius: 8px;
+  background: #f8fbfb;
+}
+
+.architecture-rule strong {
+  color: #123044;
+}
+
+.architecture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 2rem 0;
+}
+
+.architecture-action {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.8rem 1.15rem;
+  border: 2px solid #0d5961;
+  border-radius: 9px;
+  background: #0d5961 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 760;
+  text-decoration: none !important;
+}
+
+.architecture-action:hover {
+  background: #ffffff !important;
+  color: #0d5961 !important;
+  -webkit-text-fill-color: #0d5961 !important;
+}
+
+.architecture-action-secondary {
+  background: #ffffff !important;
+  color: #0d5961 !important;
+  -webkit-text-fill-color: #0d5961 !important;
+}
+
+.architecture-action-secondary:hover {
+  background: #0d5961 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+@media (max-width: 900px) {
+  .architecture-layer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-map {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-step:not(:last-child)::after {
+    content: "↓";
+    top: auto;
+    right: 50%;
+    bottom: -1.05rem;
+    transform: translateX(50%);
+  }
+}
+
+@media (max-width: 620px) {
+  .architecture-hero {
+    padding: 2.4rem 1rem;
+  }
+
+  .architecture-actions {
+    flex-direction: column;
+  }
+
+  .architecture-action {
+    width: 100%;
+  }
+}
+</style>
+<section class="architecture-hero">
+
+  <div class="architecture-hero-content">
+
+    <div class="architecture-eyebrow">
+      Repository design · reproducibility · validation
+    </div>
+
+    <h2 class="anchored">
+      A clear separation between learning content, executable infrastructure, and research outputs.
+    </h2>
+
+    <p>
+      This page explains how the NHANES Laboratory Data with R project is
+      organized technically. It focuses on repository structure, reproducible
+      execution, modular R code, validation contracts, provenance, output
+      management, testing, versioning, and extension.
+    </p>
+
+    <div class="architecture-layer-grid">
+
+      <div class="architecture-layer">
+        <strong>Educational layer</strong>
+        <span>
+          Foundations, laboratory guides, pipeline catalogs, and structured courses
+        </span>
+      </div>
+
+      <div class="architecture-layer">
+        <strong>Execution layer</strong>
+        <span>
+          Configuration files, R functions, scripts, validation rules, and tests
+        </span>
+      </div>
+
+      <div class="architecture-layer">
+        <strong>Output layer</strong>
+        <span>
+          Processed datasets, tables, figures, logs, and provenance records
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
 </section>
-<section id="reproducible-execution" class="level2">
-<h2 class="anchored" data-anchor-id="reproducible-execution">Reproducible execution</h2>
-<p>Restore the recorded environment and run the pipeline from the repository root:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'renv::restore()'</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/run_pipeline.R <span class="at">--refresh</span><span class="op">=</span>true <span class="at">--write-csv</span><span class="op">=</span>false</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The executable entry point sources the modules under <code>R/</code>. Quarto renders this guide but does not install packages, download data, or overwrite research outputs.</p>
-</section>
-<section id="source-catalog" class="level2">
-<h2 class="anchored" data-anchor-id="source-catalog">Source catalog</h2>
-<p>Every upstream file is declared in <code>config/nhanes_files.csv</code>. The catalog records:</p>
+<section id="purpose-of-this-page" class="level1">
+<h1>Purpose of this page</h1>
+<p>The rest of the website explains:</p>
 <ul>
-<li>the official release cycle and file identifier;</li>
-<li>the direct CDC HTTPS URL;</li>
-<li>expected row count;</li>
-<li>record level and merge key;</li>
-<li>exam and analytic role.</li>
+<li>how NHANES is structured;</li>
+<li>how laboratory data should be interpreted;</li>
+<li>how survey design and weights work;</li>
+<li>how cycles are combined;</li>
+<li>how specific analytical pipelines are built.</li>
 </ul>
-<p>An upstream row-count change stops the pipeline so the CDC revision can be reviewed instead of silently changing a research dataset.</p>
+<p>This page does not repeat those topics.</p>
+<p>Its purpose is to explain:</p>
+<pre class="text"><code>how the repository itself works</code></pre>
+<p>and:</p>
+<pre class="text"><code>how the technical design supports reproducibility</code></pre>
 </section>
-<section id="cbc-first-and-second-examinations" class="level2">
-<h2 class="anchored" data-anchor-id="cbc-first-and-second-examinations">CBC first and second examinations</h2>
-<p>The 2001–2002 <code>L25_B</code> file contains the primary CBC examination. <code>L25_2_B</code> contains repeat measurements from a second examination. CDC documents the second exam as a convenience sample without survey weights.</p>
-<p>The legacy v1 workflow appended these files by rows, creating 557 duplicate participants in the combined CBC and CBC-demographic outputs. Version 0.2 keeps:</p>
+<section id="the-project-architecture" class="level1">
+<h1>The project architecture</h1>
+<div class="architecture-map">
+
+  <div class="architecture-step">
+    <strong>Configure</strong>
+    <span>Declare sources, cycles, roles, and expectations.</span>
+  </div>
+
+  <div class="architecture-step">
+    <strong>Acquire</strong>
+    <span>Download and preserve official public-use files.</span>
+  </div>
+
+  <div class="architecture-step">
+    <strong>Validate</strong>
+    <span>Check structures, keys, rows, variables, and relationships.</span>
+  </div>
+
+  <div class="architecture-step">
+    <strong>Transform</strong>
+    <span>Harmonize, combine, merge, label, and document.</span>
+  </div>
+
+  <div class="architecture-step">
+    <strong>Publish</strong>
+    <span>Create datasets, tables, figures, lessons, and evidence.</span>
+  </div>
+
+</div>
+</section>
+<section id="repository-structure" class="level1">
+<h1>Repository structure</h1>
+<p>A simplified repository structure is:</p>
+<pre class="text"><code>NHANES/
+├── _quarto.yml
+├── styles.css
+├── renv.lock
+├── CITATION.cff
+├── LICENSE
+│
+├── config/
+│   └── nhanes_files.csv
+│
+├── R/
+│   ├── catalog.R
+│   ├── download.R
+│   ├── validate.R
+│   └── pipeline.R
+│
+├── scripts/
+│   └── run_pipeline.R
+│
+├── data/
+│   ├── raw/
+│   └── processed/
+│
+├── outputs/
+│   ├── figures/
+│   ├── tables/
+│   └── validation/
+│
+├── foundations/
+├── laboratory/
+├── pipelines/
+└── tutorial/</code></pre>
+<p>The exact files may grow over time, but the architectural roles should remain distinct.</p>
+</section>
+<section id="what-each-layer-does" class="level1">
+<h1>What each layer does</h1>
+<div class="architecture-grid">
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">1</div>
+    <h3 class="anchored" data-anchor-id="what-each-layer-does">Website configuration</h3>
+    <p>
+      `_quarto.yml` defines navigation, sidebars, page order, rendering behavior,
+      and the overall website structure.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">2</div>
+    <h3 class="anchored">Source configuration</h3>
+    <p>
+      Files under `config/` declare official source files, cycles, URLs,
+      roles, expected structures, and local destinations.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">3</div>
+    <h3 class="anchored">Reusable R modules</h3>
+    <p>
+      Files under `R/` contain focused functions for catalog handling,
+      acquisition, validation, integration, and output generation.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">4</div>
+    <h3 class="anchored">Execution scripts</h3>
+    <p>
+      Files under `scripts/` provide controlled entry points that run the
+      pipeline in a defined order.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">5</div>
+    <h3 class="anchored">Research data</h3>
+    <p>
+      Raw files are preserved separately from processed datasets so source
+      evidence is not confused with derived analytical products.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">6</div>
+    <h3 class="anchored">Generated outputs</h3>
+    <p>
+      Tables, figures, validation records, logs, and provenance manifests are
+      written to dedicated output folders.
+    </p>
+  </div>
+
+</div>
+</section>
+<section id="website-and-pipeline-execution-are-separate" class="level1">
+<h1>Website and pipeline execution are separate</h1>
+<p>The Quarto website and the analytical pipeline serve different purposes.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Website rendering</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Pipeline execution</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href="">Why the separation matters</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<p>Quarto processes <code>.qmd</code> files and produces HTML pages.</p>
+<p>Typical command:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This builds the website.</p>
+<p>It should not silently:</p>
 <ul>
-<li><code>cbc_primary_1999_2018</code>: primary CBC observations used for representative analyses when paired with the appropriate design and weights;</li>
-<li><code>cbc_second_exam_2001_2002</code>: supplementary repeat observations for methods that explicitly account for repeat measures and the nonprobability subsample.</li>
+<li>install analytical packages;</li>
+<li>refresh source data;</li>
+<li>overwrite research datasets;</li>
+<li>change raw files;</li>
+<li>rerun long network-dependent workflows.</li>
 </ul>
-<p>The second-exam observations are never silently included in population trends.</p>
-<p>Official documentation: <a href="https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2001/DataFiles/L25_2_B.htm" class="uri">https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2001/DataFiles/L25_2_B.htm</a></p>
-</section>
-<section id="merge-contract" class="level2">
-<h2 class="anchored" data-anchor-id="merge-contract">Merge contract</h2>
-<p>Primary person-level CBC and Demographics are each required to be unique on <code>SEQN + cycle</code>. Every CBC key must exist in Demographics. The protected left join must preserve the CBC row count and key uniqueness.</p>
-<p>These checks are deliberately component-specific. Some other NHANES files have multiple records per participant and must not be merged until their granularity has been modeled appropriately.</p>
-</section>
-<section id="survey-design-and-weights" class="level2">
-<h2 class="anchored" data-anchor-id="survey-design-and-weights">Survey design and weights</h2>
-<p>NHANES is a complex, multistage probability sample. Valid population estimates generally require:</p>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<p>The R pipeline performs the data work.</p>
+<p>A repository-level entry point may resemble:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/run_pipeline.R</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Depending on implementation, optional arguments may control:</p>
 <ul>
-<li>the weight appropriate to the least inclusive analytic component;</li>
-<li>strata (<code>SDMVSTRA</code>) and primary sampling units (<code>SDMVPSU</code>);</li>
-<li>adjusted weights when compatible cycles are combined;</li>
-<li>domain-analysis methods rather than deleting sampled records prematurely;</li>
-<li>review of eligibility, nonresponse, and laboratory-method changes.</li>
+<li>source refresh;</li>
+<li>CSV exports;</li>
+<li>validation strictness;</li>
+<li>output destinations;</li>
+<li>logging behavior.</li>
 </ul>
-<p>This pipeline preserves design variables but does not select a universal weight, because the correct choice depends on each analysis. Consult the <a href="https://wwwn.cdc.gov/nchs/nhanes/tutorials/weighting.aspx">NHANES weighting tutorial</a> before estimating population quantities.</p>
-</section>
-<section id="provenance-and-validation" class="level2">
-<h2 class="anchored" data-anchor-id="provenance-and-validation">Provenance and validation</h2>
-<p>Each run produces:</p>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<p>Separating rendering from analytical execution makes it easier to:</p>
 <ul>
-<li><code>provenance.csv</code>, containing source URLs, retrieval time, byte size, SHA-256, and imported dimensions;</li>
-<li><code>validation.csv</code>, containing output dimensions, participant counts, and duplicate-participant counts;</li>
-<li>compressed RDS datasets, with CSV copies only when requested.</li>
+<li>preview documentation without rerunning the pipeline;</li>
+<li>review website changes independently;</li>
+<li>avoid unintended data modification;</li>
+<li>keep network failures from breaking ordinary documentation work;</li>
+<li>reproduce outputs through an explicit command.</li>
 </ul>
-<p>CI runs synthetic tests on every pull request. A separate scheduled workflow performs the network-dependent CDC refresh so temporary upstream availability does not make ordinary code review unreliable.</p>
+</div>
+</div>
+</div>
+<div class="architecture-rule">
+<p><strong>Architecture rule:</strong> Rendering documentation should not silently mutate research data.</p>
+</div>
 </section>
-<section id="expanding-to-more-nhanes-components" class="level2">
-<h2 class="anchored" data-anchor-id="expanding-to-more-nhanes-components">Expanding to more NHANES components</h2>
-<p>Adding catalog rows is only the acquisition step. Each new component also needs:</p>
-<ol type="1">
-<li>record-level and key validation;</li>
-<li>a variable harmonization crosswalk;</li>
-<li>eligibility and missing-data documentation;</li>
+<section id="reproducible-software-environment" class="level1">
+<h1>Reproducible software environment</h1>
+<p>The project uses a recorded R environment so package versions can be restored.</p>
+<p>A typical restoration command is:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'renv::restore()'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The lockfile records the package environment expected by the project.</p>
+<p>Important files may include:</p>
+<pre class="text"><code>renv.lock
+renv/
+.Rprofile</code></pre>
+<p>A reproducible environment helps reduce differences caused by:</p>
+<ul>
+<li>package updates;</li>
+<li>changed defaults;</li>
+<li>dependency conflicts;</li>
+<li>machine-specific library states;</li>
+<li>inconsistent development environments.</li>
+</ul>
+</section>
+<section id="configuration-driven-acquisition" class="level1">
+<h1>Configuration-driven acquisition</h1>
+<p>Every upstream file should be declared in a structured source catalog rather than being scattered across scripts.</p>
+<p>The catalog may include:</p>
+<pre class="text"><code>survey_cycle
+component
+file_name
+file_role
+source_url
+local_path
+expected_rows
+record_level
+merge_key
+required_variables
+notes</code></pre>
+<p>A configuration-driven approach provides:</p>
+<ul>
+<li>one auditable source list;</li>
+<li>explicit cycle coverage;</li>
+<li>controlled primary and supplementary roles;</li>
+<li>reusable acquisition logic;</li>
+<li>easier extension to additional components.</li>
+</ul>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Adding a catalog row is not enough to support a new analysis
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A new source also requires:</p>
+<ul>
+<li>record-level validation;</li>
+<li>variable review;</li>
+<li>eligibility documentation;</li>
+<li>merge logic;</li>
+<li>method review;</li>
 <li>survey-weight guidance;</li>
-<li>tests for every merge or reshape;</li>
-<li>review of differences across survey cycles.</li>
-</ol>
-<p>This separation makes the repository extensible without implying that all NHANES files can be safely combined through one generic join.</p>
+<li>analytical tests.</li>
+</ul>
+</div>
+</div>
 </section>
-<section id="citation-and-license" class="level2">
-<h2 class="anchored" data-anchor-id="citation-and-license">Citation and license</h2>
-<p>Use the version-specific citation exposed by <code>CITATION.cff</code>, cite the original CDC/NCHS files, and report the pipeline version and provenance manifest used in the analysis.</p>
-<p>The project code and documentation use the MIT License. CDC data remain governed by their official public-use documentation and terms.</p>
+<section id="modular-r-architecture" class="level1">
+<h1>Modular R architecture</h1>
+<p>A modular design separates responsibilities.</p>
+<div class="architecture-contract">
+
+  <div class="contract-card">
+    <h3 class="anchored" data-anchor-id="modular-r-architecture">`catalog.R`</h3>
+    <p>
+      Reads, validates, filters, and documents the source catalog.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3 class="anchored">`download.R`</h3>
+    <p>
+      Downloads files, records status, calculates hashes, and preserves raw sources.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3 class="anchored">`validate.R`</h3>
+    <p>
+      Checks files, variables, dimensions, keys, duplicates, and expected relationships.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3 class="anchored">`pipeline.R`</h3>
+    <p>
+      Coordinates import, harmonization, integration, analysis, and output creation.
+    </p>
+  </div>
+
+</div>
+<p>The main entry script should coordinate these modules rather than contain every implementation detail.</p>
+<p>A simplified pattern is:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"R"</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"catalog.R"</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"R"</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"download.R"</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">"R"</span>,</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">"validate.R"</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">"R"</span>,</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">"pipeline.R"</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="fu">run_pipeline</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="why-modularity-matters" class="level1">
+<h1>Why modularity matters</h1>
+<p>Modular functions make it easier to:</p>
+<ul>
+<li>test one responsibility at a time;</li>
+<li>reuse logic across pipelines;</li>
+<li>isolate failures;</li>
+<li>improve code review;</li>
+<li>add new laboratory components;</li>
+<li>avoid duplicating validation code;</li>
+<li>preserve a readable execution sequence.</li>
+</ul>
+</section>
+<section id="validation-contracts" class="level1">
+<h1>Validation contracts</h1>
+<p>A validation contract is an explicit condition that must be true before the pipeline continues.</p>
+<p>Examples include:</p>
+<pre class="text"><code>required file exists
+expected variables are present
+participant keys are complete
+primary records are unique
+row counts are plausible
+join relationships are valid
+output files were created</code></pre>
+<div class="architecture-contract">
+
+  <div class="contract-card">
+    <h3 class="anchored" data-anchor-id="validation-contracts">Source contract</h3>
+    <p>
+      The expected file exists, imports successfully, and matches the declared source role.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3 class="anchored">Schema contract</h3>
+    <p>
+      Required variables, classes, labels, and identifiers are present.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3 class="anchored">Key contract</h3>
+    <p>
+      Participant keys are complete and unique where one-row-per-person structure is required.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3 class="anchored">Merge contract</h3>
+    <p>
+      The join preserves the intended analytical population and expected row count.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3 class="anchored">Output contract</h3>
+    <p>
+      Required datasets, tables, figures, logs, and validation records are created.
+    </p>
+  </div>
+
+</div>
+<div class="architecture-rule">
+<p><strong>Architecture rule:</strong> A pipeline should stop when an essential contract fails rather than silently create a questionable dataset.</p>
+</div>
+</section>
+<section id="component-specific-validation" class="level1">
+<h1>Component-specific validation</h1>
+<p>Not every NHANES file has one row per participant.</p>
+<p>Some components may contain:</p>
+<ul>
+<li>repeated examinations;</li>
+<li>food-level records;</li>
+<li>medication-level records;</li>
+<li>event-level observations;</li>
+<li>multiple specimens;</li>
+<li>replicate measurements.</li>
+</ul>
+<p>Therefore, validation rules must reflect the declared record level.</p>
+<p>A generic uniqueness rule applied to every component would be incorrect.</p>
+</section>
+<section id="provenance-and-source-integrity" class="level1">
+<h1>Provenance and source integrity</h1>
+<p>Each run should preserve enough information to establish:</p>
+<pre class="text"><code>what source was used
+when it was obtained
+whether it changed
+how it was processed
+which outputs were generated</code></pre>
+<p>A provenance manifest may contain:</p>
+<pre class="text"><code>source URL
+retrieval date and time
+local path
+file size
+SHA-256 hash
+imported row count
+imported column count
+survey cycle
+component
+file role
+pipeline version</code></pre>
+</section>
+<section id="file-hashes" class="level1">
+<h1>File hashes</h1>
+<p>A cryptographic hash provides a reproducible fingerprint of a file.</p>
+<p>For example:</p>
+<pre class="text"><code>SHA-256</code></pre>
+<p>If the same source filename later produces a different hash, the upstream file may have changed.</p>
+<p>That change should be reviewed rather than ignored.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>A stable URL does not guarantee stable content
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Public-use files may be revised while retaining the same general location or name.</p>
+<p>Hashes and dimensions help detect upstream changes.</p>
+</div>
+</div>
+</section>
+<section id="raw-and-processed-data-must-remain-separate" class="level1">
+<h1>Raw and processed data must remain separate</h1>
+<p>The project should maintain a clear distinction:</p>
+<pre class="text"><code>data/raw/</code></pre>
+<p>contains downloaded source files.</p>
+<pre class="text"><code>data/processed/</code></pre>
+<p>contains derived and reusable analytical datasets.</p>
+<p>Raw files should not be manually edited.</p>
+<p>Transformations should be implemented in code and reflected in processed outputs.</p>
+</section>
+<section id="output-management-rules" class="level1">
+<h1>Output-management rules</h1>
+<p>Generated files should be written into defined locations.</p>
+<pre class="text"><code>outputs/
+├── figures/
+├── tables/
+└── validation/</code></pre>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Figures</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">Tables</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false" href="">Validation</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<p>May include:</p>
+<ul>
+<li>PNG for web display;</li>
+<li>PDF for publication or print;</li>
+<li>SVG for scalable editing and presentation.</li>
+</ul>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<p>May include:</p>
+<ul>
+<li>descriptive summaries;</li>
+<li>cycle-level diagnostics;</li>
+<li>missingness reports;</li>
+<li>figure source data;</li>
+<li>variable dictionaries.</li>
+</ul>
+</div>
+<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
+<p>May include:</p>
+<ul>
+<li>source manifests;</li>
+<li>file hashes;</li>
+<li>row-count reports;</li>
+<li>duplicate-key reports;</li>
+<li>join validation;</li>
+<li>session information;</li>
+<li>execution logs.</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<section id="rds-and-csv-outputs" class="level1">
+<h1>RDS and CSV outputs</h1>
+<p>RDS and CSV files serve different purposes.</p>
+<section id="rds" class="level2">
+<h2 class="anchored" data-anchor-id="rds">RDS</h2>
+<p>RDS can preserve:</p>
+<ul>
+<li>factor structure;</li>
+<li>variable classes;</li>
+<li>labels;</li>
+<li>attributes;</li>
+<li>R-specific objects.</li>
+</ul>
+</section>
+<section id="csv" class="level2">
+<h2 class="anchored" data-anchor-id="csv">CSV</h2>
+<p>CSV supports:</p>
+<ul>
+<li>portability;</li>
+<li>review outside R;</li>
+<li>use in other analytical tools;</li>
+<li>simple archival inspection.</li>
+</ul>
+<p>The pipeline may treat RDS as the primary reusable format and generate CSV copies only when requested.</p>
+</section>
+</section>
+<section id="controlled-execution" class="level1">
+<h1>Controlled execution</h1>
+<p>A complete run should be initiated explicitly from the repository root.</p>
+<p>A general command may resemble:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/run_pipeline.R</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A configurable entry point may support options such as:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/run_pipeline.R <span class="dt">\</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--refresh</span><span class="op">=</span>true <span class="dt">\</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--write-csv</span><span class="op">=</span>false</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The exact arguments must match the implementation in the repository.</p>
+</section>
+<section id="continuous-integration" class="level1">
+<h1>Continuous integration</h1>
+<p>Continuous integration can test the repository automatically when code changes.</p>
+<p>Useful checks include:</p>
+<ul>
+<li>R syntax;</li>
+<li>function tests;</li>
+<li>synthetic-data tests;</li>
+<li>configuration validation;</li>
+<li>expected output structure;</li>
+<li>Quarto rendering;</li>
+<li>broken links;</li>
+<li>reproducibility checks.</li>
+</ul>
+<p>Network-dependent source refreshes should usually be separated from ordinary pull-request tests.</p>
+<p>This prevents temporary upstream outages from making every code review unreliable.</p>
+</section>
+<section id="scheduled-refreshes" class="level1">
+<h1>Scheduled refreshes</h1>
+<p>A scheduled workflow may:</p>
+<ul>
+<li>check official sources;</li>
+<li>download updated files;</li>
+<li>compare hashes;</li>
+<li>inspect row counts;</li>
+<li>detect revisions;</li>
+<li>create a report;</li>
+<li>require human review before accepting upstream changes.</li>
+</ul>
+<p>The pipeline should not silently approve a changed upstream file simply because the download succeeded.</p>
+</section>
+<section id="versioning-and-releases" class="level1">
+<h1>Versioning and releases</h1>
+<p>A reproducible analysis should identify the exact project version used.</p>
+<p>Versioning may include:</p>
+<ul>
+<li>Git commit;</li>
+<li>release tag;</li>
+<li>pipeline version;</li>
+<li>source manifest;</li>
+<li>package lockfile;</li>
+<li>output date;</li>
+<li>provenance file.</li>
+</ul>
+<p>A formal release may contain:</p>
+<pre class="text"><code>source code
+documentation
+citation metadata
+license
+release notes
+validation summaries</code></pre>
+</section>
+<section id="citation" class="level1">
+<h1>Citation</h1>
+<p>The project should provide a machine-readable citation file such as:</p>
+<pre class="text"><code>CITATION.cff</code></pre>
+<p>A complete analytical report should cite:</p>
+<ul>
+<li>the project version;</li>
+<li>the original CDC or NCHS data sources;</li>
+<li>the survey cycles used;</li>
+<li>the source files or components;</li>
+<li>the provenance manifest;</li>
+<li>the relevant NHANES documentation.</li>
+</ul>
+</section>
+<section id="licensing" class="level1">
+<h1>Licensing</h1>
+<p>The project code and documentation may be distributed under the MIT License.</p>
+<p>That license applies to the project’s own code and documentation.</p>
+<p>NHANES public-use data remain governed by their official documentation, release conditions, and applicable public-use requirements.</p>
+</section>
+<section id="extending-the-repository" class="level1">
+<h1>Extending the repository</h1>
+<p>Adding another laboratory pipeline should follow a controlled sequence.</p>
+<div class="architecture-grid">
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">1</div>
+    <h3 class="anchored" data-anchor-id="extending-the-repository">Declare sources</h3>
+    <p>
+      Add reviewed source files, URLs, cycles, roles, expected variables, and record levels.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">2</div>
+    <h3 class="anchored">Model the records</h3>
+    <p>
+      Establish what one row represents and which keys define uniqueness.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">3</div>
+    <h3 class="anchored">Review compatibility</h3>
+    <p>
+      Assess units, methods, eligibility, detection limits, and cycle differences.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">4</div>
+    <h3 class="anchored">Define validation</h3>
+    <p>
+      Create component-specific schema, key, range, missingness, and merge checks.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">5</div>
+    <h3 class="anchored">Document weights</h3>
+    <p>
+      Identify the eligible sample, component weight, cycle adjustment, strata, and PSUs.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">6</div>
+    <h3 class="anchored">Publish evidence</h3>
+    <p>
+      Save processed datasets, dictionaries, diagnostics, limitations, and reproducibility records.
+    </p>
+  </div>
+
+</div>
+</section>
+<section id="contributor-checklist" class="level1">
+<h1>Contributor checklist</h1>
+<p>Before merging a technical change, confirm:</p>
+<ul class="task-list">
+<li><label><input type="checkbox">The change has a clear architectural purpose.</label></li>
+<li><label><input type="checkbox">Existing responsibilities remain separated.</label></li>
+<li><label><input type="checkbox">New sources are declared in configuration.</label></li>
+<li><label><input type="checkbox">Raw source files are not manually altered.</label></li>
+<li><label><input type="checkbox">New functions have focused responsibilities.</label></li>
+<li><label><input type="checkbox">Component-specific validation has been added.</label></li>
+<li><label><input type="checkbox">Tests cover the intended behavior.</label></li>
+<li><label><input type="checkbox">Failure conditions are explicit.</label></li>
+<li><label><input type="checkbox">Output paths are controlled.</label></li>
+<li><label><input type="checkbox">Provenance is preserved.</label></li>
+<li><label><input type="checkbox">Documentation links to the correct educational pages.</label></li>
+<li><label><input type="checkbox">Quarto renders successfully.</label></li>
+<li><label><input type="checkbox">No personal computer paths are embedded.</label></li>
+<li><label><input type="checkbox">Version and citation information remain accurate.</label></li>
+</ul>
+</section>
+<section id="where-to-find-analytical-guidance" class="level1">
+<h1>Where to find analytical guidance</h1>
+<p>This page describes the repository architecture.</p>
+<p>For analytical guidance, use the relevant section of the site:</p>
+<div class="architecture-actions">
+
+  <a class="architecture-action" href="foundations/index.html">
+    Review NHANES foundations →
+  </a>
+
+  <a class="architecture-action architecture-action-secondary" href="laboratory/index.html">
+    Explore laboratory data
+  </a>
+
+  <a class="architecture-action architecture-action-secondary" href="pipelines/index.html">
+    Browse the pipeline catalog
+  </a>
+
+  <a class="architecture-action architecture-action-secondary" href="pipelines/cbc-demographics/index.html">
+    Open the CBC and Demographic pipeline
+  </a>
+
+</div>
+</section>
+<section id="page-summary" class="level1">
+<h1>Page summary</h1>
+<p>The project architecture separates:</p>
+<pre class="text"><code>educational content
+executable infrastructure
+generated research outputs</code></pre>
+<p>Reproducibility is supported through:</p>
+<pre class="text"><code>configuration-driven sources
+modular R functions
+explicit execution
+validation contracts
+source hashes
+provenance manifests
+controlled outputs
+automated tests
+versioned releases</code></pre>
+<p>The goal is not only to make the pipeline run.</p>
+<p>The goal is to make every important scientific and technical decision visible, testable, and reproducible.</p>
 
 
 </section>
@@ -710,16 +1825,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <footer class="footer">
   <div class="nav-footer">
     <div class="nav-footer-left">
-<p>© 2026 Simon Aseno · MIT licensed</p>
+<div style="color: #ffffff !important; font-size: 0.82rem; line-height: 1.25;">
+<div style="color: #ffffff !important; font-weight: 700; margin: 0 0 0.1rem 0;">
+<pre><code>NHANES Laboratory Data with R</code></pre>
+</div>
+<div style="color: #ffffff !important; margin: 0 0 0.08rem 0;">
+<pre><code>© 2026 Simon Aseno</code></pre>
+</div>
+<div style="color: #e2edf2 !important; margin: 0;">
+<pre><code>Open-source project · MIT License</code></pre>
+</div>
+</div>
 </div>   
     <div class="nav-footer-center">
-<p>Built for transparent, reproducible population-health research.</p>
+<div style="max-width: 620px; margin: 0 auto; color: #ffffff !important; text-align: center; font-size: 0.74rem; line-height: 1.35;">
+<div style="color: #ffffff !important; font-weight: 600; margin: 0 0 0.25rem 0;">
+<pre><code>Reproducible R workflows and free education for NHANES laboratory data.</code></pre>
+</div>
+<div style="color: #e2edf2 !important; margin: 0;">
+<pre><code>This independent educational and open-source project is not affiliated
+with, endorsed by, or an official publication of the Centers for Disease
+Control and Prevention or the National Center for Health Statistics.
+Project materials, interpretations, code, and any errors are the
+responsibility of the author and do not represent the official views of
+any employer, institution, government agency, or affiliated organization.</code></pre>
+</div>
+</div>
 <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/simonaseno/NHANES/blob/main/NhanesDownloadScripts.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
     <div class="nav-footer-right">
       <ul class="footer-items list-unstyled">
     <li class="nav-item">
     <a class="nav-link" href="https://github.com/simonaseno/NHANES">
-<p>Source</p>
+<p>GitHub</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES/blob/main/LICENSE">
+<p>MIT License</p>
 </a>
   </li>  
     <li class="nav-item">
