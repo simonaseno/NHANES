@@ -1,15 +1,13 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
-<head>
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
 
-<meta charset="utf-8" />
-<meta name="generator" content="quarto-1.10.18" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-
-<meta name="author" content="Simon Aseno, MPH" />
-<meta name="dcterms.date" content="2026-08-05" />
+<meta name="author" content="Simon Aseno, MPH">
+<meta name="dcterms.date" content="2026-08-05">
 
 <title>NHANES CBC and Demographics Data Guide – NHANES Data Pipeline</title>
 <style>
@@ -67,7 +65,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 }
 </style>
 
-<!-- htmldependencies:E3FAD763 -->
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-7164ac15fac84eb1248f3de9b802584a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -98,44 +112,47 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <style>html{ scroll-behavior: smooth; }</style>
 
 
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="NHANES CBC and Demographics Data Guide – NHANES Data Pipeline">
+<meta property="og:description" content="A validated, reproducible R pipeline for public-use NHANES data.">
+<meta property="og:image" content="https://simonaseno.github.io/NHANES/assets/nhanes-pipeline.jpg">
+<meta property="og:site_name" content="NHANES Data Pipeline">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="NHANES CBC and Demographics Data Guide – NHANES Data Pipeline">
+<meta name="twitter:description" content="A validated, reproducible R pipeline for public-use NHANES data.">
+<meta name="twitter:image" content="https://simonaseno.github.io/NHANES/assets/nhanes-pipeline.jpg">
+<meta name="twitter:card" content="summary_large_image">
 </head>
 
-<body>
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="/index.html">
+    <a class="navbar-brand" href="./index.html">
     <span class="navbar-title">NHANES Data Pipeline</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
-  aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation"
-  onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link" href="/index.html"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Overview</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="/NhanesDownloadScripts.html"> 
+    <a class="nav-link active" href="./NhanesDownloadScripts.html" aria-current="page"> 
 <span class="menu-text">Data guide</span></a>
   </li>  
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/simonaseno/NHANES"> <i 
-  class="bi bi-github" 
-  role="img" 
-  aria-label="View the NHANES Data Pipeline on GitHub" 
->
+    <a class="nav-link" href="https://github.com/simonaseno/NHANES"> <i class="bi bi-github" role="img" aria-label="View the NHANES Data Pipeline on GitHub">
 </i> 
 <span class="menu-text"></span></a>
   </li>  
@@ -151,7 +168,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <div id="quarto-toc-target"></div>
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#purpose" id="toc-purpose" class="nav-link active" data-scroll-target="#purpose">Purpose</a></li>
+  <li><a href="#reproducible-execution" id="toc-reproducible-execution" class="nav-link" data-scroll-target="#reproducible-execution">Reproducible execution</a></li>
+  <li><a href="#source-catalog" id="toc-source-catalog" class="nav-link" data-scroll-target="#source-catalog">Source catalog</a></li>
+  <li><a href="#cbc-first-and-second-examinations" id="toc-cbc-first-and-second-examinations" class="nav-link" data-scroll-target="#cbc-first-and-second-examinations">CBC first and second examinations</a></li>
+  <li><a href="#merge-contract" id="toc-merge-contract" class="nav-link" data-scroll-target="#merge-contract">Merge contract</a></li>
+  <li><a href="#survey-design-and-weights" id="toc-survey-design-and-weights" class="nav-link" data-scroll-target="#survey-design-and-weights">Survey design and weights</a></li>
+  <li><a href="#provenance-and-validation" id="toc-provenance-and-validation" class="nav-link" data-scroll-target="#provenance-and-validation">Provenance and validation</a></li>
+  <li><a href="#expanding-to-more-nhanes-components" id="toc-expanding-to-more-nhanes-components" class="nav-link" data-scroll-target="#expanding-to-more-nhanes-components">Expanding to more NHANES components</a></li>
+  <li><a href="#citation-and-license" id="toc-citation-and-license" class="nav-link" data-scroll-target="#citation-and-license">Citation and license</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/simonaseno/NHANES/blob/main/NhanesDownloadScripts.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -186,34 +217,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
-<nav id="TOC" role="doc-toc">
-    <h2 id="toc-title">On this page</h2>
-   
-  <ul>
-  <li><a href="#purpose" id="toc-purpose">Purpose</a></li>
-  <li><a href="#reproducible-execution" id="toc-reproducible-execution">Reproducible execution</a></li>
-  <li><a href="#source-catalog" id="toc-source-catalog">Source catalog</a></li>
-  <li><a href="#cbc-first-and-second-examinations" id="toc-cbc-first-and-second-examinations">CBC first and second examinations</a></li>
-  <li><a href="#merge-contract" id="toc-merge-contract">Merge contract</a></li>
-  <li><a href="#survey-design-and-weights" id="toc-survey-design-and-weights">Survey design and weights</a></li>
-  <li><a href="#provenance-and-validation" id="toc-provenance-and-validation">Provenance and validation</a></li>
-  <li><a href="#expanding-to-more-nhanes-components" id="toc-expanding-to-more-nhanes-components">Expanding to more NHANES components</a></li>
-  <li><a href="#citation-and-license" id="toc-citation-and-license">Citation and license</a></li>
-  </ul>
-</nav>
+
 <section id="purpose" class="level2">
-<h2>Purpose</h2>
+<h2 class="anchored" data-anchor-id="purpose">Purpose</h2>
 <p>This project downloads, validates, and prepares public-use NHANES Complete Blood Count (CBC) and Demographics data for the ten continuous cycles from 1999–2000 through 2017–2018. Acquisition is driven by a reviewed source catalog, and the scientific rules are implemented in testable R functions rather than embedded in this document.</p>
 </section>
 <section id="reproducible-execution" class="level2">
-<h2>Reproducible execution</h2>
+<h2 class="anchored" data-anchor-id="reproducible-execution">Reproducible execution</h2>
 <p>Restore the recorded environment and run the pipeline from the repository root:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">&#39;renv::restore()&#39;</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/run_pipeline.R <span class="at">--refresh</span><span class="op">=</span>true <span class="at">--write-csv</span><span class="op">=</span>false</span></code></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'renv::restore()'</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/run_pipeline.R <span class="at">--refresh</span><span class="op">=</span>true <span class="at">--write-csv</span><span class="op">=</span>false</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>The executable entry point sources the modules under <code>R/</code>. Quarto renders this guide but does not install packages, download data, or overwrite research outputs.</p>
 </section>
 <section id="source-catalog" class="level2">
-<h2>Source catalog</h2>
+<h2 class="anchored" data-anchor-id="source-catalog">Source catalog</h2>
 <p>Every upstream file is declared in <code>config/nhanes_files.csv</code>. The catalog records:</p>
 <ul>
 <li>the official release cycle and file identifier;</li>
@@ -225,7 +242,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>An upstream row-count change stops the pipeline so the CDC revision can be reviewed instead of silently changing a research dataset.</p>
 </section>
 <section id="cbc-first-and-second-examinations" class="level2">
-<h2>CBC first and second examinations</h2>
+<h2 class="anchored" data-anchor-id="cbc-first-and-second-examinations">CBC first and second examinations</h2>
 <p>The 2001–2002 <code>L25_B</code> file contains the primary CBC examination. <code>L25_2_B</code> contains repeat measurements from a second examination. CDC documents the second exam as a convenience sample without survey weights.</p>
 <p>The legacy v1 workflow appended these files by rows, creating 557 duplicate participants in the combined CBC and CBC-demographic outputs. Version 0.2 keeps:</p>
 <ul>
@@ -236,12 +253,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Official documentation: <a href="https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2001/DataFiles/L25_2_B.htm" class="uri">https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2001/DataFiles/L25_2_B.htm</a></p>
 </section>
 <section id="merge-contract" class="level2">
-<h2>Merge contract</h2>
+<h2 class="anchored" data-anchor-id="merge-contract">Merge contract</h2>
 <p>Primary person-level CBC and Demographics are each required to be unique on <code>SEQN + cycle</code>. Every CBC key must exist in Demographics. The protected left join must preserve the CBC row count and key uniqueness.</p>
 <p>These checks are deliberately component-specific. Some other NHANES files have multiple records per participant and must not be merged until their granularity has been modeled appropriately.</p>
 </section>
 <section id="survey-design-and-weights" class="level2">
-<h2>Survey design and weights</h2>
+<h2 class="anchored" data-anchor-id="survey-design-and-weights">Survey design and weights</h2>
 <p>NHANES is a complex, multistage probability sample. Valid population estimates generally require:</p>
 <ul>
 <li>the weight appropriate to the least inclusive analytic component;</li>
@@ -253,7 +270,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>This pipeline preserves design variables but does not select a universal weight, because the correct choice depends on each analysis. Consult the <a href="https://wwwn.cdc.gov/nchs/nhanes/tutorials/weighting.aspx">NHANES weighting tutorial</a> before estimating population quantities.</p>
 </section>
 <section id="provenance-and-validation" class="level2">
-<h2>Provenance and validation</h2>
+<h2 class="anchored" data-anchor-id="provenance-and-validation">Provenance and validation</h2>
 <p>Each run produces:</p>
 <ul>
 <li><code>provenance.csv</code>, containing source URLs, retrieval time, byte size, SHA-256, and imported dimensions;</li>
@@ -263,7 +280,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>CI runs synthetic tests on every pull request. A separate scheduled workflow performs the network-dependent CDC refresh so temporary upstream availability does not make ordinary code review unreliable.</p>
 </section>
 <section id="expanding-to-more-nhanes-components" class="level2">
-<h2>Expanding to more NHANES components</h2>
+<h2 class="anchored" data-anchor-id="expanding-to-more-nhanes-components">Expanding to more NHANES components</h2>
 <p>Adding catalog rows is only the acquisition step. Each new component also needs:</p>
 <ol type="1">
 <li>record-level and key validation;</li>
@@ -276,43 +293,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>This separation makes the repository extensible without implying that all NHANES files can be safely combined through one generic join.</p>
 </section>
 <section id="citation-and-license" class="level2">
-<h2>Citation and license</h2>
+<h2 class="anchored" data-anchor-id="citation-and-license">Citation and license</h2>
 <p>Use the version-specific citation exposed by <code>CITATION.cff</code>, cite the original CDC/NCHS files, and report the pipeline version and provenance manifest used in the analysis.</p>
 <p>The project code and documentation use the MIT License. CDC data remain governed by their official public-use documentation and terms.</p>
-<div id="quarto-navigation-envelope" class="hidden">
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLWludC1zaWRlYmFyLXRpdGxl">NHANES Data Pipeline</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLWludC1uYXZiYXItdGl0bGU=">NHANES Data Pipeline</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLWludC1uYXZiYXI6T3ZlcnZpZXc=">Overview</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLWludC1uYXZiYXI6L2luZGV4Lmh0bWw=">/index.html</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLWludC1uYXZiYXI6RGF0YSBndWlkZQ==">Data guide</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLWludC1uYXZiYXI6L05oYW5lc0Rvd25sb2FkU2NyaXB0cy5odG1s">/NhanesDownloadScripts.html</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLWludC1uYXZiYXI6aHR0cHM6Ly9naXRodWIuY29tL3NpbW9uYXNlbm8vTkhBTkVT">https://github.com/simonaseno/NHANES</span></p>
-<div class="hidden quarto-markdown-envelope-contents" data-render-id="Zm9vdGVyLWxlZnQ=">
-<p>© 2026 Simon Aseno · MIT licensed</p>
-</div>
-<div class="hidden quarto-markdown-envelope-contents" data-render-id="Zm9vdGVyLWNlbnRlcg==">
-<p>Built for transparent, reproducible population-health research.</p>
-</div>
-<div class="hidden quarto-markdown-envelope-contents" data-render-id="Zm9vdGVyLXJpZ2h0LWh0dHBzOi8vZ2l0aHViLmNvbS9zaW1vbmFzZW5vL05IQU5FUw==">
-<p>Source</p>
-</div>
-<div class="hidden quarto-markdown-envelope-contents" data-render-id="Zm9vdGVyLXJpZ2h0LWh0dHBzOi8vZ2l0aHViLmNvbS9zaW1vbmFzZW5vL05IQU5FUy9pc3N1ZXM=">
-<p>Report an issue</p>
-</div>
-</div>
-<div id="quarto-meta-markdown" class="hidden">
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLW1ldGF0aXRsZQ==">NHANES CBC and Demographics Data Guide – NHANES Data Pipeline</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLXR3aXR0ZXJjYXJkdGl0bGU=">NHANES CBC and Demographics Data Guide – NHANES Data Pipeline</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLW9nY2FyZHRpdGxl">NHANES CBC and Demographics Data Guide – NHANES Data Pipeline</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLW1ldGFzaXRlbmFtZQ==">NHANES Data Pipeline</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLXR3aXR0ZXJjYXJkZGVzYw==">A validated, reproducible R pipeline for public-use NHANES data.</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLW9nY2FyZGRkZXNj">A validated, reproducible R pipeline for public-use NHANES data.</span></p>
-<p><span class="hidden quarto-markdown-envelope-contents" data-render-id="cXVhcnRvLW1ldGFzaXRlZGVzYw==">A validated, reproducible R pipeline for public-use NHANES data.</span></p>
-</div>
+
+
 </section>
 
 </main> <!-- /main -->
-<script id = "quarto-html-after-body" type="application/javascript">
+<script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
     const anchorJS = new window.AnchorJS();
@@ -721,32 +710,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <footer class="footer">
   <div class="nav-footer">
     <div class="nav-footer-left">
-      <div class='footer-contents'>© 2026 Simon Aseno · MIT licensed</div>  
-    </div>   
+<p>© 2026 Simon Aseno · MIT licensed</p>
+</div>   
     <div class="nav-footer-center">
-      <div class='footer-contents'>Built for transparent, reproducible population-health research.</div>  
-    </div>
-    <div class="nav-footer-right">
-      <ul class="footer-items list-unstyled">
-    <li class="nav-item">
-    <a class="nav-link" href="https://github.com/simonaseno/NHANES">
- Source
-    </a>
-  </li>  
-    <li class="nav-item">
-    <a class="nav-link" href="https://github.com/simonaseno/NHANES/issues">
- Report an issue
-    </a>
-  </li>  
-</ul>
-    </div>
-  </div>
-</footer>
-
-</body>
-
-</html>
-ns d-sm-block d-md-none"><ul><li><a href="https://github.com/simonaseno/NHANES/blob/main/NhanesDownloadScripts.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+<p>Built for transparent, reproducible population-health research.</p>
+<div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/simonaseno/NHANES/blob/main/NhanesDownloadScripts.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/simonaseno/NHANES/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
     <div class="nav-footer-right">
       <ul class="footer-items list-unstyled">
     <li class="nav-item">

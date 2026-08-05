@@ -67,7 +67,7 @@
     "href": "NhanesDownloadScripts.html#citation-and-license",
     "title": "NHANES CBC and Demographics Data Guide",
     "section": "Citation and license",
-    "text": "Citation and license\nUse the version-specific citation exposed by CITATION.cff, cite the original CDC/NCHS files, and report the pipeline version and provenance manifest used in the analysis.\nThe project code and documentation use the MIT License. CDC data remain governed by their official public-use documentation and terms.\n\nNHANES Data Pipeline\nNHANES Data Pipeline\nOverview\n/index.html\nData guide\n/NhanesDownloadScripts.html\nhttps://github.com/simonaseno/NHANES\n\n© 2026 Simon Aseno · MIT licensed\n\n\nBuilt for transparent, reproducible population-health research.\n\n\nSource\n\n\nReport an issue\n\n\n\nNHANES CBC and Demographics Data Guide – NHANES Data Pipeline\nNHANES CBC and Demographics Data Guide – NHANES Data Pipeline\nNHANES CBC and Demographics Data Guide – NHANES Data Pipeline\nNHANES Data Pipeline\nA validated, reproducible R pipeline for public-use NHANES data.\nA validated, reproducible R pipeline for public-use NHANES data.\nA validated, reproducible R pipeline for public-use NHANES data."
+    "text": "Citation and license\nUse the version-specific citation exposed by CITATION.cff, cite the original CDC/NCHS files, and report the pipeline version and provenance manifest used in the analysis.\nThe project code and documentation use the MIT License. CDC data remain governed by their official public-use documentation and terms."
   },
   {
     "objectID": "index.html",
