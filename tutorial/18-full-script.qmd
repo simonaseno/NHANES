@@ -1,0 +1,1663 @@
+---
+title: "Lesson 18: Assemble and Run the Complete Pipeline"
+subtitle: "Organize the full script, run it from a clean R session, and verify every generated output"
+description: "Assemble the completed NHANES CBC and Demographic pipeline into one reproducible script and validate the full execution."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- organize the pipeline sections in their required execution order;
+- distinguish configuration, functions, processing, analysis, and outputs;
+- verify that the complete script can be parsed by R;
+- run the pipeline from a clean R session;
+- capture execution time and failure information;
+- confirm that the source catalog is valid;
+- verify that all primary and supplementary source roles are preserved;
+- confirm that all four figures are generated;
+- create a final pipeline-run summary;
+- distinguish running the R pipeline from rendering the Quarto website.
+:::
+
+## What this lesson accomplishes
+
+In Lessons 1–17, you built the pipeline incrementally.
+
+You now have code that:
+
+1. prepares the project;
+2. loads packages;
+3. validates the source catalog;
+4. downloads the NHANES source files;
+5. imports and inspects every XPT file;
+6. investigates the 2001–2002 second CBC examination;
+7. combines the primary CBC files;
+8. combines the Demographic files;
+9. merges the two components;
+10. validates the merged dataset;
+11. creates readable labels;
+12. saves reusable outputs;
+13. analyzes hemoglobin;
+14. creates four professional figures.
+
+Lesson 18 does not introduce a new analytical method.
+
+It organizes the completed work into a reproducible execution sequence.
+
+## The final pipeline file
+
+The complete script should be stored as:
+
+```text
+nhanes_pipeline.R
+```
+
+at the root of the project.
+
+Your project should contain:
+
+```text
+NHANES/
+├── nhanes_pipeline.R
+├── config/
+├── data/
+├── outputs/
+├── R/
+├── tutorial/
+├── _quarto.yml
+└── styles.css
+```
+
+## Pipeline execution order
+
+The sections in `nhanes_pipeline.R` should appear in this order:
+
+```text
+Section 1: Project setup
+Section 2: Package validation and loading
+Section 3: Output-directory creation
+Section 4: Source-catalog definition and validation
+Section 5: Download one test file
+Section 6: Download all source files
+Section 7: Inspect all downloaded files
+Section 8: Investigate and handle duplicate records
+Section 9: Combine files within each component
+Section 10: Merge CBC and Demographic data
+Section 11: Validate the merged analytical dataset
+Section 12: Create readable variable labels
+Section 13: Save reusable outputs
+Section 14: Analyze and prepare hemoglobin data
+Section 15: Create professional hemoglobin figures
+Section 16: Complete pipeline-run validation
+```
+
+::: {.callout-important icon="true"}
+## Execution order matters
+
+Later sections depend on objects created earlier.
+
+For example:
+
+- file inspection requires the acquisition manifest;
+- duplicate handling requires imported source objects;
+- component combination requires the duplicate policy;
+- merging requires validated component datasets;
+- plotting requires the Lesson 16 summary datasets.
+
+Do not rearrange sections casually.
+:::
+
+## Add the final pipeline-validation section
+
+At the bottom of `nhanes_pipeline.R`, add:
+
+```r
+# ============================================================
+# SECTION 16: COMPLETE PIPELINE-RUN VALIDATION
+# ============================================================
+```
+
+## Record pipeline start time
+
+Ideally, the pipeline start time should be recorded near the beginning of the script.
+
+Near the top of `nhanes_pipeline.R`, add:
+
+```r
+pipeline_started_at <- Sys.time()
+```
+
+At the end of the script, calculate the finish time:
+
+```r
+pipeline_finished_at <- Sys.time()
+```
+
+Calculate elapsed time:
+
+```r
+pipeline_elapsed_seconds <- as.numeric(
+  difftime(
+    pipeline_finished_at,
+    pipeline_started_at,
+    units = "secs"
+  )
+)
+```
+
+## Define critical final objects
+
+Create a list of objects that must exist after a successful run:
+
+```r
+required_pipeline_objects <- c(
+  "nhanes_catalog",
+  "acquisition_manifest",
+  "source_inspection_report",
+  "imported_sources",
+  "cbc_second_exam_2001_2002",
+  "primary_cbc_sources",
+  "primary_demographic_sources",
+  "cbc_primary_1999_2018",
+  "demographics_1999_2018",
+  "cbc_demographics_1999_2018",
+  "cbc_demographics_validated",
+  "cbc_demographics_labelled",
+  "cbc_demographics_analysis",
+  "hemoglobin_complete_cases",
+  "hemoglobin_trend_figure_data",
+  "hemoglobin_distribution_figure_data",
+  "hemoglobin_record_count_figure_data",
+  "hemoglobin_missingness_figure_data",
+  "hemoglobin_trend_plot",
+  "hemoglobin_distribution_plot",
+  "hemoglobin_record_count_plot",
+  "hemoglobin_missingness_plot"
+)
+```
+
+Check whether each object exists:
+
+```r
+pipeline_object_check <- tibble::tibble(
+  object = required_pipeline_objects,
+  exists = purrr::map_lgl(
+    required_pipeline_objects,
+    exists
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  pipeline_object_check,
+  n = Inf
+)
+```
+
+Identify missing objects:
+
+```r
+missing_pipeline_objects <-
+  pipeline_object_check |>
+  dplyr::filter(
+    !exists
+  )
+```
+
+Stop when required objects are missing:
+
+```r
+if (
+  nrow(
+    missing_pipeline_objects
+  ) > 0
+) {
+  stop(
+    "The completed pipeline is missing required objects: ",
+    paste(
+      missing_pipeline_objects$object,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Validate the source catalog
+
+The production catalog requires these columns:
+
+```r
+required_final_catalog_columns <- c(
+  "dataset_id",
+  "cycle",
+  "cycle_start",
+  "cycle_end",
+  "component",
+  "file_id",
+  "exam",
+  "analysis_role",
+  "record_level",
+  "merge_key",
+  "expected_rows",
+  "url"
+)
+```
+
+Identify missing catalog columns:
+
+```r
+missing_final_catalog_columns <- setdiff(
+  required_final_catalog_columns,
+  names(
+    nhanes_catalog
+  )
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  length(
+    missing_final_catalog_columns
+  ) > 0
+) {
+  stop(
+    "The final source catalog is missing required columns: ",
+    paste(
+      missing_final_catalog_columns,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Check unique dataset identifiers:
+
+```r
+if (
+  anyDuplicated(
+    nhanes_catalog$dataset_id
+  ) > 0
+) {
+  stop(
+    "The final source catalog contains duplicated dataset_id values."
+  )
+}
+```
+
+Check analytical roles:
+
+```r
+supported_analysis_roles <- c(
+  "primary",
+  "supplementary"
+)
+```
+
+```r
+unsupported_analysis_roles <- setdiff(
+  unique(
+    nhanes_catalog$analysis_role
+  ),
+  supported_analysis_roles
+)
+```
+
+Stop if unsupported roles exist:
+
+```r
+if (
+  length(
+    unsupported_analysis_roles
+  ) > 0
+) {
+  stop(
+    "Unsupported analytical roles were found: ",
+    paste(
+      unsupported_analysis_roles,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Validate source-file counts
+
+The completed catalog should contain:
+
+```text
+10 primary CBC files
+1 supplementary second-examination CBC file
+10 primary Demographic files
+```
+
+Create a summary:
+
+```r
+final_catalog_role_summary <-
+  nhanes_catalog |>
+  dplyr::count(
+    component,
+    analysis_role,
+    name = "source_files"
+  ) |>
+  dplyr::arrange(
+    component,
+    analysis_role
+  )
+```
+
+Inspect:
+
+```r
+print(
+  final_catalog_role_summary,
+  n = Inf
+)
+```
+
+Count primary CBC files:
+
+```r
+final_primary_cbc_count <-
+  nhanes_catalog |>
+  dplyr::filter(
+    component == "cbc",
+    analysis_role == "primary"
+  ) |>
+  nrow()
+```
+
+Count supplementary CBC files:
+
+```r
+final_supplementary_cbc_count <-
+  nhanes_catalog |>
+  dplyr::filter(
+    component == "cbc",
+    analysis_role == "supplementary"
+  ) |>
+  nrow()
+```
+
+Count primary Demographic files:
+
+```r
+final_primary_demographic_count <-
+  nhanes_catalog |>
+  dplyr::filter(
+    component == "demographic",
+    analysis_role == "primary"
+  ) |>
+  nrow()
+```
+
+Validate:
+
+```r
+if (
+  final_primary_cbc_count != 10
+) {
+  stop(
+    "The final catalog does not contain 10 primary CBC files."
+  )
+}
+```
+
+```r
+if (
+  final_supplementary_cbc_count != 1
+) {
+  stop(
+    "The final catalog does not contain exactly one supplementary CBC file."
+  )
+}
+```
+
+```r
+if (
+  final_primary_demographic_count != 10
+) {
+  stop(
+    "The final catalog does not contain 10 primary Demographic files."
+  )
+}
+```
+
+## Confirm the second examination policy
+
+Confirm that the supplementary source is identified:
+
+```r
+final_supplementary_cbc_sources <-
+  nhanes_catalog |>
+  dplyr::filter(
+    component == "cbc",
+    analysis_role == "supplementary"
+  ) |>
+  dplyr::select(
+    dataset_id,
+    cycle,
+    file_id,
+    exam,
+    analysis_role
+  )
+```
+
+Inspect:
+
+```r
+print(
+  final_supplementary_cbc_sources,
+  n = Inf
+)
+```
+
+Confirm that `L25_2_B` remains excluded from the primary stack:
+
+```r
+second_exam_in_primary_stack <-
+  "L25_2_B" %in%
+    unique(
+      cbc_primary_1999_2018$source_file_id
+    )
+```
+
+Expected:
+
+```text
+[1] FALSE
+```
+
+Stop if it entered the primary stack:
+
+```r
+if (
+  second_exam_in_primary_stack
+) {
+  stop(
+    "L25_2_B was incorrectly included in the primary CBC stack."
+  )
+}
+```
+
+Confirm that the supplementary object contains records:
+
+```r
+if (
+  nrow(
+    cbc_second_exam_2001_2002
+  ) < 1
+) {
+  stop(
+    "The preserved second-examination dataset contains no records."
+  )
+}
+```
+
+## Validate acquisition success
+
+Create:
+
+```r
+final_acquisition_summary <-
+  acquisition_manifest |>
+  dplyr::count(
+    status,
+    name = "source_files"
+  )
+```
+
+Inspect:
+
+```r
+print(
+  final_acquisition_summary
+)
+```
+
+Identify unsuccessful acquisitions:
+
+```r
+failed_final_acquisitions <-
+  acquisition_manifest |>
+  dplyr::filter(
+    status != "success"
+  )
+```
+
+Stop if any primary acquisition failed:
+
+```r
+failed_primary_acquisitions <-
+  failed_final_acquisitions |>
+  dplyr::filter(
+    analysis_role == "primary"
+  )
+```
+
+```r
+if (
+  nrow(
+    failed_primary_acquisitions
+  ) > 0
+) {
+  stop(
+    "One or more primary source acquisitions failed: ",
+    paste(
+      failed_primary_acquisitions$dataset_id,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Validate the final analytical key
+
+Check for missing keys:
+
+```r
+final_pipeline_missing_keys <-
+  cbc_demographics_labelled |>
+  dplyr::filter(
+    is.na(
+      survey_cycle
+    ) |
+      is.na(
+        SEQN
+      )
+  )
+```
+
+Check for duplicated keys:
+
+```r
+final_pipeline_duplicate_keys <-
+  cbc_demographics_labelled |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Stop if missing keys exist:
+
+```r
+if (
+  nrow(
+    final_pipeline_missing_keys
+  ) > 0
+) {
+  stop(
+    "The completed analytical dataset contains missing keys."
+  )
+}
+```
+
+Stop if duplicated keys exist:
+
+```r
+if (
+  nrow(
+    final_pipeline_duplicate_keys
+  ) > 0
+) {
+  stop(
+    "The completed analytical dataset contains duplicated participant-cycle keys."
+  )
+}
+```
+
+## Validate survey-cycle coverage
+
+Define:
+
+```r
+final_expected_cycles <- c(
+  "1999-2000",
+  "2001-2002",
+  "2003-2004",
+  "2005-2006",
+  "2007-2008",
+  "2009-2010",
+  "2011-2012",
+  "2013-2014",
+  "2015-2016",
+  "2017-2018"
+)
+```
+
+Identify observed cycles:
+
+```r
+final_observed_cycles <- sort(
+  unique(
+    cbc_demographics_labelled$survey_cycle
+  )
+)
+```
+
+Find missing cycles:
+
+```r
+final_missing_cycles <- setdiff(
+  final_expected_cycles,
+  final_observed_cycles
+)
+```
+
+Find unexpected cycles:
+
+```r
+final_unexpected_cycles <- setdiff(
+  final_observed_cycles,
+  final_expected_cycles
+)
+```
+
+Stop if missing:
+
+```r
+if (
+  length(
+    final_missing_cycles
+  ) > 0
+) {
+  stop(
+    "The completed dataset is missing survey cycles: ",
+    paste(
+      final_missing_cycles,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Stop if unexpected cycles appear:
+
+```r
+if (
+  length(
+    final_unexpected_cycles
+  ) > 0
+) {
+  stop(
+    "The completed dataset contains unexpected survey cycles: ",
+    paste(
+      final_unexpected_cycles,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Validate the four figure objects
+
+Define:
+
+```r
+final_figure_objects <- c(
+  "hemoglobin_trend_plot",
+  "hemoglobin_distribution_plot",
+  "hemoglobin_record_count_plot",
+  "hemoglobin_missingness_plot"
+)
+```
+
+Check that each object inherits from `ggplot`:
+
+```r
+final_figure_object_check <- tibble::tibble(
+  object = final_figure_objects,
+  is_ggplot = purrr::map_lgl(
+    final_figure_objects,
+    function(object_name) {
+      inherits(
+        get(
+          object_name
+        ),
+        "ggplot"
+      )
+    }
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  final_figure_object_check
+)
+```
+
+Stop if any figure object is invalid:
+
+```r
+if (
+  any(
+    !final_figure_object_check$is_ggplot
+  )
+) {
+  stop(
+    "One or more final figure objects are not valid ggplot objects."
+  )
+}
+```
+
+## Validate exported figure files
+
+Define:
+
+```r
+final_required_figure_files <- c(
+  file.path(
+    "outputs",
+    "figures",
+    "figure_1_hemoglobin_mean_trend.png"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_1_hemoglobin_mean_trend.pdf"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_1_hemoglobin_mean_trend.svg"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_2_hemoglobin_distribution.png"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_2_hemoglobin_distribution.pdf"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_2_hemoglobin_distribution.svg"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_3_hemoglobin_record_counts.png"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_3_hemoglobin_record_counts.pdf"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_3_hemoglobin_record_counts.svg"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_4_hemoglobin_missingness.png"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_4_hemoglobin_missingness.pdf"
+  ),
+  file.path(
+    "outputs",
+    "figures",
+    "figure_4_hemoglobin_missingness.svg"
+  )
+)
+```
+
+Create a file check:
+
+```r
+final_figure_file_check <-
+  tibble::tibble(
+    file =
+      final_required_figure_files,
+    exists =
+      file.exists(
+        final_required_figure_files
+      ),
+    size_bytes =
+      ifelse(
+        file.exists(
+          final_required_figure_files
+        ),
+        file.info(
+          final_required_figure_files
+        )$size,
+        NA_real_
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  final_figure_file_check,
+  n = Inf
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  any(
+    !final_figure_file_check$exists
+  )
+) {
+  stop(
+    "One or more required figure files were not generated."
+  )
+}
+```
+
+Stop if any are empty:
+
+```r
+if (
+  any(
+    is.na(
+      final_figure_file_check$size_bytes
+    ) |
+      final_figure_file_check$size_bytes <= 0
+  )
+) {
+  stop(
+    "One or more required figure files are empty."
+  )
+}
+```
+
+## Validate critical reusable datasets
+
+Define:
+
+```r
+final_required_dataset_files <- c(
+  file.path(
+    "data",
+    "processed",
+    "cbc_primary_1999_2018.rds"
+  ),
+  file.path(
+    "data",
+    "processed",
+    "demographics_1999_2018.rds"
+  ),
+  file.path(
+    "data",
+    "processed",
+    "cbc_second_exam_2001_2002.rds"
+  ),
+  file.path(
+    "data",
+    "processed",
+    "cbc_demographics_labelled_1999_2018.rds"
+  ),
+  file.path(
+    "data",
+    "processed",
+    "cbc_demographics_analysis_1999_2018.rds"
+  )
+)
+```
+
+Create:
+
+```r
+final_dataset_file_check <-
+  tibble::tibble(
+    file =
+      final_required_dataset_files,
+    exists =
+      file.exists(
+        final_required_dataset_files
+      ),
+    size_bytes =
+      ifelse(
+        file.exists(
+          final_required_dataset_files
+        ),
+        file.info(
+          final_required_dataset_files
+        )$size,
+        NA_real_
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  final_dataset_file_check,
+  n = Inf
+)
+```
+
+Stop if missing or empty:
+
+```r
+if (
+  any(
+    !final_dataset_file_check$exists
+  ) ||
+    any(
+      is.na(
+        final_dataset_file_check$size_bytes
+      ) |
+        final_dataset_file_check$size_bytes <= 0
+    )
+) {
+  stop(
+    "One or more required reusable datasets are missing or empty."
+  )
+}
+```
+
+## Create the final validation table
+
+Run:
+
+```r
+complete_pipeline_validation <-
+  tibble::tibble(
+    check = c(
+      "All required pipeline objects exist",
+      "Catalog contains required columns",
+      "Catalog dataset identifiers are unique",
+      "Catalog analytical roles are supported",
+      "Ten primary CBC sources are declared",
+      "One supplementary CBC source is declared",
+      "Ten primary Demographic sources are declared",
+      "Second CBC examination is excluded from primary stack",
+      "Second CBC examination is preserved separately",
+      "All primary acquisitions succeeded",
+      "Final key values are complete",
+      "Final composite key is unique",
+      "All ten expected cycles are present",
+      "No unexpected cycles are present",
+      "All four figure objects are valid",
+      "All twelve exported figure files exist",
+      "All exported figure files are nonempty",
+      "All required processed datasets exist",
+      "All required processed datasets are nonempty"
+    ),
+    passed = c(
+      nrow(
+        missing_pipeline_objects
+      ) == 0,
+      length(
+        missing_final_catalog_columns
+      ) == 0,
+      anyDuplicated(
+        nhanes_catalog$dataset_id
+      ) == 0,
+      length(
+        unsupported_analysis_roles
+      ) == 0,
+      final_primary_cbc_count == 10,
+      final_supplementary_cbc_count == 1,
+      final_primary_demographic_count == 10,
+      !second_exam_in_primary_stack,
+      nrow(
+        cbc_second_exam_2001_2002
+      ) > 0,
+      nrow(
+        failed_primary_acquisitions
+      ) == 0,
+      nrow(
+        final_pipeline_missing_keys
+      ) == 0,
+      nrow(
+        final_pipeline_duplicate_keys
+      ) == 0,
+      length(
+        final_missing_cycles
+      ) == 0,
+      length(
+        final_unexpected_cycles
+      ) == 0,
+      all(
+        final_figure_object_check$is_ggplot
+      ),
+      all(
+        final_figure_file_check$exists
+      ),
+      all(
+        final_figure_file_check$size_bytes > 0
+      ),
+      all(
+        final_dataset_file_check$exists
+      ),
+      all(
+        final_dataset_file_check$size_bytes > 0
+      )
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  complete_pipeline_validation,
+  n = Inf
+)
+```
+
+Identify failures:
+
+```r
+failed_complete_pipeline_checks <-
+  complete_pipeline_validation |>
+  dplyr::filter(
+    !passed
+  )
+```
+
+Stop if a check fails:
+
+```r
+if (
+  nrow(
+    failed_complete_pipeline_checks
+  ) > 0
+) {
+  stop(
+    "Complete pipeline validation failed: ",
+    paste(
+      failed_complete_pipeline_checks$check,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Create a final run summary
+
+Run:
+
+```r
+complete_pipeline_run_summary <-
+  tibble::tibble(
+    metric = c(
+      "Pipeline started",
+      "Pipeline finished",
+      "Elapsed seconds",
+      "Catalog source files",
+      "Primary CBC source files",
+      "Supplementary CBC source files",
+      "Primary Demographic source files",
+      "Primary CBC records",
+      "Supplementary second-examination records",
+      "Merged analytical records",
+      "Merged analytical variables",
+      "Survey cycles",
+      "Complete hemoglobin analysis records",
+      "Professional figures",
+      "Exported figure files",
+      "Failed final checks"
+    ),
+    value = c(
+      format(
+        pipeline_started_at,
+        tz = "UTC",
+        usetz = TRUE
+      ),
+      format(
+        pipeline_finished_at,
+        tz = "UTC",
+        usetz = TRUE
+      ),
+      round(
+        pipeline_elapsed_seconds,
+        2
+      ),
+      nrow(
+        nhanes_catalog
+      ),
+      final_primary_cbc_count,
+      final_supplementary_cbc_count,
+      final_primary_demographic_count,
+      nrow(
+        cbc_primary_1999_2018
+      ),
+      nrow(
+        cbc_second_exam_2001_2002
+      ),
+      nrow(
+        cbc_demographics_labelled
+      ),
+      ncol(
+        cbc_demographics_labelled
+      ),
+      dplyr::n_distinct(
+        cbc_demographics_labelled$survey_cycle
+      ),
+      nrow(
+        hemoglobin_complete_cases
+      ),
+      length(
+        final_figure_objects
+      ),
+      length(
+        final_required_figure_files
+      ),
+      nrow(
+        failed_complete_pipeline_checks
+      )
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  complete_pipeline_run_summary,
+  n = Inf
+)
+```
+
+## Save the final validation files
+
+Save the object check:
+
+```r
+readr::write_csv(
+  pipeline_object_check,
+  file.path(
+    "outputs",
+    "validation",
+    "complete_pipeline_object_check.csv"
+  )
+)
+```
+
+Save the catalog role summary:
+
+```r
+readr::write_csv(
+  final_catalog_role_summary,
+  file.path(
+    "outputs",
+    "validation",
+    "final_catalog_role_summary.csv"
+  )
+)
+```
+
+Save the figure file check:
+
+```r
+readr::write_csv(
+  final_figure_file_check,
+  file.path(
+    "outputs",
+    "validation",
+    "final_figure_file_check.csv"
+  )
+)
+```
+
+Save the dataset file check:
+
+```r
+readr::write_csv(
+  final_dataset_file_check,
+  file.path(
+    "outputs",
+    "validation",
+    "final_dataset_file_check.csv"
+  )
+)
+```
+
+Save the complete validation table:
+
+```r
+readr::write_csv(
+  complete_pipeline_validation,
+  file.path(
+    "outputs",
+    "validation",
+    "complete_pipeline_validation.csv"
+  )
+)
+```
+
+Save the run summary:
+
+```r
+readr::write_csv(
+  complete_pipeline_run_summary,
+  file.path(
+    "outputs",
+    "validation",
+    "complete_pipeline_run_summary.csv"
+  )
+)
+```
+
+## Print the success message
+
+Add:
+
+```r
+message(
+  paste(
+    "NHANES pipeline completed successfully in",
+    round(
+      pipeline_elapsed_seconds,
+      2
+    ),
+    "seconds."
+  )
+)
+```
+
+Add:
+
+```r
+message(
+  paste(
+    "Validated analytical records:",
+    scales::comma(
+      nrow(
+        cbc_demographics_labelled
+      )
+    )
+  )
+)
+```
+
+Add:
+
+```r
+message(
+  "Four professional figures were generated in PNG, PDF, and SVG formats."
+)
+```
+
+## The bottom of the script should end here
+
+The final lines of `nhanes_pipeline.R` should resemble:
+
+```r
+message(
+  paste(
+    "NHANES pipeline completed successfully in",
+    round(
+      pipeline_elapsed_seconds,
+      2
+    ),
+    "seconds."
+  )
+)
+
+message(
+  paste(
+    "Validated analytical records:",
+    scales::comma(
+      nrow(
+        cbc_demographics_labelled
+      )
+    )
+  )
+)
+
+message(
+  "Four professional figures were generated in PNG, PDF, and SVG formats."
+)
+```
+
+# Check the script before running it
+
+## Save the file
+
+In VS Code, open:
+
+```text
+nhanes_pipeline.R
+```
+
+Press:
+
+```text
+Command + S
+```
+
+## Check whether R can parse the script
+
+Open the terminal at the project root and run:
+
+```bash
+Rscript -e 'parse(file = "nhanes_pipeline.R"); cat("Script parsed successfully.\n")'
+```
+
+A successful result ends with:
+
+```text
+Script parsed successfully.
+```
+
+A parsing failure means the script contains a structural syntax problem such as:
+
+- a missing parenthesis;
+- a missing brace;
+- an incomplete quotation mark;
+- a malformed operator;
+- an unfinished function;
+- a copied Markdown fence inside the R script.
+
+::: {.callout-warning icon="true"}
+## Parsing does not run the pipeline
+
+This command checks the script’s R syntax.
+
+It does not:
+
+- download files;
+- process data;
+- create datasets;
+- generate figures.
+:::
+
+# Run from a clean R session
+
+## Why use a clean session?
+
+A script can appear to work because objects from previous interactive work remain in memory.
+
+A reproducible pipeline must create every required object itself.
+
+Using `Rscript` starts a separate R process and reduces dependence on the current VS Code session.
+
+## Run the complete pipeline
+
+From the project root, run:
+
+```bash
+Rscript nhanes_pipeline.R
+```
+
+Leave the terminal open while it runs.
+
+The script may take time because it can:
+
+- validate packages;
+- download source files;
+- import multiple XPT files;
+- create hashes;
+- write large processed datasets;
+- export twelve figure files;
+- produce validation reports.
+
+## Save the console output to a log
+
+For a reproducible execution log, run:
+
+```bash
+Rscript nhanes_pipeline.R 2>&1 | tee outputs/validation/complete_pipeline_console.log
+```
+
+This displays the output in the terminal and saves it as:
+
+```text
+outputs/validation/complete_pipeline_console.log
+```
+
+## Check the exit status
+
+Immediately after the pipeline finishes, run:
+
+```bash
+echo $?
+```
+
+Expected:
+
+```text
+0
+```
+
+An exit status of `0` means the R process completed without an unhandled error.
+
+A nonzero status means the run failed.
+
+## Do not run the entire script repeatedly while debugging
+
+When an error occurs:
+
+1. read the first error message;
+2. identify the section named in the message;
+3. inspect the relevant object or file;
+4. fix the underlying problem;
+5. restart from a clean session;
+6. run the complete script again.
+
+Avoid repeatedly executing later sections against partially created objects.
+
+# Verify the final output directories
+
+After a successful run, inspect:
+
+```text
+data/processed/
+```
+
+You should find reusable datasets including:
+
+```text
+cbc_primary_1999_2018.rds
+demographics_1999_2018.rds
+cbc_second_exam_2001_2002.rds
+cbc_demographics_labelled_1999_2018.rds
+cbc_demographics_analysis_1999_2018.rds
+```
+
+Inspect:
+
+```text
+outputs/figures/
+```
+
+You should find:
+
+```text
+figure_1_hemoglobin_mean_trend.png
+figure_1_hemoglobin_mean_trend.pdf
+figure_1_hemoglobin_mean_trend.svg
+
+figure_2_hemoglobin_distribution.png
+figure_2_hemoglobin_distribution.pdf
+figure_2_hemoglobin_distribution.svg
+
+figure_3_hemoglobin_record_counts.png
+figure_3_hemoglobin_record_counts.pdf
+figure_3_hemoglobin_record_counts.svg
+
+figure_4_hemoglobin_missingness.png
+figure_4_hemoglobin_missingness.pdf
+figure_4_hemoglobin_missingness.svg
+```
+
+Inspect:
+
+```text
+outputs/validation/
+```
+
+You should find the final validation files, including:
+
+```text
+complete_pipeline_object_check.csv
+final_catalog_role_summary.csv
+final_figure_file_check.csv
+final_dataset_file_check.csv
+complete_pipeline_validation.csv
+complete_pipeline_run_summary.csv
+complete_pipeline_console.log
+```
+
+# Open the principal figure
+
+On macOS, run:
+
+```bash
+open outputs/figures/figure_1_hemoglobin_mean_trend.png
+```
+
+Open the complete figure folder:
+
+```bash
+open outputs/figures
+```
+
+# Figures embedded in Lesson 17
+
+Lesson 17 includes the exported PNG figures directly beneath their corresponding creation and export sections.
+
+After the R pipeline successfully generates the figures, Quarto will be able to embed:
+
+```text
+Figure 1 under the mean-trend section
+Figure 2 under the distribution section
+Figure 3 under the record-count section
+Figure 4 under the missingness section
+```
+
+The R pipeline must generate the PNG files before the website is rendered.
+
+::: {.callout-important icon="true"}
+## Run the R pipeline before rendering the website
+
+The correct order is:
+
+```text
+1. Run nhanes_pipeline.R
+2. Confirm that all four PNG files exist
+3. Render the Quarto website
+```
+
+If the PNG files do not exist, Lesson 17 cannot display them.
+:::
+
+# Running the pipeline is not rendering the website
+
+These are separate tasks.
+
+## Run the analytical pipeline
+
+```bash
+Rscript nhanes_pipeline.R
+```
+
+This creates:
+
+- processed datasets;
+- tables;
+- validation reports;
+- figures.
+
+## Render the Quarto website
+
+```bash
+quarto render
+```
+
+This creates the HTML website.
+
+We are **not** running `quarto render` yet because Lessons 19 and 20 still need to be finalized.
+
+# Optional: create a dedicated runner script
+
+You can create:
+
+```text
+run_pipeline.R
+```
+
+with:
+
+```r
+pipeline_script <- "nhanes_pipeline.R"
+
+if (
+  !file.exists(
+    pipeline_script
+  )
+) {
+  stop(
+    "Pipeline script does not exist: ",
+    pipeline_script
+  )
+}
+
+message(
+  "Starting the NHANES pipeline."
+)
+
+source(
+  pipeline_script,
+  echo = FALSE,
+  chdir = FALSE
+)
+
+message(
+  "The NHANES pipeline finished."
+)
+```
+
+Then run:
+
+```bash
+Rscript run_pipeline.R
+```
+
+This is optional.
+
+The main reproducible command remains:
+
+```bash
+Rscript nhanes_pipeline.R
+```
+
+# Common assembly problems
+
+## Code appears in the wrong order
+
+An object is used before it is created.
+
+Review the section order at the beginning of this lesson.
+
+## Markdown fences were copied into the R script
+
+The R file must not contain lines such as:
+
+````text
+```r
+```

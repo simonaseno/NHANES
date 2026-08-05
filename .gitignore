@@ -27,3 +27,29 @@ _site/
 /.quarto/
 
 **/*.quarto_ipynb
+
+# R session files
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# Quarto build output and temporary files
+_site/
+.quarto/
+
+# Downloaded and processed NHANES data
+data/raw/
+data/processed/
+*.xpt
+*.rds
+
+# Generated analytical outputs
+outputs/**/*.csv
+outputs/**/*.rds
+outputs/figures/*.png
+
+# Preserve intentionally committed sample outputs
+!outputs/sample/
+!outputs/sample/**
+!outputs/README.md

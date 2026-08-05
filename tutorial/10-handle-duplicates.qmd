@@ -1,0 +1,1428 @@
+---
+title: "Lesson 10: Investigate and Handle Duplicate Records"
+subtitle: "Separate the 2001–2002 second CBC examination and preserve duplicate evidence before combining cycles"
+description: "Investigate repeated participant keys in the NHANES CBC source files and preserve the second examination separately."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- explain why repeated `SEQN` values require investigation;
+- distinguish duplicates within one source from overlap across sources;
+- compare the 2001–2002 primary and second CBC examinations;
+- identify participants appearing in both files;
+- distinguish exact duplicate rows from different measurements;
+- preserve the second examination as supplementary data;
+- create duplicate-audit reports;
+- prepare a clean set of primary CBC sources for combination.
+:::
+
+## Why duplicate handling matters
+
+A duplicate participant key is not automatically an error.
+
+Repeated identifiers can represent:
+
+- an exact duplicate row;
+- a repeat examination;
+- a second specimen;
+- a complementary record;
+- conflicting values;
+- a source with more than one row per participant;
+- the same participant appearing in more than one source file.
+
+Deleting repeated records without understanding their meaning can remove scientifically valuable information.
+
+## The specific issue in this pipeline
+
+The 2001–2002 CBC release contains two relevant files:
+
+```text
+L25_B
+L25_2_B
+```
+
+In this tutorial:
+
+- `L25_B` is treated as the primary CBC examination;
+- `L25_2_B` is treated as a supplementary second examination.
+
+Some participants may appear in both files.
+
+Appending both files directly into one primary person-level dataset would create repeated participant-cycle keys.
+
+::: {.callout-warning icon="true"}
+## Do not use this shortcut
+
+```r
+dplyr::distinct(
+  SEQN,
+  .keep_all = TRUE
+)
+```
+
+This keeps one arbitrary row and discards the others.
+
+It does not determine whether the discarded records are:
+
+- exact copies;
+- repeat measurements;
+- complementary observations;
+- conflicting observations.
+:::
+
+## Where you are in the workflow
+
+You currently have:
+
+```r
+imported_sources
+```
+
+This is a named list containing every imported and source-labelled NHANES dataset.
+
+You also have:
+
+```r
+source_inspection_report
+```
+
+This contains source-level checks for:
+
+- rows;
+- columns;
+- `SEQN`;
+- missing identifiers;
+- duplicated identifiers;
+- variable labels.
+
+You will now investigate the relationship between `L25_B` and `L25_2_B`.
+
+## Add the duplicate-handling section
+
+Add this below the source-inspection section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 8: INVESTIGATE AND HANDLE DUPLICATE RECORDS
+# ============================================================
+```
+
+## Retrieve the two 2001–2002 CBC sources
+
+Retrieve the primary CBC file:
+
+```r
+cbc_2001_2002_primary <- imported_sources[[
+  "cbc_2001_2002_primary"
+]]
+```
+
+Retrieve the second examination:
+
+```r
+cbc_2001_2002_second_exam <- imported_sources[[
+  "cbc_2001_2002_second_exam"
+]]
+```
+
+Confirm that both objects exist:
+
+```r
+is.data.frame(
+  cbc_2001_2002_primary
+)
+```
+
+```r
+is.data.frame(
+  cbc_2001_2002_second_exam
+)
+```
+
+Both should return:
+
+```text
+[1] TRUE
+```
+
+## Inspect their dimensions
+
+Run:
+
+```r
+dim(
+  cbc_2001_2002_primary
+)
+```
+
+```r
+dim(
+  cbc_2001_2002_second_exam
+)
+```
+
+Record the observed row and column counts.
+
+Do not assume the two files have identical dimensions.
+
+## Confirm source roles
+
+Inspect:
+
+```r
+cbc_2001_2002_primary |>
+  dplyr::distinct(
+    source_dataset_id,
+    source_file_id,
+    source_exam,
+    analysis_role
+  )
+```
+
+Expected role:
+
+```text
+source_file_id: L25_B
+source_exam: primary
+analysis_role: primary
+```
+
+Inspect the second examination:
+
+```r
+cbc_2001_2002_second_exam |>
+  dplyr::distinct(
+    source_dataset_id,
+    source_file_id,
+    source_exam,
+    analysis_role
+  )
+```
+
+Expected role:
+
+```text
+source_file_id: L25_2_B
+source_exam: second
+analysis_role: supplementary
+```
+
+## Check duplicates within each individual file
+
+Create a helper function:
+
+```r
+find_duplicate_keys <- function(
+    data,
+    key_columns) {
+
+  data |>
+    dplyr::count(
+      dplyr::across(
+        dplyr::all_of(
+          key_columns
+        )
+      ),
+      name = "occurrences"
+    ) |>
+    dplyr::filter(
+      occurrences > 1
+    )
+}
+```
+
+Check the primary file:
+
+```r
+primary_internal_duplicates <- find_duplicate_keys(
+  data = cbc_2001_2002_primary,
+  key_columns = "SEQN"
+)
+```
+
+Inspect:
+
+```r
+print(
+  primary_internal_duplicates,
+  n = Inf
+)
+```
+
+Check the second examination:
+
+```r
+second_exam_internal_duplicates <- find_duplicate_keys(
+  data = cbc_2001_2002_second_exam,
+  key_columns = "SEQN"
+)
+```
+
+Inspect:
+
+```r
+print(
+  second_exam_internal_duplicates,
+  n = Inf
+)
+```
+
+These checks answer:
+
+```text
+Does one source file contain repeated SEQN values internally?
+```
+
+They do not yet answer whether the same participant appears across both files.
+
+## Identify participants appearing in both files
+
+Create one distinct key table for each source:
+
+```r
+primary_participants <- cbc_2001_2002_primary |>
+  dplyr::distinct(
+    survey_cycle,
+    SEQN
+  )
+```
+
+```r
+second_exam_participants <- cbc_2001_2002_second_exam |>
+  dplyr::distinct(
+    survey_cycle,
+    SEQN
+  )
+```
+
+Find shared participants:
+
+```r
+shared_second_exam_participants <- primary_participants |>
+  dplyr::inner_join(
+    second_exam_participants,
+    by = c(
+      "survey_cycle",
+      "SEQN"
+    )
+  ) |>
+  dplyr::arrange(
+    SEQN
+  )
+```
+
+Count them:
+
+```r
+nrow(
+  shared_second_exam_participants
+)
+```
+
+This is the number of participants who have both:
+
+- a primary CBC examination;
+- a second CBC examination.
+
+## Identify participants found only in the primary file
+
+Run:
+
+```r
+primary_only_participants <- primary_participants |>
+  dplyr::anti_join(
+    second_exam_participants,
+    by = c(
+      "survey_cycle",
+      "SEQN"
+    )
+  )
+```
+
+Count:
+
+```r
+nrow(
+  primary_only_participants
+)
+```
+
+## Identify participants found only in the second examination
+
+Run:
+
+```r
+second_exam_only_participants <- second_exam_participants |>
+  dplyr::anti_join(
+    primary_participants,
+    by = c(
+      "survey_cycle",
+      "SEQN"
+    )
+  )
+```
+
+Count:
+
+```r
+nrow(
+  second_exam_only_participants
+)
+```
+
+::: {.callout-important icon="true"}
+## A second-exam-only participant is not automatically an error
+
+A participant appearing only in the supplementary source may reflect:
+
+- source eligibility;
+- missing primary results;
+- release structure;
+- a valid follow-up record;
+- a source-specific inclusion rule.
+
+Preserve and report such records rather than deleting them.
+:::
+
+## Create an overlap summary
+
+Run:
+
+```r
+cbc_2001_2002_overlap_summary <- tibble::tibble(
+  category = c(
+    "primary_participants",
+    "second_exam_participants",
+    "shared_participants",
+    "primary_only_participants",
+    "second_exam_only_participants"
+  ),
+  participants = c(
+    nrow(
+      primary_participants
+    ),
+    nrow(
+      second_exam_participants
+    ),
+    nrow(
+      shared_second_exam_participants
+    ),
+    nrow(
+      primary_only_participants
+    ),
+    nrow(
+      second_exam_only_participants
+    )
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  cbc_2001_2002_overlap_summary
+)
+```
+
+## Compare common variables
+
+The two sources may not have identical columns.
+
+Identify shared variables:
+
+```r
+common_second_exam_variables <- intersect(
+  names(
+    cbc_2001_2002_primary
+  ),
+  names(
+    cbc_2001_2002_second_exam
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  common_second_exam_variables
+)
+```
+
+Identify variables found only in the primary file:
+
+```r
+primary_only_variables <- setdiff(
+  names(
+    cbc_2001_2002_primary
+  ),
+  names(
+    cbc_2001_2002_second_exam
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  primary_only_variables
+)
+```
+
+Identify variables found only in the second examination:
+
+```r
+second_exam_only_variables <- setdiff(
+  names(
+    cbc_2001_2002_second_exam
+  ),
+  names(
+    cbc_2001_2002_primary
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  second_exam_only_variables
+)
+```
+
+## Separate metadata from scientific variables
+
+The imported datasets contain metadata columns added by the pipeline.
+
+Define them:
+
+```r
+source_metadata_columns <- c(
+  "survey_cycle",
+  "source_dataset_id",
+  "source_component",
+  "source_file_id",
+  "source_exam",
+  "analysis_role",
+  "source_url",
+  "local_source_file",
+  "source_sha256"
+)
+```
+
+Identify common scientific variables:
+
+```r
+common_scientific_variables <- setdiff(
+  common_second_exam_variables,
+  source_metadata_columns
+)
+```
+
+Ensure `SEQN` is included:
+
+```r
+if (
+  !"SEQN" %in%
+    common_scientific_variables
+) {
+  stop(
+    "SEQN is not available in both CBC sources."
+  )
+}
+```
+
+## Join shared participants for comparison
+
+Add suffixes so primary and second-exam values can be compared side by side:
+
+```r
+shared_second_exam_comparison <-
+  cbc_2001_2002_primary |>
+  dplyr::semi_join(
+    shared_second_exam_participants,
+    by = c(
+      "survey_cycle",
+      "SEQN"
+    )
+  ) |>
+  dplyr::select(
+    dplyr::all_of(
+      common_scientific_variables
+    )
+  ) |>
+  dplyr::inner_join(
+    cbc_2001_2002_second_exam |>
+      dplyr::semi_join(
+        shared_second_exam_participants,
+        by = c(
+          "survey_cycle",
+          "SEQN"
+        )
+      ) |>
+      dplyr::select(
+        dplyr::all_of(
+          common_scientific_variables
+        )
+      ),
+    by = "SEQN",
+    suffix = c(
+      "_primary",
+      "_second"
+    )
+  )
+```
+
+Inspect:
+
+```r
+dplyr::glimpse(
+  shared_second_exam_comparison
+)
+```
+
+## Why compare only shared variables?
+
+A row cannot be classified as an exact duplicate when the two source schemas differ unless comparison is restricted to variables available in both sources.
+
+Even then, identical values across common variables do not prove that the two source files are conceptually interchangeable.
+
+The source role must still be preserved.
+
+## Build a value-comparison function
+
+Create:
+
+```r
+values_equal_with_missing <- function(
+    first_value,
+    second_value) {
+
+  dplyr::case_when(
+    is.na(first_value) &
+      is.na(second_value) ~ TRUE,
+
+    is.na(first_value) |
+      is.na(second_value) ~ FALSE,
+
+    TRUE ~ first_value ==
+      second_value
+  )
+}
+```
+
+## Identify comparable measurement variables
+
+Remove `SEQN` from the comparison variables:
+
+```r
+measurement_variables <- setdiff(
+  common_scientific_variables,
+  "SEQN"
+)
+```
+
+Inspect:
+
+```r
+print(
+  measurement_variables
+)
+```
+
+## Compare each shared participant across common variables
+
+Create a long comparison table:
+
+```r
+shared_measurement_comparison <-
+  purrr::map_dfr(
+    measurement_variables,
+    function(variable_name) {
+
+      primary_column <- paste0(
+        variable_name,
+        "_primary"
+      )
+
+      second_column <- paste0(
+        variable_name,
+        "_second"
+      )
+
+      tibble::tibble(
+        SEQN =
+          shared_second_exam_comparison$SEQN,
+        variable =
+          variable_name,
+        primary_value =
+          shared_second_exam_comparison[[
+            primary_column
+          ]],
+        second_exam_value =
+          shared_second_exam_comparison[[
+            second_column
+          ]],
+        values_match =
+          values_equal_with_missing(
+            shared_second_exam_comparison[[
+              primary_column
+            ]],
+            shared_second_exam_comparison[[
+              second_column
+            ]]
+          )
+      )
+    }
+  )
+```
+
+Inspect:
+
+```r
+print(
+  shared_measurement_comparison,
+  n = 50
+)
+```
+
+## Summarize differences by variable
+
+Run:
+
+```r
+second_exam_variable_difference_summary <-
+  shared_measurement_comparison |>
+  dplyr::group_by(
+    variable
+  ) |>
+  dplyr::summarise(
+    compared_participants =
+      dplyr::n(),
+    matching_values =
+      sum(
+        values_match,
+        na.rm = TRUE
+      ),
+    different_values =
+      sum(
+        !values_match,
+        na.rm = TRUE
+      ),
+    percent_different =
+      100 *
+      different_values /
+      compared_participants,
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(
+    dplyr::desc(
+      different_values
+    ),
+    variable
+  )
+```
+
+Inspect:
+
+```r
+print(
+  second_exam_variable_difference_summary,
+  n = Inf
+)
+```
+
+Variables with different values provide evidence that the second examination contains distinct measurements rather than simple duplicate copies.
+
+## Classify each shared participant
+
+Create a participant-level summary:
+
+```r
+second_exam_participant_comparison <-
+  shared_measurement_comparison |>
+  dplyr::group_by(
+    SEQN
+  ) |>
+  dplyr::summarise(
+    compared_variables =
+      dplyr::n(),
+    matching_variables =
+      sum(
+        values_match,
+        na.rm = TRUE
+      ),
+    different_variables =
+      sum(
+        !values_match,
+        na.rm = TRUE
+      ),
+    all_common_values_match =
+      all(
+        values_match
+      ),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    comparison_class =
+      dplyr::case_when(
+        all_common_values_match ~
+          "all_common_values_match",
+
+        different_variables > 0 ~
+          "different_measurements",
+
+        TRUE ~
+          "unresolved"
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  second_exam_participant_comparison,
+  n = Inf
+)
+```
+
+## Interpret the comparison classes
+
+### `all_common_values_match`
+
+All compared common values are identical.
+
+This is evidence of a value-level match across the shared variables.
+
+It does not justify deleting the supplementary source because:
+
+- source roles differ;
+- source provenance differs;
+- nonshared variables may differ;
+- the records belong to separate examination contexts.
+
+### `different_measurements`
+
+At least one common variable differs between the primary and second examinations.
+
+This indicates that the second record contains distinct measurements.
+
+### `unresolved`
+
+The comparison could not be classified completely.
+
+This category should be preserved and investigated.
+
+## Extract matched participants
+
+Run:
+
+```r
+all_common_values_match <- second_exam_participant_comparison |>
+  dplyr::filter(
+    comparison_class ==
+      "all_common_values_match"
+  )
+```
+
+Count:
+
+```r
+nrow(
+  all_common_values_match
+)
+```
+
+## Extract participants with different measurements
+
+Run:
+
+```r
+different_measurement_participants <-
+  second_exam_participant_comparison |>
+  dplyr::filter(
+    comparison_class ==
+      "different_measurements"
+  )
+```
+
+Count:
+
+```r
+nrow(
+  different_measurement_participants
+)
+```
+
+## Extract unresolved comparisons
+
+Run:
+
+```r
+unresolved_second_exam_comparisons <-
+  second_exam_participant_comparison |>
+  dplyr::filter(
+    comparison_class ==
+      "unresolved"
+  )
+```
+
+Count:
+
+```r
+nrow(
+  unresolved_second_exam_comparisons
+)
+```
+
+## Preserve the second examination separately
+
+Create the supplementary dataset:
+
+```r
+cbc_second_exam_2001_2002 <-
+  cbc_2001_2002_second_exam |>
+  dplyr::mutate(
+    inclusion_in_primary_stack = FALSE,
+    exclusion_reason =
+      "Supplementary second CBC examination preserved separately"
+  )
+```
+
+Inspect:
+
+```r
+cbc_second_exam_2001_2002 |>
+  dplyr::distinct(
+    survey_cycle,
+    source_file_id,
+    source_exam,
+    analysis_role,
+    inclusion_in_primary_stack,
+    exclusion_reason
+  )
+```
+
+## Prepare the primary CBC source list
+
+Identify the primary CBC source IDs:
+
+```r
+primary_cbc_dataset_ids <- nhanes_catalog |>
+  dplyr::filter(
+    component == "cbc",
+    analysis_role == "primary"
+  ) |>
+  dplyr::pull(
+    dataset_id
+  )
+```
+
+Expected number:
+
+```r
+length(
+  primary_cbc_dataset_ids
+)
+```
+
+Expected result:
+
+```text
+[1] 10
+```
+
+Create a list containing only primary CBC sources:
+
+```r
+primary_cbc_sources <- imported_sources[
+  primary_cbc_dataset_ids
+]
+```
+
+Confirm:
+
+```r
+length(
+  primary_cbc_sources
+)
+```
+
+Expected result:
+
+```text
+[1] 10
+```
+
+Confirm that the second examination is excluded:
+
+```r
+"cbc_2001_2002_second_exam" %in%
+  names(
+    primary_cbc_sources
+  )
+```
+
+Expected result:
+
+```text
+[1] FALSE
+```
+
+## Create the duplicate-audit summary
+
+Run:
+
+```r
+duplicate_audit_summary <- tibble::tibble(
+  check = c(
+    "primary_internal_duplicate_keys",
+    "second_exam_internal_duplicate_keys",
+    "shared_participants",
+    "primary_only_participants",
+    "second_exam_only_participants",
+    "all_common_values_match",
+    "different_measurements",
+    "unresolved_comparisons",
+    "primary_cbc_sources_retained",
+    "supplementary_cbc_sources_preserved"
+  ),
+  count = c(
+    nrow(
+      primary_internal_duplicates
+    ),
+    nrow(
+      second_exam_internal_duplicates
+    ),
+    nrow(
+      shared_second_exam_participants
+    ),
+    nrow(
+      primary_only_participants
+    ),
+    nrow(
+      second_exam_only_participants
+    ),
+    nrow(
+      all_common_values_match
+    ),
+    nrow(
+      different_measurement_participants
+    ),
+    nrow(
+      unresolved_second_exam_comparisons
+    ),
+    length(
+      primary_cbc_sources
+    ),
+    1L
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  duplicate_audit_summary
+)
+```
+
+## Save shared participant keys
+
+Run:
+
+```r
+readr::write_csv(
+  shared_second_exam_participants,
+  file.path(
+    "outputs",
+    "duplicate-reports",
+    "shared_second_exam_participants.csv"
+  )
+)
+```
+
+## Save primary-only participants
+
+Run:
+
+```r
+readr::write_csv(
+  primary_only_participants,
+  file.path(
+    "outputs",
+    "duplicate-reports",
+    "primary_only_participants.csv"
+  )
+)
+```
+
+## Save second-exam-only participants
+
+Run:
+
+```r
+readr::write_csv(
+  second_exam_only_participants,
+  file.path(
+    "outputs",
+    "duplicate-reports",
+    "second_exam_only_participants.csv"
+  )
+)
+```
+
+## Save participant-level comparison results
+
+Run:
+
+```r
+readr::write_csv(
+  second_exam_participant_comparison,
+  file.path(
+    "outputs",
+    "duplicate-reports",
+    "second_exam_participant_comparison.csv"
+  )
+)
+```
+
+## Save variable-level differences
+
+Run:
+
+```r
+readr::write_csv(
+  second_exam_variable_difference_summary,
+  file.path(
+    "outputs",
+    "duplicate-reports",
+    "second_exam_variable_difference_summary.csv"
+  )
+)
+```
+
+## Save detailed measurement comparisons
+
+Run:
+
+```r
+readr::write_csv(
+  shared_measurement_comparison,
+  file.path(
+    "outputs",
+    "duplicate-reports",
+    "shared_measurement_comparison.csv"
+  )
+)
+```
+
+## Save unresolved comparisons
+
+Run:
+
+```r
+readr::write_csv(
+  unresolved_second_exam_comparisons,
+  file.path(
+    "outputs",
+    "duplicate-reports",
+    "unresolved_conflicts.csv"
+  )
+)
+```
+
+## Save the duplicate-audit summary
+
+Run:
+
+```r
+readr::write_csv(
+  duplicate_audit_summary,
+  file.path(
+    "outputs",
+    "duplicate-reports",
+    "duplicate_audit_summary.csv"
+  )
+)
+```
+
+## Save the supplementary second examination
+
+Run:
+
+```r
+saveRDS(
+  cbc_second_exam_2001_2002,
+  file.path(
+    "data",
+    "processed",
+    "cbc_second_exam_2001_2002.rds"
+  )
+)
+```
+
+## Confirm saved outputs
+
+Run:
+
+```r
+duplicate_output_files <- c(
+  "shared_second_exam_participants.csv",
+  "primary_only_participants.csv",
+  "second_exam_only_participants.csv",
+  "second_exam_participant_comparison.csv",
+  "second_exam_variable_difference_summary.csv",
+  "shared_measurement_comparison.csv",
+  "unresolved_conflicts.csv",
+  "duplicate_audit_summary.csv"
+)
+
+duplicate_output_paths <- file.path(
+  "outputs",
+  "duplicate-reports",
+  duplicate_output_files
+)
+
+duplicate_output_check <- tibble::tibble(
+  file = duplicate_output_paths,
+  exists = file.exists(
+    duplicate_output_paths
+  )
+)
+
+print(
+  duplicate_output_check,
+  n = Inf
+)
+```
+
+Every file should return:
+
+```text
+TRUE
+```
+
+Confirm the supplementary RDS file:
+
+```r
+file.exists(
+  file.path(
+    "data",
+    "processed",
+    "cbc_second_exam_2001_2002.rds"
+  )
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+## Validate that the primary list contains one source per cycle
+
+Run:
+
+```r
+primary_cbc_cycle_summary <- purrr::imap_dfr(
+  primary_cbc_sources,
+  function(
+      data,
+      dataset_id) {
+
+    tibble::tibble(
+      dataset_id = dataset_id,
+      survey_cycle = unique(
+        data$survey_cycle
+      ),
+      source_file_id = unique(
+        data$source_file_id
+      ),
+      analysis_role = unique(
+        data$analysis_role
+      ),
+      rows = nrow(
+        data
+      )
+    )
+  }
+)
+```
+
+Inspect:
+
+```r
+print(
+  primary_cbc_cycle_summary,
+  n = Inf
+)
+```
+
+Count sources per cycle:
+
+```r
+primary_cbc_cycle_counts <-
+  primary_cbc_cycle_summary |>
+  dplyr::count(
+    survey_cycle,
+    name = "primary_sources"
+  )
+```
+
+Inspect:
+
+```r
+print(
+  primary_cbc_cycle_counts,
+  n = Inf
+)
+```
+
+Every cycle should have:
+
+```text
+primary_sources = 1
+```
+
+Stop otherwise:
+
+```r
+if (
+  any(
+    primary_cbc_cycle_counts$primary_sources != 1
+  )
+) {
+  stop(
+    "Each survey cycle must have exactly one primary CBC source."
+  )
+}
+```
+
+## Why the second examination is not discarded
+
+The second examination remains valuable for:
+
+- repeat-measurement analysis;
+- within-person comparison;
+- measurement stability;
+- quality-control investigation;
+- methodological research;
+- sensitivity analyses.
+
+Its exclusion from the primary stack is an analytical design decision, not a judgment that the data are invalid.
+
+## Why source roles must remain explicit
+
+The following two statements are different:
+
+```text
+This row is a duplicate.
+```
+
+```text
+This participant has a second examination.
+```
+
+The first implies redundancy.
+
+The second describes study design.
+
+The pipeline preserves that distinction through:
+
+```text
+source_exam
+analysis_role
+source_file_id
+inclusion_in_primary_stack
+```
+
+## Common mistakes
+
+### Appending `L25_B` and `L25_2_B`
+
+This creates repeated participant-cycle keys in the main CBC stack.
+
+### Deleting the second examination
+
+This loses scientifically useful repeat-measurement data.
+
+### Using `distinct(SEQN, .keep_all = TRUE)`
+
+This keeps an arbitrary record without scientific justification.
+
+### Comparing every column directly
+
+Pipeline metadata and source-specific variables may differ even when scientific measurements match.
+
+### Calling all shared participants exact duplicates
+
+The same participant appearing in both files does not mean the measurement values are identical.
+
+### Treating identical common values as proof of redundancy
+
+Identical values across shared variables do not erase differences in source role, examination context, or nonshared variables.
+
+## Checkpoint
+
+Confirm:
+
+- [ ] `L25_B` was identified as the primary CBC source.
+- [ ] `L25_2_B` was identified as the supplementary second examination.
+- [ ] Internal duplicate keys were checked in both files.
+- [ ] Shared participants were identified.
+- [ ] Primary-only participants were identified.
+- [ ] Second-exam-only participants were identified.
+- [ ] Common variables were identified.
+- [ ] Shared measurements were compared.
+- [ ] Participants with different measurements were identified.
+- [ ] Unresolved comparisons were preserved.
+- [ ] The second examination was saved separately.
+- [ ] The primary CBC source list contains 10 files.
+- [ ] The supplementary source is excluded from the primary list.
+- [ ] Each cycle has exactly one primary CBC source.
+- [ ] Duplicate-audit reports were saved.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why should `L25_2_B` not be appended to the primary CBC stack?
+
+It represents a second examination for participants who may already appear in `L25_B`. Appending it would create repeated participant-cycle keys and mix primary and repeat measurements.
+:::
+
+::: {.callout-note collapse="true"}
+## Does a shared `SEQN` prove that two rows are exact duplicates?
+
+No. It proves only that the same participant appears in both sources. Measurement values and source context must still be compared.
+:::
+
+::: {.callout-note collapse="true"}
+## Why preserve the second examination?
+
+It may support repeat-measurement, reliability, quality-control, and methodological analyses even though it is excluded from the main primary stack.
+:::
+
+## Lesson summary
+
+You have:
+
+- investigated duplicate keys within the two 2001–2002 CBC sources;
+- identified participants shared across examinations;
+- compared common measurements;
+- classified matched, different, and unresolved records;
+- preserved the second examination separately;
+- created a clean list of 10 primary CBC sources;
+- saved a complete duplicate-audit trail.
+
+[Continue to Lesson 11: Combine files within each component](11-combine-components.qmd){.button .button-primary}

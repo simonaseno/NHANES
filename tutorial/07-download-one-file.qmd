@@ -1,0 +1,1259 @@
+---
+title: "Lesson 7: Download and Validate One NHANES File"
+subtitle: "Test the acquisition workflow before downloading every source file"
+description: "Download one official NHANES XPT file, confirm that it was saved correctly, and troubleshoot common acquisition problems."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- select one test source from the NHANES catalog;
+- create the required raw-data directory;
+- download an official NHANES XPT file;
+- confirm that the downloaded file exists;
+- verify that the file is not empty;
+- inspect the file size and extension;
+- calculate a SHA-256 file hash;
+- record the acquisition result;
+- diagnose common download failures;
+- understand why one file should be tested before bulk acquisition.
+:::
+
+# Why start with one file?
+
+Before downloading every source file, test the acquisition workflow with one file.
+
+A successful single-file test confirms that:
+
+- the catalog can be read;
+- the source URL is accessible;
+- the destination directory exists;
+- R can write the file;
+- the local filename is correct;
+- the file is not empty;
+- the source can be inspected before scaling up.
+
+This reduces the risk of repeating the same mistake across all source files.
+
+# Where this lesson fits
+
+The acquisition workflow is:
+
+```text
+Read the source catalog
+→ select one test file
+→ download it
+→ validate the local file
+→ inspect its contents
+→ download all remaining files
+```
+
+Do not begin bulk acquisition until the one-file test succeeds.
+
+# Add the test-download section
+
+Open:
+
+```text
+nhanes_pipeline.R
+```
+
+Add this section below the source-catalog code:
+
+```r
+# ============================================================
+# SECTION 5: DOWNLOAD AND VALIDATE ONE TEST FILE
+# ============================================================
+```
+
+# Load the required packages
+
+The code in this lesson uses:
+
+```r
+library(
+  dplyr
+)
+
+library(
+  readr
+)
+
+library(
+  tibble
+)
+
+library(
+  digest
+)
+```
+
+It also uses functions from base R.
+
+Your package-loading section may already load these packages.
+
+Do not repeat `library()` calls unnecessarily when they are already included near the beginning of the pipeline.
+
+# Confirm that the catalog exists
+
+The catalog object should already exist:
+
+```r
+exists(
+  "nhanes_catalog"
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+Stop if it does not exist:
+
+```r
+if (
+  !exists(
+    "nhanes_catalog"
+  )
+) {
+  stop(
+    "The nhanes_catalog object does not exist."
+  )
+}
+```
+
+Confirm that it is a data frame:
+
+```r
+if (
+  !is.data.frame(
+    nhanes_catalog
+  )
+) {
+  stop(
+    "nhanes_catalog is not a data frame."
+  )
+}
+```
+
+# Select one test source
+
+Use the first primary CBC source as the test file:
+
+```r
+test_source <-
+  nhanes_catalog |>
+  dplyr::filter(
+    component == "cbc",
+    analysis_role == "primary"
+  ) |>
+  dplyr::arrange(
+    cycle_start,
+    cycle_end
+  ) |>
+  dplyr::slice(
+    1
+  )
+```
+
+Inspect it:
+
+```r
+print(
+  test_source
+)
+```
+
+The object should contain one row.
+
+Validate:
+
+```r
+if (
+  nrow(
+    test_source
+  ) != 1
+) {
+  stop(
+    "The test-source selection must return exactly one catalog row."
+  )
+}
+```
+
+# Inspect the selected metadata
+
+Display the most important fields:
+
+```r
+test_source |>
+  dplyr::select(
+    dataset_id,
+    cycle,
+    component,
+    file_id,
+    exam,
+    analysis_role,
+    url
+  ) |>
+  print()
+```
+
+Confirm that:
+
+- the component is CBC;
+- the analytical role is primary;
+- the URL begins with the official secure CDC host;
+- the source represents the intended first survey cycle.
+
+# Create the raw-data directory
+
+Define the directory:
+
+```r
+raw_data_directory <- file.path(
+  "data",
+  "raw"
+)
+```
+
+Create it when necessary:
+
+```r
+dir.create(
+  raw_data_directory,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+```
+
+Confirm it exists:
+
+```r
+dir.exists(
+  raw_data_directory
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+Stop if it does not exist:
+
+```r
+if (
+  !dir.exists(
+    raw_data_directory
+  )
+) {
+  stop(
+    "The raw-data directory could not be created."
+  )
+}
+```
+
+# Create the local filename
+
+Use the source `file_id` as the local filename:
+
+```r
+test_local_filename <- paste0(
+  test_source$file_id,
+  ".xpt"
+)
+```
+
+Create the complete local path:
+
+```r
+test_local_path <- file.path(
+  raw_data_directory,
+  test_local_filename
+)
+```
+
+Inspect:
+
+```r
+test_local_path
+```
+
+The result should resemble:
+
+```text
+data/raw/FILE_ID.xpt
+```
+
+The exact file identifier depends on the selected catalog row.
+
+# Confirm the source URL
+
+Extract the URL:
+
+```r
+test_source_url <- test_source$url
+```
+
+Inspect:
+
+```r
+test_source_url
+```
+
+Validate that it uses HTTPS:
+
+```r
+if (
+  !grepl(
+    "^https://",
+    test_source_url
+  )
+) {
+  stop(
+    "The test-source URL does not use HTTPS."
+  )
+}
+```
+
+Validate the official CDC host:
+
+```r
+if (
+  !grepl(
+    "^https://wwwn\\.cdc\\.gov/",
+    test_source_url
+  )
+) {
+  stop(
+    "The test-source URL does not use the expected official CDC host."
+  )
+}
+```
+
+# Download the test file
+
+Run:
+
+```r
+download.file(
+  url =
+    test_source_url,
+  destfile =
+    test_local_path,
+  mode =
+    "wb",
+  quiet =
+    FALSE
+)
+```
+
+The `mode = "wb"` argument writes the file in binary mode.
+
+This is appropriate for an XPT file.
+
+# Confirm that the file exists
+
+Run:
+
+```r
+file.exists(
+  test_local_path
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+Stop if the file was not created:
+
+```r
+if (
+  !file.exists(
+    test_local_path
+  )
+) {
+  stop(
+    "The test file was not created: ",
+    test_local_path
+  )
+}
+```
+
+# Confirm that the file is not empty
+
+Read its metadata:
+
+```r
+test_file_information <- file.info(
+  test_local_path
+)
+```
+
+Inspect:
+
+```r
+test_file_information
+```
+
+Extract its size:
+
+```r
+test_file_size_bytes <-
+  test_file_information$size
+```
+
+Inspect:
+
+```r
+test_file_size_bytes
+```
+
+Stop if the size is unavailable or zero:
+
+```r
+if (
+  is.na(
+    test_file_size_bytes
+  ) ||
+    test_file_size_bytes <= 0
+) {
+  stop(
+    "The downloaded test file is empty or its size could not be determined."
+  )
+}
+```
+
+Create a readable size:
+
+```r
+test_file_size_megabytes <-
+  test_file_size_bytes /
+    1024^2
+```
+
+Inspect:
+
+```r
+round(
+  test_file_size_megabytes,
+  2
+)
+```
+
+# If the download does not work
+
+Use this section immediately when the test file is not created, is empty, or produces a download error.
+
+::: {.callout-warning icon="true"}
+## Stop before continuing
+
+Do not proceed to bulk acquisition when the single-file test fails.
+
+The later acquisition steps depend on this workflow working correctly.
+:::
+
+## Confirm that you are in the project root
+
+In the VS Code terminal, run:
+
+```bash
+pwd
+```
+
+The result should end with:
+
+```text
+/NHANES
+```
+
+List the project files:
+
+```bash
+ls
+```
+
+You should see items such as:
+
+```text
+_quarto.yml
+nhanes_pipeline.R
+config
+data
+outputs
+R
+tutorial
+```
+
+If these files are not visible, open the correct project folder or move into it before rerunning the download.
+
+## Confirm that the catalog file exists
+
+In the terminal, run:
+
+```bash
+ls -l config/nhanes_files.csv
+```
+
+If the terminal reports that the file does not exist, return to the catalog lesson and confirm that it was created and saved correctly.
+
+## Confirm that the destination directory exists
+
+Run:
+
+```bash
+ls -ld data/raw
+```
+
+If the directory does not exist, create it:
+
+```bash
+mkdir -p data/raw
+```
+
+Then rerun the R code that defines `test_local_path`.
+
+## Inspect the exact source URL
+
+In R, run:
+
+```r
+test_source_url
+```
+
+The URL should:
+
+- begin with `https://`;
+- use the expected official CDC host;
+- end with the intended XPT filename;
+- contain no accidental spaces.
+
+Check for leading or trailing whitespace:
+
+```r
+identical(
+  test_source_url,
+  trimws(
+    test_source_url
+  )
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+## Check whether the official host is reachable
+
+In the terminal, run:
+
+```bash
+curl -I https://wwwn.cdc.gov/
+```
+
+A response from the server confirms that the host is reachable.
+
+A network failure may indicate:
+
+- no internet connection;
+- a temporary server problem;
+- a firewall or institutional network restriction;
+- a proxy configuration issue;
+- a DNS problem.
+
+## Test the exact source URL
+
+Copy the URL displayed by:
+
+```r
+test_source_url
+```
+
+Then run this in the terminal:
+
+```bash
+curl -I "PASTE_THE_EXACT_SOURCE_URL_HERE"
+```
+
+Replace the placeholder with the actual URL.
+
+Do not include the placeholder text itself.
+
+## Check whether a partial file was created
+
+Run:
+
+```bash
+ls -lh data/raw
+```
+
+A failed download may leave:
+
+- no file;
+- a zero-byte file;
+- an incomplete file;
+- an HTML error response saved with an `.xpt` extension.
+
+## Inspect the local file type
+
+After a file is created, run:
+
+```bash
+file data/raw/FILE_NAME.xpt
+```
+
+Replace `FILE_NAME.xpt` with the actual downloaded filename.
+
+If the result indicates HTML or text rather than a transport file or binary data file, the download may contain an error page rather than NHANES data.
+
+## Remove only the failed test file
+
+Do not delete the entire raw-data directory.
+
+Remove only the unsuccessful test file:
+
+```bash
+rm data/raw/FILE_NAME.xpt
+```
+
+Then rerun the download from R.
+
+## Confirm that R can write to the directory
+
+In R, run:
+
+```r
+file.access(
+  raw_data_directory,
+  mode = 2
+)
+```
+
+Expected:
+
+```text
+0
+```
+
+A result of `0` means the directory is writable.
+
+A result of `-1` suggests that R cannot write to the directory.
+
+## Confirm the error before changing the catalog
+
+Do not replace the URL merely because one attempt failed.
+
+First determine whether the problem is:
+
+- the working directory;
+- the destination path;
+- internet access;
+- a temporary server response;
+- a malformed catalog value;
+- a permissions problem.
+
+The complete diagnostic reference is provided in Lesson 19.
+
+# Confirm the file extension
+
+Run:
+
+```r
+tools::file_ext(
+  test_local_path
+)
+```
+
+Expected:
+
+```text
+xpt
+```
+
+Validate:
+
+```r
+if (
+  tolower(
+    tools::file_ext(
+      test_local_path
+    )
+  ) != "xpt"
+) {
+  stop(
+    "The downloaded test file does not have an XPT extension."
+  )
+}
+```
+
+# Calculate a SHA-256 hash
+
+Create a file hash:
+
+```r
+test_file_sha256 <- digest::digest(
+  test_local_path,
+  algorithm = "sha256",
+  file = TRUE
+)
+```
+
+Inspect:
+
+```r
+test_file_sha256
+```
+
+A SHA-256 value should contain 64 hexadecimal characters.
+
+Validate:
+
+```r
+if (
+  nchar(
+    test_file_sha256
+  ) != 64
+) {
+  stop(
+    "The test-file SHA-256 hash is invalid."
+  )
+}
+```
+
+# Why calculate a hash?
+
+A file hash helps document the exact downloaded file.
+
+If the source file changes or becomes corrupted, its hash will generally change.
+
+The hash supports:
+
+- reproducibility;
+- integrity checking;
+- acquisition auditing;
+- comparison across pipeline runs.
+
+A hash does not prove that the source is scientifically correct.
+
+It identifies the file that was acquired.
+
+# Create a test acquisition record
+
+Run:
+
+```r
+test_acquisition_record <- tibble::tibble(
+  dataset_id =
+    test_source$dataset_id,
+  cycle =
+    test_source$cycle,
+  component =
+    test_source$component,
+  file_id =
+    test_source$file_id,
+  exam =
+    test_source$exam,
+  analysis_role =
+    test_source$analysis_role,
+  source_url =
+    test_source_url,
+  local_path =
+    test_local_path,
+  downloaded_at_utc =
+    format(
+      Sys.time(),
+      tz = "UTC",
+      usetz = TRUE
+    ),
+  file_exists =
+    file.exists(
+      test_local_path
+    ),
+  size_bytes =
+    test_file_size_bytes,
+  size_megabytes =
+    round(
+      test_file_size_megabytes,
+      3
+    ),
+  sha256 =
+    test_file_sha256,
+  status =
+    "success"
+)
+```
+
+Inspect:
+
+```r
+print(
+  test_acquisition_record,
+  width = Inf
+)
+```
+
+# Save the test acquisition record
+
+Confirm that the validation directory exists:
+
+```r
+validation_directory <- file.path(
+  "outputs",
+  "validation"
+)
+```
+
+```r
+dir.create(
+  validation_directory,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+```
+
+Save the record:
+
+```r
+test_acquisition_record_path <- file.path(
+  validation_directory,
+  "test_acquisition_record.csv"
+)
+```
+
+```r
+readr::write_csv(
+  test_acquisition_record,
+  test_acquisition_record_path
+)
+```
+
+Confirm that it exists:
+
+```r
+file.exists(
+  test_acquisition_record_path
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+# Validate the saved acquisition record
+
+Check its size:
+
+```r
+test_acquisition_record_size <-
+  file.info(
+    test_acquisition_record_path
+  )$size
+```
+
+Stop if it is empty:
+
+```r
+if (
+  is.na(
+    test_acquisition_record_size
+  ) ||
+    test_acquisition_record_size <= 0
+) {
+  stop(
+    "The saved test acquisition record is empty."
+  )
+}
+```
+
+Reload it:
+
+```r
+reloaded_test_acquisition_record <-
+  readr::read_csv(
+    test_acquisition_record_path,
+    show_col_types = FALSE
+  )
+```
+
+Inspect:
+
+```r
+print(
+  reloaded_test_acquisition_record,
+  width = Inf
+)
+```
+
+# Confirm that the recorded path matches
+
+Run:
+
+```r
+identical(
+  reloaded_test_acquisition_record$local_path,
+  test_local_path
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+# Confirm that the recorded hash matches
+
+Run:
+
+```r
+identical(
+  reloaded_test_acquisition_record$sha256,
+  test_file_sha256
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+# Optional: avoid downloading the same valid file repeatedly
+
+During later runs, the local file may already exist.
+
+You can use:
+
+```r
+if (
+  file.exists(
+    test_local_path
+  ) &&
+    file.info(
+      test_local_path
+    )$size > 0
+) {
+  message(
+    "The validated local test file already exists: ",
+    test_local_path
+  )
+} else {
+  download.file(
+    url =
+      test_source_url,
+    destfile =
+      test_local_path,
+    mode =
+      "wb",
+    quiet =
+      FALSE
+  )
+}
+```
+
+This avoids unnecessary repeated downloads.
+
+However, existence alone does not prove that the file is valid.
+
+A production workflow should also consider:
+
+- file size;
+- file hash;
+- import success;
+- expected variables;
+- expected record count.
+
+# Do not import the file yet
+
+This lesson verifies acquisition.
+
+The next inspection lesson will use `haven::read_xpt()` to confirm that the downloaded file:
+
+- can be imported;
+- contains records;
+- includes `SEQN`;
+- has the expected variable structure.
+
+A file can exist and still be invalid.
+
+Therefore, acquisition validation and import validation are separate steps.
+
+# Create a concise test summary
+
+Run:
+
+```r
+test_download_summary <- tibble::tibble(
+  check = c(
+    "Catalog object exists",
+    "Exactly one test source selected",
+    "Raw-data directory exists",
+    "Source URL uses HTTPS",
+    "Source URL uses official CDC host",
+    "Downloaded file exists",
+    "Downloaded file is nonempty",
+    "Downloaded file has XPT extension",
+    "SHA-256 hash has 64 characters",
+    "Acquisition record was saved"
+  ),
+  passed = c(
+    exists(
+      "nhanes_catalog"
+    ),
+    nrow(
+      test_source
+    ) == 1,
+    dir.exists(
+      raw_data_directory
+    ),
+    grepl(
+      "^https://",
+      test_source_url
+    ),
+    grepl(
+      "^https://wwwn\\.cdc\\.gov/",
+      test_source_url
+    ),
+    file.exists(
+      test_local_path
+    ),
+    !is.na(
+      test_file_size_bytes
+    ) &&
+      test_file_size_bytes > 0,
+    tolower(
+      tools::file_ext(
+        test_local_path
+      )
+    ) == "xpt",
+    nchar(
+      test_file_sha256
+    ) == 64,
+    file.exists(
+      test_acquisition_record_path
+    )
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  test_download_summary,
+  n = Inf
+)
+```
+
+# Stop when a test fails
+
+Identify failed checks:
+
+```r
+failed_test_download_checks <-
+  test_download_summary |>
+  dplyr::filter(
+    !passed
+  )
+```
+
+Stop when necessary:
+
+```r
+if (
+  nrow(
+    failed_test_download_checks
+  ) > 0
+) {
+  stop(
+    "Test-download validation failed: ",
+    paste(
+      failed_test_download_checks$check,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Expected message:
+
+```r
+message(
+  "The test NHANES file was downloaded and validated successfully."
+)
+```
+
+# What success looks like
+
+After this lesson, you should have:
+
+```text
+data/raw/FILE_ID.xpt
+```
+
+and:
+
+```text
+outputs/validation/test_acquisition_record.csv
+```
+
+The downloaded file should:
+
+- exist;
+- have a size greater than zero;
+- use the `.xpt` extension;
+- have a valid SHA-256 hash;
+- be associated with one catalog row.
+
+# Common mistakes
+
+## Running the download from the wrong directory
+
+Check:
+
+```bash
+pwd
+```
+
+before changing any paths.
+
+## Pasting a terminal command into the R console
+
+Commands such as:
+
+```bash
+pwd
+```
+
+and:
+
+```bash
+curl -I https://wwwn.cdc.gov/
+```
+
+belong in the terminal.
+
+## Pasting R code into the terminal
+
+Code such as:
+
+```r
+download.file(
+  url = test_source_url,
+  destfile = test_local_path
+)
+```
+
+belongs in R.
+
+## Downloading every file before testing one
+
+A catalog or path error may then be repeated many times.
+
+## Assuming that existence proves validity
+
+A file can exist but contain:
+
+- zero bytes;
+- an incomplete response;
+- an HTML error page;
+- corrupted content.
+
+## Editing the XPT file manually
+
+Raw source files should remain unchanged.
+
+## Replacing an official URL without investigation
+
+A temporary failure does not necessarily mean the catalog URL is incorrect.
+
+## Ignoring the file hash
+
+Hashes provide an integrity record for reproducibility.
+
+# Checkpoint
+
+Confirm:
+
+- [ ] The source catalog exists.
+- [ ] Exactly one primary CBC source was selected.
+- [ ] The selected source metadata were inspected.
+- [ ] The raw-data directory exists.
+- [ ] The local filename was created from `file_id`.
+- [ ] The source URL uses HTTPS.
+- [ ] The source URL uses the expected CDC host.
+- [ ] The test file was downloaded.
+- [ ] The local file exists.
+- [ ] The local file is not empty.
+- [ ] The file has an XPT extension.
+- [ ] A SHA-256 hash was calculated.
+- [ ] The acquisition record was created.
+- [ ] The acquisition record was saved.
+- [ ] The saved acquisition record was reloaded.
+- [ ] The saved path and hash match the current file.
+- [ ] You know to check `pwd` when a path fails.
+- [ ] You know how to inspect a partial or invalid download.
+- [ ] Every test-download validation passed.
+- [ ] You have not run `quarto render`.
+
+# Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why download one file before downloading all sources?
+
+A one-file test confirms that the catalog, URL, destination directory, local filename, and validation process work before the same workflow is repeated across every source.
+:::
+
+::: {.callout-note collapse="true"}
+## Why use `mode = "wb"`?
+
+The XPT file is downloaded as binary content. Binary mode helps preserve the file correctly during writing.
+:::
+
+::: {.callout-note collapse="true"}
+## Does a nonzero file size prove that the file is a valid NHANES XPT file?
+
+No. The file must still be imported and inspected. A nonempty file could contain an error page or incomplete content.
+:::
+
+::: {.callout-note collapse="true"}
+## What should you check first when R reports that a file or directory does not exist?
+
+Confirm the current working directory with `pwd` and verify that the command is running from the project root.
+:::
+
+::: {.callout-note collapse="true"}
+## Why calculate a SHA-256 hash?
+
+The hash records the exact file acquired and supports integrity checking and reproducibility across pipeline runs.
+:::
+
+# Lesson summary
+
+You have:
+
+- selected one test source from the catalog;
+- created the raw-data directory;
+- downloaded one official NHANES XPT file;
+- confirmed that the file exists and is not empty;
+- checked its extension and size;
+- calculated a SHA-256 hash;
+- created and saved an acquisition record;
+- learned how to diagnose common download failures;
+- prepared the workflow for bulk acquisition.
+
+[Continue to Lesson 8: Download all source files](08-download-all-files.qmd){.button .button-primary}

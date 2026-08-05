@@ -1,0 +1,77 @@
+/* =========================================================
+   CBC TUTORIAL SIDEBAR TYPOGRAPHY ONLY
+   ========================================================= */
+
+/*
+Applies only to pages using the CBC tutorial sidebar.
+It does not change body text, page headings, tables, code,
+the navbar, or the other website sidebars.
+*/
+
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar {
+  line-height: 1.45;
+}
+
+/* Tutorial sidebar title */
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar .sidebar-title {
+  font-size: 1.08rem;
+  line-height: 1.3;
+  margin-bottom: 0.85rem;
+}
+
+/* Tutorial section headings */
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar .sidebar-section > .sidebar-item-container {
+  margin-top: 0.55rem;
+  margin-bottom: 0.25rem;
+}
+
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar .sidebar-section > .sidebar-item-container .sidebar-item-text {
+  font-size: 0.98rem;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+/* Individual tutorial lesson links */
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar .sidebar-link {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  padding-top: 0.34rem;
+  padding-bottom: 0.34rem;
+}
+
+/* Text wrapping inside lesson links */
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar .sidebar-link .sidebar-item-text {
+  line-height: 1.45;
+}
+
+/* Space between lesson entries */
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar .sidebar-item {
+  margin-bottom: 0.14rem;
+}
+
+/* Indentation for lessons inside each section */
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar .sidebar-section .sidebar-section {
+  padding-left: 0.2rem;
+}
+
+/* Current lesson */
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar .sidebar-link.active {
+  font-weight: 650;
+}
+
+/* Tutorial overview link */
+body:has(#quarto-sidebar a[href*="tutorial/01-welcome"])
+#quarto-sidebar a[href*="tutorial/index"] {
+  font-size: 0.97rem;
+  line-height: 1.4;
+  margin-bottom: 0.35rem;
+}

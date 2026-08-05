@@ -1,0 +1,1957 @@
+---
+title: "Lesson 13: Validate the Merged Results"
+subtitle: "Run systematic post-merge checks before using the analytical dataset"
+description: "Validate the structure, keys, coverage, provenance, variables, and merge outcomes of the NHANES CBC and Demographic analytical dataset."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- validate the final analytical row count;
+- confirm the uniqueness of `survey_cycle + SEQN`;
+- verify survey-cycle coverage;
+- assess Demographic match completeness;
+- validate CBC and Demographic provenance;
+- confirm required analytical variables;
+- inspect missingness by cycle;
+- identify impossible or implausible values;
+- create a consolidated validation report;
+- stop the pipeline when critical checks fail.
+:::
+
+## Why post-merge validation is necessary
+
+A successful join does not prove that the resulting dataset is analytically valid.
+
+The merged dataset could still contain:
+
+- duplicated participant keys;
+- missing survey cycles;
+- unexpected row multiplication;
+- missing required variables;
+- incomplete Demographic matches;
+- lost provenance;
+- supplementary records;
+- implausible laboratory values;
+- structural missingness;
+- inconsistent coding across cycles.
+
+Post-merge validation converts these expectations into explicit checks.
+
+## Where you are in the workflow
+
+You currently have:
+
+```r
+cbc_demographics_1999_2018
+```
+
+This dataset was created using a one-to-one left join between:
+
+```r
+cbc_primary_1999_2018
+```
+
+and:
+
+```r
+demographics_1999_2018
+```
+
+The explicit merge key is:
+
+```text
+survey_cycle + SEQN
+```
+
+## Add the validation section
+
+Add this below the merge section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 11: VALIDATE THE MERGED ANALYTICAL DATASET
+# ============================================================
+```
+
+## Confirm the merged object exists
+
+Run:
+
+```r
+if (
+  !exists(
+    "cbc_demographics_1999_2018"
+  )
+) {
+  stop(
+    "The merged analytical dataset does not exist."
+  )
+}
+```
+
+Confirm that it is a data frame:
+
+```r
+if (
+  !is.data.frame(
+    cbc_demographics_1999_2018
+  )
+) {
+  stop(
+    "The merged analytical object is not a data frame."
+  )
+}
+```
+
+## Record the final dimensions
+
+Run:
+
+```r
+final_dataset_dimensions <- tibble::tibble(
+  rows = nrow(
+    cbc_demographics_1999_2018
+  ),
+  columns = ncol(
+    cbc_demographics_1999_2018
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  final_dataset_dimensions
+)
+```
+
+## Validate row-count preservation
+
+The merged dataset should contain exactly the same number of rows as the primary CBC dataset.
+
+Run:
+
+```r
+final_row_count_validation <- tibble::tibble(
+  primary_cbc_rows =
+    nrow(
+      cbc_primary_1999_2018
+    ),
+  merged_rows =
+    nrow(
+      cbc_demographics_1999_2018
+    ),
+  rows_preserved =
+    primary_cbc_rows ==
+      merged_rows
+)
+```
+
+Inspect:
+
+```r
+print(
+  final_row_count_validation
+)
+```
+
+Stop if the row count changed:
+
+```r
+if (
+  !final_row_count_validation$rows_preserved
+) {
+  stop(
+    "The final merged row count differs from the primary CBC row count."
+  )
+}
+```
+
+## Validate required key columns
+
+Define:
+
+```r
+required_key_columns <- c(
+  "survey_cycle",
+  "SEQN"
+)
+```
+
+Check:
+
+```r
+missing_required_key_columns <- setdiff(
+  required_key_columns,
+  names(
+    cbc_demographics_1999_2018
+  )
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  length(
+    missing_required_key_columns
+  ) > 0
+) {
+  stop(
+    "The final dataset is missing required key columns: ",
+    paste(
+      missing_required_key_columns,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Validate missing key values
+
+Run:
+
+```r
+final_missing_key_rows <-
+  cbc_demographics_1999_2018 |>
+  dplyr::filter(
+    is.na(
+      survey_cycle
+    ) |
+      is.na(
+        SEQN
+      )
+  )
+```
+
+Count:
+
+```r
+nrow(
+  final_missing_key_rows
+)
+```
+
+Expected result:
+
+```text
+[1] 0
+```
+
+Stop if key values are missing:
+
+```r
+if (
+  nrow(
+    final_missing_key_rows
+  ) > 0
+) {
+  stop(
+    "The final dataset contains missing participant-key values."
+  )
+}
+```
+
+## Validate composite-key uniqueness
+
+Run:
+
+```r
+final_duplicate_keys <-
+  cbc_demographics_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  final_duplicate_keys,
+  n = Inf
+)
+```
+
+Expected count:
+
+```r
+nrow(
+  final_duplicate_keys
+)
+```
+
+Expected result:
+
+```text
+[1] 0
+```
+
+Stop if duplicates remain:
+
+```r
+if (
+  nrow(
+    final_duplicate_keys
+  ) > 0
+) {
+  stop(
+    "The final dataset contains duplicate survey_cycle + SEQN keys."
+  )
+}
+```
+
+## Validate survey-cycle coverage
+
+Define the expected cycles:
+
+```r
+expected_survey_cycles <- c(
+  "1999-2000",
+  "2001-2002",
+  "2003-2004",
+  "2005-2006",
+  "2007-2008",
+  "2009-2010",
+  "2011-2012",
+  "2013-2014",
+  "2015-2016",
+  "2017-2018"
+)
+```
+
+Identify observed cycles:
+
+```r
+observed_survey_cycles <-
+  sort(
+    unique(
+      cbc_demographics_1999_2018$survey_cycle
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  observed_survey_cycles
+)
+```
+
+Find missing cycles:
+
+```r
+missing_survey_cycles <- setdiff(
+  expected_survey_cycles,
+  observed_survey_cycles
+)
+```
+
+Find unexpected cycles:
+
+```r
+unexpected_survey_cycles <- setdiff(
+  observed_survey_cycles,
+  expected_survey_cycles
+)
+```
+
+Stop if expected cycles are missing:
+
+```r
+if (
+  length(
+    missing_survey_cycles
+  ) > 0
+) {
+  stop(
+    "The final dataset is missing survey cycles: ",
+    paste(
+      missing_survey_cycles,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Stop if unexpected cycles appear:
+
+```r
+if (
+  length(
+    unexpected_survey_cycles
+  ) > 0
+) {
+  stop(
+    "The final dataset contains unexpected survey cycles: ",
+    paste(
+      unexpected_survey_cycles,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Create a cycle-level row summary
+
+Run:
+
+```r
+final_cycle_summary <-
+  cbc_demographics_1999_2018 |>
+  dplyr::group_by(
+    survey_cycle
+  ) |>
+  dplyr::summarise(
+    records =
+      dplyr::n(),
+    unique_participants =
+      dplyr::n_distinct(
+        SEQN
+      ),
+    duplicate_keys =
+      records -
+      unique_participants,
+    matched_demographics =
+      sum(
+        demographic_match
+      ),
+    unmatched_demographics =
+      sum(
+        !demographic_match
+      ),
+    demographic_match_percent =
+      100 *
+      matched_demographics /
+      records,
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(
+    match(
+      survey_cycle,
+      expected_survey_cycles
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  final_cycle_summary,
+  n = Inf
+)
+```
+
+## Validate Demographic match indicator
+
+Check that the variable exists:
+
+```r
+if (
+  !"demographic_match" %in%
+    names(
+      cbc_demographics_1999_2018
+    )
+) {
+  stop(
+    "The final dataset is missing demographic_match."
+  )
+}
+```
+
+Check its type:
+
+```r
+class(
+  cbc_demographics_1999_2018$demographic_match
+)
+```
+
+It should be logical.
+
+Validate:
+
+```r
+if (
+  !is.logical(
+    cbc_demographics_1999_2018$demographic_match
+  )
+) {
+  stop(
+    "demographic_match must be a logical variable."
+  )
+}
+```
+
+Check missing values:
+
+```r
+sum(
+  is.na(
+    cbc_demographics_1999_2018$demographic_match
+  )
+)
+```
+
+Expected:
+
+```text
+[1] 0
+```
+
+## Validate Demographic match consistency
+
+A matched row should have Demographic provenance.
+
+Run:
+
+```r
+inconsistent_demographic_matches <-
+  cbc_demographics_1999_2018 |>
+  dplyr::filter(
+    demographic_match &
+      is.na(
+        demographic_source_dataset_id
+      )
+  )
+```
+
+Stop if inconsistent rows exist:
+
+```r
+if (
+  nrow(
+    inconsistent_demographic_matches
+  ) > 0
+) {
+  stop(
+    "Some rows are marked as matched but lack Demographic provenance."
+  )
+}
+```
+
+A row marked as unmatched should not have Demographic provenance:
+
+```r
+inconsistent_demographic_nonmatches <-
+  cbc_demographics_1999_2018 |>
+  dplyr::filter(
+    !demographic_match &
+      !is.na(
+        demographic_source_dataset_id
+      )
+  )
+```
+
+Stop if inconsistent:
+
+```r
+if (
+  nrow(
+    inconsistent_demographic_nonmatches
+  ) > 0
+) {
+  stop(
+    "Some rows are marked as unmatched but contain Demographic provenance."
+  )
+}
+```
+
+## Validate CBC provenance
+
+Define required CBC provenance columns:
+
+```r
+required_cbc_provenance <- c(
+  "cbc_source_dataset_id",
+  "cbc_source_component",
+  "cbc_source_file_id",
+  "cbc_source_exam",
+  "cbc_analysis_role",
+  "cbc_source_url",
+  "cbc_local_source_file",
+  "cbc_source_sha256"
+)
+```
+
+Identify missing columns:
+
+```r
+missing_cbc_provenance <- setdiff(
+  required_cbc_provenance,
+  names(
+    cbc_demographics_1999_2018
+  )
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  length(
+    missing_cbc_provenance
+  ) > 0
+) {
+  stop(
+    "Missing CBC provenance columns: ",
+    paste(
+      missing_cbc_provenance,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Check missing CBC provenance values:
+
+```r
+cbc_provenance_missingness <-
+  cbc_demographics_1999_2018 |>
+  dplyr::summarise(
+    dplyr::across(
+      dplyr::all_of(
+        required_cbc_provenance
+      ),
+      ~ sum(
+        is.na(
+          .x
+        )
+      )
+    )
+  ) |>
+  tidyr::pivot_longer(
+    cols = dplyr::everything(),
+    names_to = "variable",
+    values_to = "missing_values"
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_provenance_missingness,
+  n = Inf
+)
+```
+
+Every CBC provenance field should be available for every primary CBC row.
+
+## Confirm primary CBC role only
+
+Run:
+
+```r
+unique(
+  cbc_demographics_1999_2018$cbc_analysis_role
+)
+```
+
+Expected:
+
+```text
+[1] "primary"
+```
+
+Stop if another role appears:
+
+```r
+if (
+  any(
+    cbc_demographics_1999_2018$cbc_analysis_role !=
+      "primary"
+  )
+) {
+  stop(
+    "The final dataset contains nonprimary CBC records."
+  )
+}
+```
+
+## Confirm the second examination is absent
+
+Run:
+
+```r
+"L25_2_B" %in%
+  unique(
+    cbc_demographics_1999_2018$cbc_source_file_id
+  )
+```
+
+Expected:
+
+```text
+[1] FALSE
+```
+
+Stop if found:
+
+```r
+if (
+  "L25_2_B" %in%
+    unique(
+      cbc_demographics_1999_2018$cbc_source_file_id
+    )
+) {
+  stop(
+    "The supplementary second CBC examination entered the final dataset."
+  )
+}
+```
+
+## Validate one primary CBC source per cycle
+
+Run:
+
+```r
+final_cbc_source_by_cycle <-
+  cbc_demographics_1999_2018 |>
+  dplyr::distinct(
+    survey_cycle,
+    cbc_source_dataset_id,
+    cbc_source_file_id
+  ) |>
+  dplyr::count(
+    survey_cycle,
+    name = "primary_cbc_sources"
+  )
+```
+
+Inspect:
+
+```r
+print(
+  final_cbc_source_by_cycle,
+  n = Inf
+)
+```
+
+Stop if any cycle has more than one primary source:
+
+```r
+if (
+  any(
+    final_cbc_source_by_cycle$primary_cbc_sources != 1
+  )
+) {
+  stop(
+    "One or more cycles contain an unexpected number of primary CBC sources."
+  )
+}
+```
+
+## Validate required analytical variables
+
+Define a small set of variables required for the tutorial analysis:
+
+```r
+required_analysis_variables <- c(
+  "survey_cycle",
+  "SEQN",
+  "LBXHGB",
+  "RIAGENDR"
+)
+```
+
+Check:
+
+```r
+missing_analysis_variables <- setdiff(
+  required_analysis_variables,
+  names(
+    cbc_demographics_1999_2018
+  )
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  length(
+    missing_analysis_variables
+  ) > 0
+) {
+  stop(
+    "The final dataset is missing required analytical variables: ",
+    paste(
+      missing_analysis_variables,
+      collapse = ", "
+    )
+  )
+}
+```
+
+::: {.callout-important icon="true"}
+## Required variables should be analysis-specific
+
+A pipeline can contain hundreds of variables.
+
+Validation should identify the variables required for the declared analysis rather than assuming that every possible NHANES variable must be present.
+:::
+
+## Inspect key variable classes
+
+Run:
+
+```r
+analysis_variable_classes <- tibble::tibble(
+  variable = required_analysis_variables,
+  variable_class = purrr::map_chr(
+    required_analysis_variables,
+    function(variable_name) {
+      paste(
+        class(
+          cbc_demographics_1999_2018[[
+            variable_name
+          ]]
+        ),
+        collapse = "; "
+      )
+    }
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  analysis_variable_classes
+)
+```
+
+Confirm that:
+
+- `survey_cycle` is character;
+- `SEQN` is numeric;
+- `LBXHGB` is numeric;
+- `RIAGENDR` is numeric or labelled numeric.
+
+## Inspect missingness in required variables
+
+Run:
+
+```r
+required_variable_missingness <-
+  cbc_demographics_1999_2018 |>
+  dplyr::summarise(
+    dplyr::across(
+      dplyr::all_of(
+        required_analysis_variables
+      ),
+      ~ sum(
+        is.na(
+          .x
+        )
+      )
+    )
+  ) |>
+  tidyr::pivot_longer(
+    cols = dplyr::everything(),
+    names_to = "variable",
+    values_to = "missing_values"
+  ) |>
+  dplyr::mutate(
+    total_records =
+      nrow(
+        cbc_demographics_1999_2018
+      ),
+    missing_percent =
+      100 *
+      missing_values /
+      total_records
+  )
+```
+
+Inspect:
+
+```r
+print(
+  required_variable_missingness,
+  n = Inf
+)
+```
+
+Missing laboratory or Demographic values do not necessarily indicate pipeline failure.
+
+They must be interpreted using:
+
+- component eligibility;
+- specimen availability;
+- examination status;
+- cycle-specific structure;
+- source documentation.
+
+## Inspect missingness by survey cycle
+
+For hemoglobin:
+
+```r
+hemoglobin_missingness_by_cycle <-
+  cbc_demographics_1999_2018 |>
+  dplyr::group_by(
+    survey_cycle
+  ) |>
+  dplyr::summarise(
+    records =
+      dplyr::n(),
+    hemoglobin_present =
+      sum(
+        !is.na(
+          LBXHGB
+        )
+      ),
+    hemoglobin_missing =
+      sum(
+        is.na(
+          LBXHGB
+        )
+      ),
+    hemoglobin_missing_percent =
+      100 *
+      hemoglobin_missing /
+      records,
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(
+    match(
+      survey_cycle,
+      expected_survey_cycles
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_missingness_by_cycle,
+  n = Inf
+)
+```
+
+For sex:
+
+```r
+sex_missingness_by_cycle <-
+  cbc_demographics_1999_2018 |>
+  dplyr::group_by(
+    survey_cycle
+  ) |>
+  dplyr::summarise(
+    records =
+      dplyr::n(),
+    sex_present =
+      sum(
+        !is.na(
+          RIAGENDR
+        )
+      ),
+    sex_missing =
+      sum(
+        is.na(
+          RIAGENDR
+        )
+      ),
+    sex_missing_percent =
+      100 *
+      sex_missing /
+      records,
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(
+    match(
+      survey_cycle,
+      expected_survey_cycles
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  sex_missingness_by_cycle,
+  n = Inf
+)
+```
+
+## Validate sex codes
+
+Inspect observed values:
+
+```r
+sort(
+  unique(
+    cbc_demographics_1999_2018$RIAGENDR
+  )
+)
+```
+
+Create a code check:
+
+```r
+unexpected_sex_codes <-
+  cbc_demographics_1999_2018 |>
+  dplyr::filter(
+    !is.na(
+      RIAGENDR
+    ),
+    !RIAGENDR %in% c(
+      1,
+      2
+    )
+  ) |>
+  dplyr::distinct(
+    RIAGENDR
+  )
+```
+
+Inspect:
+
+```r
+print(
+  unexpected_sex_codes,
+  n = Inf
+)
+```
+
+Stop if unexpected codes exist:
+
+```r
+if (
+  nrow(
+    unexpected_sex_codes
+  ) > 0
+) {
+  stop(
+    "Unexpected RIAGENDR codes were detected."
+  )
+}
+```
+
+## Inspect hemoglobin distribution
+
+Run:
+
+```r
+summary(
+  cbc_demographics_1999_2018$LBXHGB
+)
+```
+
+Create a cycle-level range report:
+
+```r
+hemoglobin_range_by_cycle <-
+  cbc_demographics_1999_2018 |>
+  dplyr::group_by(
+    survey_cycle
+  ) |>
+  dplyr::summarise(
+    nonmissing_records =
+      sum(
+        !is.na(
+          LBXHGB
+        )
+      ),
+    minimum =
+      ifelse(
+        all(
+          is.na(
+            LBXHGB
+          )
+        ),
+        NA_real_,
+        min(
+          LBXHGB,
+          na.rm = TRUE
+        )
+      ),
+    median =
+      ifelse(
+        all(
+          is.na(
+            LBXHGB
+          )
+        ),
+        NA_real_,
+        median(
+          LBXHGB,
+          na.rm = TRUE
+        )
+      ),
+    maximum =
+      ifelse(
+        all(
+          is.na(
+            LBXHGB
+          )
+        ),
+        NA_real_,
+        max(
+          LBXHGB,
+          na.rm = TRUE
+        )
+      ),
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(
+    match(
+      survey_cycle,
+      expected_survey_cycles
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_range_by_cycle,
+  n = Inf
+)
+```
+
+## Flag clearly impossible hemoglobin values
+
+For a basic data-integrity check, flag nonpositive values:
+
+```r
+nonpositive_hemoglobin <-
+  cbc_demographics_1999_2018 |>
+  dplyr::filter(
+    !is.na(
+      LBXHGB
+    ),
+    LBXHGB <= 0
+  )
+```
+
+Count:
+
+```r
+nrow(
+  nonpositive_hemoglobin
+)
+```
+
+Values outside an expected clinical range may require review, but thresholds should not be used casually to delete observations.
+
+::: {.callout-warning icon="true"}
+## Plausibility flags are not automatic exclusion rules
+
+An unusual value can reflect:
+
+- a true extreme observation;
+- a measurement issue;
+- a coding issue;
+- a unit difference;
+- a changed method;
+- a data-entry or release problem.
+
+Flag first. Investigate before excluding.
+:::
+
+## Create a broad hemoglobin review flag
+
+Use a deliberately broad review range:
+
+```r
+hemoglobin_review_flags <-
+  cbc_demographics_1999_2018 |>
+  dplyr::filter(
+    !is.na(
+      LBXHGB
+    ),
+    LBXHGB < 3 |
+      LBXHGB > 25
+  ) |>
+  dplyr::select(
+    survey_cycle,
+    SEQN,
+    LBXHGB,
+    cbc_source_dataset_id,
+    cbc_source_file_id
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_review_flags,
+  n = Inf
+)
+```
+
+This is a review list, not a deletion list.
+
+## Validate survey-design variables
+
+Formal NHANES inference requires survey-design variables.
+
+Check for:
+
+```r
+survey_design_variables <- c(
+  "SDMVSTRA",
+  "SDMVPSU"
+)
+```
+
+Identify missing columns:
+
+```r
+missing_survey_design_variables <- setdiff(
+  survey_design_variables,
+  names(
+    cbc_demographics_1999_2018
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  missing_survey_design_variables
+)
+```
+
+Stop if they are absent:
+
+```r
+if (
+  length(
+    missing_survey_design_variables
+  ) > 0
+) {
+  stop(
+    "The merged dataset is missing survey-design variables: ",
+    paste(
+      missing_survey_design_variables,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Inspect survey-design completeness
+
+Run:
+
+```r
+survey_design_missingness <-
+  cbc_demographics_1999_2018 |>
+  dplyr::summarise(
+    missing_strata =
+      sum(
+        is.na(
+          SDMVSTRA
+        )
+      ),
+    missing_psu =
+      sum(
+        is.na(
+          SDMVPSU
+        )
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  survey_design_missingness
+)
+```
+
+## Identify available weight variables
+
+Search the final dataset:
+
+```r
+available_weight_variables <- grep(
+  "^WT",
+  names(
+    cbc_demographics_1999_2018
+  ),
+  value = TRUE
+)
+```
+
+Inspect:
+
+```r
+print(
+  available_weight_variables
+)
+```
+
+This step inventories available weights.
+
+It does not determine which weight should be used for a specific analysis.
+
+Weight selection depends on:
+
+- the analytical component;
+- examination eligibility;
+- subsample design;
+- number of combined cycles;
+- NHANES weighting guidance.
+
+## Validate source hashes
+
+Check CBC hashes:
+
+```r
+invalid_cbc_hashes <-
+  cbc_demographics_1999_2018 |>
+  dplyr::filter(
+    is.na(
+      cbc_source_sha256
+    ) |
+      nchar(
+        cbc_source_sha256
+      ) != 64
+  )
+```
+
+Stop if invalid:
+
+```r
+if (
+  nrow(
+    invalid_cbc_hashes
+  ) > 0
+) {
+  stop(
+    "The final dataset contains missing or invalid CBC source hashes."
+  )
+}
+```
+
+Check matched Demographic hashes:
+
+```r
+invalid_demographic_hashes <-
+  cbc_demographics_1999_2018 |>
+  dplyr::filter(
+    demographic_match,
+    is.na(
+      demographic_source_sha256
+    ) |
+      nchar(
+        demographic_source_sha256
+      ) != 64
+  )
+```
+
+Stop if invalid:
+
+```r
+if (
+  nrow(
+    invalid_demographic_hashes
+  ) > 0
+) {
+  stop(
+    "Matched Demographic records contain missing or invalid source hashes."
+  )
+}
+```
+
+## Create a consolidated validation table
+
+Build one check table:
+
+```r
+final_validation_checks <- tibble::tibble(
+  check = c(
+    "merged_object_exists",
+    "merged_is_data_frame",
+    "primary_cbc_rows_preserved",
+    "required_key_columns_present",
+    "missing_composite_key_rows",
+    "duplicate_composite_keys",
+    "expected_survey_cycles_present",
+    "unexpected_survey_cycles_absent",
+    "demographic_match_present",
+    "demographic_match_has_no_missing_values",
+    "cbc_provenance_columns_present",
+    "cbc_provenance_complete",
+    "cbc_role_is_primary",
+    "second_exam_absent",
+    "one_primary_cbc_source_per_cycle",
+    "required_analysis_variables_present",
+    "sex_codes_valid",
+    "survey_design_variables_present",
+    "cbc_hashes_valid",
+    "matched_demographic_hashes_valid"
+  ),
+  passed = c(
+    exists(
+      "cbc_demographics_1999_2018"
+    ),
+    is.data.frame(
+      cbc_demographics_1999_2018
+    ),
+    final_row_count_validation$rows_preserved,
+    length(
+      missing_required_key_columns
+    ) == 0,
+    nrow(
+      final_missing_key_rows
+    ) == 0,
+    nrow(
+      final_duplicate_keys
+    ) == 0,
+    length(
+      missing_survey_cycles
+    ) == 0,
+    length(
+      unexpected_survey_cycles
+    ) == 0,
+    "demographic_match" %in%
+      names(
+        cbc_demographics_1999_2018
+      ),
+    sum(
+      is.na(
+        cbc_demographics_1999_2018$demographic_match
+      )
+    ) == 0,
+    length(
+      missing_cbc_provenance
+    ) == 0,
+    all(
+      cbc_provenance_missingness$missing_values == 0
+    ),
+    all(
+      cbc_demographics_1999_2018$cbc_analysis_role ==
+        "primary"
+    ),
+    !"L25_2_B" %in%
+      unique(
+        cbc_demographics_1999_2018$cbc_source_file_id
+      ),
+    all(
+      final_cbc_source_by_cycle$primary_cbc_sources == 1
+    ),
+    length(
+      missing_analysis_variables
+    ) == 0,
+    nrow(
+      unexpected_sex_codes
+    ) == 0,
+    length(
+      missing_survey_design_variables
+    ) == 0,
+    nrow(
+      invalid_cbc_hashes
+    ) == 0,
+    nrow(
+      invalid_demographic_hashes
+    ) == 0
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  final_validation_checks,
+  n = Inf
+)
+```
+
+## Stop if a critical validation fails
+
+Run:
+
+```r
+failed_final_checks <- final_validation_checks |>
+  dplyr::filter(
+    !passed
+  )
+```
+
+Inspect:
+
+```r
+print(
+  failed_final_checks,
+  n = Inf
+)
+```
+
+Stop when failures exist:
+
+```r
+if (
+  nrow(
+    failed_final_checks
+  ) > 0
+) {
+  stop(
+    "Final validation failed: ",
+    paste(
+      failed_final_checks$check,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Expected message when all checks pass:
+
+```r
+message(
+  "All critical final validation checks passed."
+)
+```
+
+Expected output:
+
+```text
+All critical final validation checks passed.
+```
+
+## Create a validation summary
+
+Run:
+
+```r
+final_validation_summary <- tibble::tibble(
+  metric = c(
+    "records",
+    "variables",
+    "survey_cycles",
+    "unique_participant_cycle_keys",
+    "duplicate_participant_cycle_keys",
+    "missing_key_rows",
+    "matched_demographic_records",
+    "unmatched_demographic_records",
+    "hemoglobin_missing_records",
+    "sex_missing_records",
+    "hemoglobin_review_flags",
+    "failed_critical_checks"
+  ),
+  value = c(
+    nrow(
+      cbc_demographics_1999_2018
+    ),
+    ncol(
+      cbc_demographics_1999_2018
+    ),
+    dplyr::n_distinct(
+      cbc_demographics_1999_2018$survey_cycle
+    ),
+    dplyr::n_distinct(
+      paste(
+        cbc_demographics_1999_2018$survey_cycle,
+        cbc_demographics_1999_2018$SEQN,
+        sep = "::"
+      )
+    ),
+    nrow(
+      final_duplicate_keys
+    ),
+    nrow(
+      final_missing_key_rows
+    ),
+    sum(
+      cbc_demographics_1999_2018$demographic_match
+    ),
+    sum(
+      !cbc_demographics_1999_2018$demographic_match
+    ),
+    sum(
+      is.na(
+        cbc_demographics_1999_2018$LBXHGB
+      )
+    ),
+    sum(
+      is.na(
+        cbc_demographics_1999_2018$RIAGENDR
+      )
+    ),
+    nrow(
+      hemoglobin_review_flags
+    ),
+    nrow(
+      failed_final_checks
+    )
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  final_validation_summary,
+  n = Inf
+)
+```
+
+## Save the final validation checks
+
+Run:
+
+```r
+readr::write_csv(
+  final_validation_checks,
+  file.path(
+    "outputs",
+    "validation",
+    "final_validation_checks.csv"
+  )
+)
+```
+
+## Save the validation summary
+
+Run:
+
+```r
+readr::write_csv(
+  final_validation_summary,
+  file.path(
+    "outputs",
+    "validation",
+    "final_validation_summary.csv"
+  )
+)
+```
+
+## Save the cycle summary
+
+Run:
+
+```r
+readr::write_csv(
+  final_cycle_summary,
+  file.path(
+    "outputs",
+    "validation",
+    "final_cycle_summary.csv"
+  )
+)
+```
+
+## Save required-variable missingness
+
+Run:
+
+```r
+readr::write_csv(
+  required_variable_missingness,
+  file.path(
+    "outputs",
+    "validation",
+    "required_variable_missingness.csv"
+  )
+)
+```
+
+## Save hemoglobin missingness by cycle
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_missingness_by_cycle,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_missingness_by_cycle.csv"
+  )
+)
+```
+
+## Save sex missingness by cycle
+
+Run:
+
+```r
+readr::write_csv(
+  sex_missingness_by_cycle,
+  file.path(
+    "outputs",
+    "validation",
+    "sex_missingness_by_cycle.csv"
+  )
+)
+```
+
+## Save hemoglobin ranges
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_range_by_cycle,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_range_by_cycle.csv"
+  )
+)
+```
+
+## Save review flags
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_review_flags,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_review_flags.csv"
+  )
+)
+```
+
+## Save available weight-variable inventory
+
+Run:
+
+```r
+available_weight_inventory <- tibble::tibble(
+  variable = available_weight_variables
+)
+```
+
+Save:
+
+```r
+readr::write_csv(
+  available_weight_inventory,
+  file.path(
+    "outputs",
+    "validation",
+    "available_weight_variables.csv"
+  )
+)
+```
+
+## Confirm validation outputs
+
+Run:
+
+```r
+final_validation_files <- c(
+  "final_validation_checks.csv",
+  "final_validation_summary.csv",
+  "final_cycle_summary.csv",
+  "required_variable_missingness.csv",
+  "hemoglobin_missingness_by_cycle.csv",
+  "sex_missingness_by_cycle.csv",
+  "hemoglobin_range_by_cycle.csv",
+  "hemoglobin_review_flags.csv",
+  "available_weight_variables.csv"
+)
+
+final_validation_paths <- file.path(
+  "outputs",
+  "validation",
+  final_validation_files
+)
+
+final_validation_output_check <- tibble::tibble(
+  file = final_validation_paths,
+  exists = file.exists(
+    final_validation_paths
+  )
+)
+
+print(
+  final_validation_output_check,
+  n = Inf
+)
+```
+
+Every result should be:
+
+```text
+TRUE
+```
+
+## Save the validated dataset
+
+Add a validation status field:
+
+```r
+cbc_demographics_validated <-
+  cbc_demographics_1999_2018 |>
+  dplyr::mutate(
+    pipeline_validation_status =
+      "passed",
+    pipeline_validation_date_utc =
+      format(
+        Sys.time(),
+        tz = "UTC",
+        usetz = TRUE
+      )
+  )
+```
+
+Save:
+
+```r
+saveRDS(
+  cbc_demographics_validated,
+  file.path(
+    "data",
+    "processed",
+    "cbc_demographics_validated_1999_2018.rds"
+  )
+)
+```
+
+Confirm:
+
+```r
+file.exists(
+  file.path(
+    "data",
+    "processed",
+    "cbc_demographics_validated_1999_2018.rds"
+  )
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+## Validation does not replace scientific review
+
+The checks in this lesson establish that the pipeline behaved as intended.
+
+They do not prove that:
+
+- every variable is harmonized correctly;
+- laboratory methods are equivalent across cycles;
+- the correct survey weight has been selected;
+- all outliers are valid;
+- a planned statistical model is appropriate;
+- an unweighted summary is nationally representative.
+
+Those questions require component documentation and analysis-specific review.
+
+## Common mistakes
+
+### Assuming a successful join is sufficient
+
+A join can succeed while producing duplicate or incomplete records.
+
+### Treating all missing values as errors
+
+Some missingness reflects eligibility, specimen collection, component availability, or cycle structure.
+
+### Deleting unusual laboratory values automatically
+
+Unusual values should be flagged and investigated first.
+
+### Using one weight for every analysis
+
+Weight selection depends on the component, subsample, cycles, and analytical population.
+
+### Validating only the final row count
+
+Row counts are important, but keys, cycles, variables, provenance, match status, and value structure must also be checked.
+
+### Ignoring failed checks
+
+A validation table is useful only when the pipeline stops or clearly warns when critical expectations are violated.
+
+## Checkpoint
+
+Confirm:
+
+- [ ] The merged object exists.
+- [ ] The merged object is a data frame.
+- [ ] The primary CBC row count was preserved.
+- [ ] Required key columns are present.
+- [ ] Composite-key values are complete.
+- [ ] `survey_cycle + SEQN` is unique.
+- [ ] All ten expected survey cycles are present.
+- [ ] No unexpected cycles appear.
+- [ ] `demographic_match` is logical and complete.
+- [ ] Match status agrees with Demographic provenance.
+- [ ] CBC provenance is complete.
+- [ ] Only primary CBC records are present.
+- [ ] `L25_2_B` is absent.
+- [ ] Each cycle has one primary CBC source.
+- [ ] Required analysis variables are present.
+- [ ] `RIAGENDR` codes are valid.
+- [ ] Hemoglobin missingness was summarized.
+- [ ] Hemoglobin ranges were inspected.
+- [ ] Review flags were saved without automatic deletion.
+- [ ] Survey-design variables are present.
+- [ ] Available weight variables were inventoried.
+- [ ] Source hashes are valid.
+- [ ] Critical validation checks passed.
+- [ ] The validated RDS file was saved.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why should the final merged row count equal the primary CBC row count?
+
+The merge uses the primary CBC dataset as the left analytical base. A one-to-one left join should add Demographic columns without adding or removing CBC rows.
+:::
+
+::: {.callout-note collapse="true"}
+## Does an unusual hemoglobin value automatically mean the record should be deleted?
+
+No. It should be flagged and investigated for measurement, coding, unit, method, or source issues before any exclusion decision is made.
+:::
+
+::: {.callout-note collapse="true"}
+## Does passing pipeline validation make an unweighted analysis nationally representative?
+
+No. National inference still requires the appropriate NHANES survey weights, strata, primary sampling units, and multi-cycle weighting procedures.
+:::
+
+## Lesson summary
+
+You have:
+
+- validated final dimensions and row preservation;
+- confirmed composite-key uniqueness;
+- verified all ten survey cycles;
+- checked Demographic match consistency;
+- validated CBC and Demographic provenance;
+- confirmed required analytical variables;
+- reviewed missingness and value ranges;
+- inventoried survey-design and weight variables;
+- created consolidated critical checks;
+- saved validation reports and a validated analytical dataset.
+
+[Continue to Lesson 14: Create readable variable labels](14-label-variables.qmd){.button .button-primary}

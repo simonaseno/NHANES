@@ -1,0 +1,420 @@
+---
+title: "Install the Required R Packages"
+subtitle: "Prepare the tools used to download, read, transform, validate, and visualize the data"
+description: "Install, load, and validate the R packages used by the NHANES pipeline."
+sidebar: tutorials
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- explain what an R package is;
+- distinguish installation from loading;
+- identify the packages required by the pipeline;
+- install only packages that are missing;
+- load packages programmatically;
+- record package versions and session information.
+:::
+
+## What is an R package?
+
+An R package is a collection of:
+
+- functions;
+- documentation;
+- datasets;
+- supporting code.
+
+Packages add specialized capabilities to R.
+
+## Packages used in this tutorial
+
+| Package | Purpose |
+|---|---|
+| `httr` | Downloads files through HTTP |
+| `haven` | Reads SAS transport `.xpt` files |
+| `dplyr` | Transforms, joins, counts, and combines data |
+| `readr` | Writes CSV files |
+| `tibble` | Creates readable data tables |
+| `ggplot2` | Creates graphs |
+| `digest` | Calculates file hashes |
+| `purrr` | Supports structured iteration |
+| `stringr` | Handles text consistently |
+
+## Installing and loading are different
+
+### Installing
+
+Installation places a package on the computer.
+
+```r
+install.packages(
+  "dplyr"
+)
+```
+
+This usually needs to be done only once for a particular R library.
+
+### Loading
+
+Loading makes the package available in the current R session.
+
+```r
+library(
+  dplyr
+)
+```
+
+This normally needs to happen each time a new R session begins.
+
+## Add the package section
+
+Add this below the directory section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 2: INSTALL AND LOAD REQUIRED PACKAGES
+# ============================================================
+
+required_packages <- c(
+  "httr",
+  "haven",
+  "dplyr",
+  "readr",
+  "tibble",
+  "ggplot2",
+  "digest",
+  "purrr",
+  "stringr"
+)
+
+packages_to_install <- required_packages[
+  !vapply(
+    required_packages,
+    requireNamespace,
+    logical(1),
+    quietly = TRUE
+  )
+]
+
+if (length(packages_to_install) > 0) {
+  install.packages(
+    packages_to_install,
+    repos = "https://cloud.r-project.org"
+  )
+}
+
+invisible(
+  lapply(
+    required_packages,
+    library,
+    character.only = TRUE
+  )
+)
+
+message(
+  "Required packages are installed and loaded."
+)
+```
+
+Run the section.
+
+The first run may produce installation messages.
+
+Expected final message:
+
+```text
+Required packages are installed and loaded.
+```
+
+## Understanding `requireNamespace()`
+
+This code:
+
+```r
+requireNamespace(
+  "dplyr",
+  quietly = TRUE
+)
+```
+
+checks whether `dplyr` is installed without attaching it.
+
+It returns:
+
+```text
+TRUE
+```
+
+or:
+
+```text
+FALSE
+```
+
+## Understanding `vapply()`
+
+`vapply()` repeats the package check for every name in `required_packages`.
+
+Only packages returning `FALSE` are included in:
+
+```r
+packages_to_install
+```
+
+## Validate the packages
+
+Add:
+
+```r
+package_check <- vapply(
+  required_packages,
+  requireNamespace,
+  logical(1),
+  quietly = TRUE
+)
+
+print(
+  package_check
+)
+```
+
+Every package should return:
+
+```text
+TRUE
+```
+
+Stop if any package is unavailable:
+
+```r
+if (!all(package_check)) {
+  unavailable_packages <- names(
+    package_check
+  )[!package_check]
+
+  stop(
+    "Required packages are unavailable: ",
+    paste(
+      unavailable_packages,
+      collapse = ", "
+    )
+  )
+}
+
+message(
+  "Package validation passed."
+)
+```
+
+Expected message:
+
+```text
+Package validation passed.
+```
+
+## Record package versions
+
+Add:
+
+```r
+package_versions <- tibble::tibble(
+  package = required_packages,
+  version = vapply(
+    required_packages,
+    function(package_name) {
+      as.character(
+        utils::packageVersion(
+          package_name
+        )
+      )
+    },
+    character(1)
+  )
+)
+
+print(
+  package_versions
+)
+```
+
+Save the table:
+
+```r
+readr::write_csv(
+  package_versions,
+  file.path(
+    "outputs",
+    "validation",
+    "package_versions.csv"
+  )
+)
+```
+
+Confirm:
+
+```r
+file.exists(
+  file.path(
+    "outputs",
+    "validation",
+    "package_versions.csv"
+  )
+)
+```
+
+Expected result:
+
+```text
+[1] TRUE
+```
+
+## Record session information
+
+Add:
+
+```r
+session_information <- capture.output(
+  sessionInfo()
+)
+
+writeLines(
+  session_information,
+  file.path(
+    "outputs",
+    "validation",
+    "session_info.txt"
+  )
+)
+```
+
+Confirm:
+
+```r
+file.exists(
+  file.path(
+    "outputs",
+    "validation",
+    "session_info.txt"
+  )
+)
+```
+
+Expected result:
+
+```text
+[1] TRUE
+```
+
+## Why session information matters
+
+It records:
+
+- R version;
+- operating system;
+- attached packages;
+- loaded namespaces;
+- package versions.
+
+This helps diagnose differences between computers and future environments.
+
+## Namespace notation
+
+You will often see:
+
+```r
+dplyr::filter()
+```
+
+The `::` notation identifies the package containing the function.
+
+This improves clarity and reduces conflicts between packages with similarly named functions.
+
+## Common problems
+
+### R cannot connect to CRAN
+
+Check:
+
+- internet connection;
+- proxy settings;
+- firewall restrictions;
+- repository address.
+
+The code uses:
+
+```text
+https://cloud.r-project.org
+```
+
+### Permission error
+
+R may be trying to install packages in a protected system directory.
+
+A user-level package library is usually preferable.
+
+### A package installs but cannot load
+
+Restart the R session and rerun the section.
+
+### Function-name conflicts
+
+Use explicit namespace notation:
+
+```r
+dplyr::select()
+```
+
+instead of:
+
+```r
+select()
+```
+
+when ambiguity is possible.
+
+## Checkpoint
+
+Confirm:
+
+- [ ] Nine package names are listed.
+- [ ] Missing packages were installed.
+- [ ] All required packages loaded.
+- [ ] Every value in `package_check` is `TRUE`.
+- [ ] `package_versions.csv` exists.
+- [ ] `session_info.txt` exists.
+- [ ] The terminal displays `Package validation passed.`
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## What is the difference between installing and loading a package?
+
+Installation places the package on the computer. Loading makes it available in the current R session.
+:::
+
+::: {.callout-note collapse="true"}
+## Why check for missing packages before installing?
+
+It avoids reinstalling packages that are already available.
+:::
+
+::: {.callout-note collapse="true"}
+## What does `haven::read_xpt()` communicate?
+
+It explicitly calls the `read_xpt()` function from the `haven` package.
+:::
+
+## Lesson summary
+
+You have:
+
+- defined the required packages;
+- installed missing packages;
+- loaded and validated them;
+- saved package-version information;
+- recorded the R session environment.
+
+[Continue to Lesson 5: Understand NHANES data](05-understand-nhanes.qmd){.button .button-primary}

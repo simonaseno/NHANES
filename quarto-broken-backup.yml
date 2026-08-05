@@ -50,17 +50,15 @@ project:
     - config/**
 
 website:
-  title: "NHANES Laboratory Data with R"
+  title: "NHANES Laboratory Data Pipeline in R"
 
   description: >-
-    Reproducible R workflows, documentation, pipelines, and free courses for
-    acquiring, validating, harmonizing, merging, analyzing, and communicating
-    NHANES laboratory data with the supporting information required for
-    scientifically valid analysis.
+    Reproducible R workflows, documentation, and tutorials for acquiring,
+    validating, harmonizing, merging, and analyzing NHANES laboratory data
+    with the supporting data required for valid analysis.
 
   site-url: "https://simonaseno.github.io/NHANES/"
   repo-url: "https://github.com/simonaseno/NHANES"
-
   repo-actions:
     - source
     - issue
@@ -69,7 +67,7 @@ website:
 
   open-graph:
     locale: en_US
-    site-name: "NHANES Laboratory Data with R"
+    site-name: "NHANES Laboratory Data Pipeline in R"
 
   twitter-card: true
 
@@ -80,25 +78,19 @@ website:
     search: true
 
     left:
-      - text: "Overview"
-        menu:
-          - href: index.qmd
-            text: "Site overview"
+      - href: index.qmd
+        text: "Overview"
 
       - text: "Understanding NHANES"
         menu:
           - href: foundations/index.qmd
             text: "Start here"
-
           - href: foundations/data-structure.qmd
             text: "NHANES data structure"
-
           - href: foundations/survey-design.qmd
             text: "Survey design"
-
           - href: foundations/survey-weights.qmd
             text: "Survey weights"
-
           - href: foundations/combining-cycles.qmd
             text: "Combining cycles"
 
@@ -106,28 +98,25 @@ website:
         menu:
           - href: laboratory/index.qmd
             text: "Laboratory data overview"
-
           - href: laboratory/component-catalog.qmd
             text: "Component catalog"
 
       - text: "Pipelines"
         menu:
           - href: pipelines/index.qmd
-            text: "Pipeline catalog"
-
+            text: "Pipeline overview"
           - href: pipelines/cbc-demographics/index.qmd
-            text: "CBC and Demographic pipeline"
+            text: "CBC and Demographics"
 
-      - text: "Courses"
+      - text: "Tutorials"
         menu:
           - href: tutorials/index.qmd
-            text: "Course catalog"
-
+            text: "Tutorial catalog"
           - href: tutorial/index.qmd
-            text: "CBC and Demographic pipeline course"
+            text: "CBC tutorial"
 
       - href: NhanesDownloadScripts.qmd
-        text: "Project architecture"
+        text: "Technical guide"
 
     right:
       - icon: github
@@ -139,20 +128,15 @@ website:
       title: "Understanding NHANES"
       style: docked
       collapse-level: 2
-
       contents:
         - href: foundations/index.qmd
           text: "Foundations overview"
-
         - href: foundations/data-structure.qmd
           text: "NHANES data structure"
-
         - href: foundations/survey-design.qmd
           text: "Survey design"
-
         - href: foundations/survey-weights.qmd
           text: "Survey weights"
-
         - href: foundations/combining-cycles.qmd
           text: "Combining cycles"
 
@@ -160,53 +144,44 @@ website:
       title: "NHANES Laboratory Data"
       style: docked
       collapse-level: 2
-
       contents:
         - href: laboratory/index.qmd
           text: "Laboratory data overview"
-
         - href: laboratory/component-catalog.qmd
           text: "Laboratory component catalog"
 
-        - section: "Available pipelines"
+        - section: "Available pipeline"
           contents:
             - href: pipelines/cbc-demographics/index.qmd
-              text: "CBC and Demographic data"
+              text: "CBC and Demographics"
 
         - section: "Related foundations"
           contents:
             - href: foundations/data-structure.qmd
               text: "NHANES data structure"
-
             - href: foundations/survey-weights.qmd
               text: "Survey weights"
-
             - href: foundations/combining-cycles.qmd
               text: "Combining cycles"
 
     - id: tutorials
-      title: "Automated CBC and Demographic Data Pipeline"
+      title: "CBC and Demographics Tutorial"
       style: docked
       collapse-level: 2
-
       contents:
         - href: tutorial/index.qmd
-          text: "Course overview"
+          text: "Tutorial overview"
 
         - section: "Getting started"
           contents:
             - href: tutorial/01-welcome.qmd
               text: "Lesson 1: Welcome and course overview"
-
             - href: tutorial/02-install-r-vscode.qmd
               text: "Lesson 2: Install R and Visual Studio Code"
-
             - href: tutorial/03-create-project.qmd
               text: "Lesson 3: Create the R project"
-
             - href: tutorial/04-install-packages.qmd
               text: "Lesson 4: Install the required R packages"
-
             - href: tutorial/05-understand-nhanes.qmd
               text: "Lesson 5: Understand NHANES data"
 
@@ -214,13 +189,10 @@ website:
           contents:
             - href: tutorial/06-define-source-catalog.qmd
               text: "Lesson 6: Define the source-file catalog"
-
             - href: tutorial/07-download-one-file.qmd
               text: "Lesson 7: Download one NHANES file"
-
             - href: tutorial/08-download-all-files.qmd
               text: "Lesson 8: Download all required files"
-
             - href: tutorial/09-inspect-data.qmd
               text: "Lesson 9: Inspect the downloaded data"
 
@@ -228,19 +200,14 @@ website:
           contents:
             - href: tutorial/10-handle-duplicates.qmd
               text: "Lesson 10: Handle duplicate records"
-
             - href: tutorial/11-combine-components.qmd
               text: "Lesson 11: Combine files within components"
-
             - href: tutorial/12-merge-data.qmd
               text: "Lesson 12: Merge CBC and Demographic data"
-
             - href: tutorial/13-validate-results.qmd
               text: "Lesson 13: Validate the merged results"
-
             - href: tutorial/14-label-variables.qmd
               text: "Lesson 14: Create readable variable labels"
-
             - href: tutorial/15-save-outputs.qmd
               text: "Lesson 15: Save reusable outputs"
 
@@ -248,61 +215,31 @@ website:
           contents:
             - href: tutorial/16-analyze-hemoglobin.qmd
               text: "Lesson 16: Analyze hemoglobin data"
-
             - href: tutorial/17-create-graph.qmd
-              text: "Lesson 17: Create and save the figures"
+              text: "Lesson 17: Create and save the graph"
 
         - section: "Complete the course"
           contents:
             - href: tutorial/18-full-script.qmd
-              text: "Lesson 18: Run the automated pipeline"
-
+              text: "Lesson 18: Run the complete pipeline"
             - href: tutorial/19-troubleshooting.qmd
               text: "Lesson 19: Troubleshoot common problems"
-
             - href: tutorial/20-completion.qmd
               text: "Lesson 20: Completion and next steps"
 
   page-footer:
-    border: true
+    border: false
     background: "#041F30"
     foreground: light
 
-    left: >-
-      <div style="color: #ffffff !important; font-size: 0.82rem; line-height: 1.25;">
-        <div style="color: #ffffff !important; font-weight: 700; margin: 0 0 0.1rem 0;">
-          NHANES Laboratory Data with R
-        </div>
-        <div style="color: #ffffff !important; margin: 0 0 0.08rem 0;">
-          © 2026 Simon Aseno
-        </div>
-        <div style="color: #e2edf2 !important; margin: 0;">
-          Open-source project · MIT License
-        </div>
-      </div>
+    left: "© 2026 Simon Aseno · MIT licensed"
 
     center: >-
-      <div style="max-width: 620px; margin: 0 auto; color: #ffffff !important; text-align: center; font-size: 0.74rem; line-height: 1.35;">
-        <div style="color: #ffffff !important; font-weight: 600; margin: 0 0 0.25rem 0;">
-          Reproducible R workflows and free education for NHANES laboratory data.
-        </div>
-        <div style="color: #e2edf2 !important; margin: 0;">
-          This independent educational and open-source project is not affiliated
-          with, endorsed by, or an official publication of the Centers for Disease
-          Control and Prevention or the National Center for Health Statistics.
-          Project materials, interpretations, code, and any errors are the
-          responsibility of the author and do not represent the official views of
-          any employer, institution, government agency, or affiliated organization.
-        </div>
-      </div>
+      Reproducible R infrastructure for NHANES laboratory data.
 
     right:
-      - text: "GitHub"
+      - text: "Source"
         href: "https://github.com/simonaseno/NHANES"
-
-      - text: "MIT License"
-        href: "https://github.com/simonaseno/NHANES/blob/main/LICENSE"
-
       - text: "Report an issue"
         href: "https://github.com/simonaseno/NHANES/issues"
 

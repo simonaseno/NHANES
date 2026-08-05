@@ -1,0 +1,2479 @@
+---
+title: "Lesson 19: Troubleshoot Common Pipeline Problems"
+subtitle: "Diagnose download, import, merge, validation, figure, and Quarto errors systematically"
+description: "Use a structured troubleshooting workflow to identify and resolve common problems in the NHANES CBC and Demographic pipeline."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- distinguish an R pipeline error from a Quarto rendering error;
+- identify the first meaningful error message;
+- confirm that commands are being run from the project root;
+- diagnose package, path, download, and import failures;
+- investigate missing or duplicated participant keys;
+- diagnose row-binding and joining problems;
+- troubleshoot missing analytical variables;
+- troubleshoot figure-generation and figure-embedding problems;
+- inspect failed validation checks;
+- create a reproducible troubleshooting report;
+- know when to stop rather than forcing the pipeline to continue.
+:::
+
+## Why troubleshooting should be systematic
+
+A long analytical pipeline can fail for many reasons.
+
+The failure may involve:
+
+- the working directory;
+- a missing package;
+- a malformed source catalog;
+- an unavailable URL;
+- an incomplete download;
+- an invalid XPT file;
+- a missing variable;
+- duplicated keys;
+- incompatible variable classes;
+- an incorrect join;
+- a missing output directory;
+- a failed figure export;
+- a missing embedded image;
+- malformed Quarto YAML;
+- an invalid Markdown structure.
+
+Trying random fixes can make the problem harder to diagnose.
+
+A better approach is:
+
+```text
+Identify the first meaningful failure
+→ isolate the affected section
+→ inspect the relevant object or file
+→ correct the underlying cause
+→ restart from a clean session
+→ rerun the pipeline
+```
+
+## The most important troubleshooting rule
+
+::: {.callout-important icon="true"}
+## Fix the first error first
+
+Later errors are often consequences of the first failure.
+
+For example:
+
+1. a source file fails to download;
+2. the import object is not created;
+3. the combined dataset is incomplete;
+4. the merge fails;
+5. the figures are not produced;
+6. Quarto cannot find the PNG files.
+
+The original problem is the failed download, not the missing figure.
+:::
+
+# Distinguish the three systems
+
+This project uses three related but separate systems.
+
+## R analytical pipeline
+
+Run with:
+
+```bash
+Rscript nhanes_pipeline.R
+```
+
+This system:
+
+- downloads data;
+- imports XPT files;
+- validates records;
+- creates processed datasets;
+- generates tables;
+- generates figures.
+
+## Quarto website renderer
+
+Run with:
+
+```bash
+quarto render
+```
+
+This system:
+
+- reads `.qmd` files;
+- processes YAML;
+- converts lessons to HTML;
+- copies figures and supporting files;
+- builds the website.
+
+## Quarto preview server
+
+Run with:
+
+```bash
+quarto preview --port 7841
+```
+
+This system:
+
+- renders the site;
+- starts a local web server;
+- keeps running until stopped.
+
+A problem in one system does not automatically mean the other systems are broken.
+
+# Start with a clean diagnostic sequence
+
+From the project root, run these commands separately.
+
+## Confirm the current directory
+
+```bash
+pwd
+```
+
+The path should end with:
+
+```text
+NHANES
+```
+
+## Confirm the main files exist
+
+```bash
+ls -l nhanes_pipeline.R
+ls -l _quarto.yml
+ls -l tutorial/19-troubleshooting.qmd
+```
+
+## Check that R is available
+
+```bash
+Rscript --version
+```
+
+## Check that Quarto is available
+
+```bash
+quarto --version
+```
+
+## Parse the R script
+
+```bash
+Rscript -e 'parse(file = "nhanes_pipeline.R"); cat("R script parsed successfully.\n")'
+```
+
+## Check the Quarto project
+
+```bash
+quarto check
+```
+
+Do not run all commands in one pasted block when troubleshooting.
+
+Running them separately makes it easier to identify the failing command.
+
+# Problem 1: The command is running from the wrong directory
+
+## Typical messages
+
+```text
+cannot open file 'nhanes_pipeline.R'
+```
+
+```text
+No such file or directory
+```
+
+```text
+Catalog does not exist
+```
+
+```text
+The analysis-ready RDS file does not exist
+```
+
+## Diagnose
+
+Run:
+
+```bash
+pwd
+```
+
+List the directory:
+
+```bash
+ls
+```
+
+You should see files and folders such as:
+
+```text
+_quarto.yml
+nhanes_pipeline.R
+config
+data
+outputs
+tutorial
+```
+
+## Fix
+
+Change into the project directory:
+
+```bash
+cd /Users/major/Documents/GitHub/NHANES
+```
+
+Confirm:
+
+```bash
+pwd
+```
+
+Then rerun the failed command.
+
+## Why this happens
+
+Relative paths such as:
+
+```r
+file.path(
+  "data",
+  "processed",
+  "cbc_demographics_analysis_1999_2018.rds"
+)
+```
+
+are interpreted relative to the current working directory.
+
+# Problem 2: R cannot parse the script
+
+## Typical messages
+
+```text
+unexpected symbol
+```
+
+```text
+unexpected end of input
+```
+
+```text
+unexpected '}'
+```
+
+```text
+unexpected string constant
+```
+
+## Diagnose
+
+Run:
+
+```bash
+Rscript -e 'parse(file = "nhanes_pipeline.R")'
+```
+
+R will usually report the approximate line containing the syntax problem.
+
+Inspect the surrounding lines:
+
+```bash
+sed -n 'START_LINE,END_LINEp' nhanes_pipeline.R
+```
+
+Replace `START_LINE` and `END_LINE` with the relevant line range.
+
+For example:
+
+```bash
+sed -n '420,450p' nhanes_pipeline.R
+```
+
+## Common causes
+
+- missing closing parenthesis;
+- missing closing brace;
+- missing quotation mark;
+- extra comma;
+- incomplete pipe;
+- malformed function call;
+- Markdown code fences copied into the R script;
+- prose copied outside an R comment.
+
+## Check for Markdown fences
+
+Run:
+
+```bash
+grep -n '```' nhanes_pipeline.R
+```
+
+The R script should not contain Quarto code fences.
+
+## Fix
+
+Correct the structural syntax problem, save the file, and rerun:
+
+```bash
+Rscript -e 'parse(file = "nhanes_pipeline.R"); cat("R script parsed successfully.\n")'
+```
+
+# Problem 3: A required package is missing
+
+## Typical message
+
+```text
+there is no package called 'package_name'
+```
+
+## Diagnose one package
+
+For example:
+
+```bash
+Rscript -e 'cat(requireNamespace("haven", quietly = TRUE), "\n")'
+```
+
+Expected:
+
+```text
+TRUE
+```
+
+## Diagnose all pipeline packages
+
+Run:
+
+```bash
+Rscript -e 'packages <- c("dplyr","tidyr","purrr","readr","haven","stringr","tibble","ggplot2","digest","httr","scales"); print(data.frame(package = packages, installed = vapply(packages, requireNamespace, logical(1), quietly = TRUE)))'
+```
+
+## Fix
+
+Open R:
+
+```bash
+R
+```
+
+Install the missing package:
+
+```r
+install.packages(
+  "package_name"
+)
+```
+
+Exit R:
+
+```r
+q()
+```
+
+Then rerun the package check.
+
+::: {.callout-warning icon="true"}
+## Do not install packages repeatedly inside the production pipeline
+
+Package installation is an environment-setup task.
+
+The production pipeline should validate and load packages, not reinstall them every time it runs.
+:::
+
+# Problem 4: The source catalog is missing or malformed
+
+## Typical messages
+
+```text
+Catalog does not exist
+```
+
+```text
+Catalog is missing columns
+```
+
+```text
+Catalog dataset_id values must be unique
+```
+
+```text
+expected_rows must contain positive integers
+```
+
+```text
+Unsupported analysis_role in catalog
+```
+
+## Confirm the file exists
+
+```bash
+ls -l config/nhanes_files.csv
+```
+
+## Inspect the first lines
+
+```bash
+sed -n '1,10p' config/nhanes_files.csv
+```
+
+## Required catalog columns
+
+The header must include:
+
+```text
+dataset_id
+cycle
+cycle_start
+cycle_end
+component
+file_id
+exam
+analysis_role
+record_level
+merge_key
+expected_rows
+url
+```
+
+## Read and validate from R
+
+Run:
+
+```bash
+Rscript -e 'source("R/catalog.R"); catalog <- read_nhanes_catalog(); print(dim(catalog)); print(names(catalog))'
+```
+
+## Check duplicated dataset identifiers
+
+```bash
+Rscript -e 'x <- read.csv("config/nhanes_files.csv", check.names = FALSE); print(x[duplicated(x$dataset_id) | duplicated(x$dataset_id, fromLast = TRUE), ])'
+```
+
+## Check analytical roles
+
+```bash
+Rscript -e 'x <- read.csv("config/nhanes_files.csv", check.names = FALSE); print(table(x$analysis_role, useNA = "ifany"))'
+```
+
+Expected roles:
+
+```text
+primary
+supplementary
+```
+
+## Check source counts
+
+```bash
+Rscript -e 'x <- read.csv("config/nhanes_files.csv", check.names = FALSE); print(with(x, table(component, analysis_role)))'
+```
+
+The intended structure is:
+
+```text
+10 primary CBC sources
+1 supplementary CBC source
+10 primary Demographic sources
+```
+
+# Problem 5: A download fails
+
+## Typical messages
+
+```text
+HTTP request failed
+```
+
+```text
+Download failed
+```
+
+```text
+File size is zero
+```
+
+```text
+Source hash could not be calculated
+```
+
+## Inspect the acquisition manifest
+
+After a partial run, open:
+
+```text
+outputs/validation/acquisition_manifest.csv
+```
+
+From the terminal:
+
+```bash
+sed -n '1,30p' outputs/validation/acquisition_manifest.csv
+```
+
+## Identify failed sources in R
+
+```r
+failed_downloads <- acquisition_manifest |>
+  dplyr::filter(
+    status != "success"
+  )
+
+print(
+  failed_downloads,
+  n = Inf
+)
+```
+
+## Confirm internet access
+
+Test the official CDC host:
+
+```bash
+curl -I https://wwwn.cdc.gov/
+```
+
+## Inspect one URL
+
+Copy the exact URL from the catalog and run:
+
+```bash
+curl -I "PASTE_THE_EXACT_URL_HERE"
+```
+
+## Check the local file
+
+```bash
+ls -lh data/raw
+```
+
+A failed download may produce:
+
+- no file;
+- a zero-byte file;
+- a very small file;
+- an HTML error page saved with an `.xpt` extension.
+
+## Inspect file type
+
+```bash
+file data/raw/FILE_NAME.xpt
+```
+
+## Remove only the failed local file
+
+```bash
+rm data/raw/FILE_NAME.xpt
+```
+
+Then rerun the acquisition section or the complete pipeline.
+
+## Do not replace official URLs casually
+
+A changed URL should be verified against the intended source release before the catalog is modified.
+
+# Problem 6: An XPT file cannot be imported
+
+## Typical messages
+
+```text
+Failed to parse
+```
+
+```text
+Unable to read file
+```
+
+```text
+Invalid file format
+```
+
+```text
+Imported source contains no records
+```
+
+## Confirm that the file exists
+
+```bash
+ls -lh data/raw/FILE_NAME.xpt
+```
+
+## Inspect the file type
+
+```bash
+file data/raw/FILE_NAME.xpt
+```
+
+## Test the file directly in R
+
+```bash
+Rscript -e 'x <- haven::read_xpt("data/raw/FILE_NAME.xpt"); print(dim(x)); print(names(x)[1:10])'
+```
+
+## Common causes
+
+- incomplete download;
+- HTML response saved as XPT;
+- zero-byte file;
+- incorrect catalog URL;
+- corrupted local file;
+- file permission problem.
+
+## Fix
+
+Delete the affected local file and download it again.
+
+Do not edit the binary XPT file manually.
+
+# Problem 7: `SEQN` is missing
+
+## Typical message
+
+```text
+SEQN is missing from a source dataset
+```
+
+## Diagnose
+
+Inspect the variable names:
+
+```r
+names(
+  imported_data
+)
+```
+
+Search case-insensitively:
+
+```r
+grep(
+  "seqn",
+  names(
+    imported_data
+  ),
+  value = TRUE,
+  ignore.case = TRUE
+)
+```
+
+## Possible causes
+
+- the wrong source file was downloaded;
+- the source is not person-level;
+- the source schema differs from the catalog declaration;
+- an HTML file was imported incorrectly;
+- the column was renamed or removed earlier in the pipeline.
+
+## Do not create a fake `SEQN`
+
+The participant key must come from the official source data.
+
+If it is missing, investigate the source rather than generating one.
+
+# Problem 8: Duplicate participant keys are found
+
+## Typical messages
+
+```text
+The combined primary CBC dataset contains duplicate survey_cycle + SEQN keys
+```
+
+```text
+The merged dataset contains duplicate keys
+```
+
+```text
+Each survey cycle must have exactly one primary CBC source
+```
+
+## Identify the duplicated keys
+
+```r
+duplicate_keys <- data |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+
+print(
+  duplicate_keys,
+  n = Inf
+)
+```
+
+## Extract affected records
+
+```r
+duplicate_records <- data |>
+  dplyr::semi_join(
+    duplicate_keys,
+    by = c(
+      "survey_cycle",
+      "SEQN"
+    )
+  ) |>
+  dplyr::arrange(
+    survey_cycle,
+    SEQN
+  )
+
+print(
+  duplicate_records,
+  n = Inf
+)
+```
+
+## Check source provenance
+
+Inspect:
+
+```r
+duplicate_records |>
+  dplyr::count(
+    survey_cycle,
+    source_file_id,
+    source_exam,
+    analysis_role,
+    name = "records"
+  )
+```
+
+## Check whether `L25_2_B` entered the primary stack
+
+```r
+"L25_2_B" %in%
+  unique(
+    cbc_primary_1999_2018$source_file_id
+  )
+```
+
+Expected:
+
+```text
+[1] FALSE
+```
+
+## Do not fix with arbitrary deduplication
+
+Avoid:
+
+```r
+dplyr::distinct(
+  survey_cycle,
+  SEQN,
+  .keep_all = TRUE
+)
+```
+
+The correct response depends on whether the repeated records are:
+
+- exact duplicates;
+- repeat examinations;
+- complementary records;
+- conflicting values;
+- incorrectly combined sources.
+
+# Problem 9: `bind_rows()` reports incompatible types
+
+## Typical message
+
+```text
+Can't combine column_name <double> and column_name <character>
+```
+
+## Diagnose the variable class by source
+
+```r
+purrr::imap_dfr(
+  primary_cbc_sources,
+  function(
+      data,
+      dataset_id) {
+
+    tibble::tibble(
+      dataset_id = dataset_id,
+      variable_class = paste(
+        class(
+          data$VARIABLE_NAME
+        ),
+        collapse = "; "
+      )
+    )
+  }
+)
+```
+
+Replace:
+
+```text
+VARIABLE_NAME
+```
+
+with the actual failing variable.
+
+## Inspect values
+
+```r
+purrr::imap(
+  primary_cbc_sources,
+  function(
+      data,
+      dataset_id) {
+
+    list(
+      dataset_id = dataset_id,
+      values = unique(
+        data$VARIABLE_NAME
+      )
+    )
+  }
+)
+```
+
+## Possible causes
+
+- one cycle stores the variable as character;
+- another stores it as numeric;
+- one source contains labelled numeric data;
+- a local transformation changed one source;
+- a metadata column was created inconsistently.
+
+## Fix only after reviewing meaning
+
+A conversion such as:
+
+```r
+as.numeric()
+```
+
+is appropriate only when the source values are genuinely numeric and the conversion is scientifically justified.
+
+Do not coerce incompatible variables merely to silence the error.
+
+# Problem 10: The combined row count is incorrect
+
+## Typical message
+
+```text
+Combined CBC row count does not equal the sum of its sources
+```
+
+## Calculate source rows
+
+```r
+source_row_counts <- purrr::imap_dfr(
+  primary_cbc_sources,
+  function(
+      data,
+      dataset_id) {
+
+    tibble::tibble(
+      dataset_id = dataset_id,
+      rows = nrow(
+        data
+      )
+    )
+  }
+)
+```
+
+Inspect:
+
+```r
+print(
+  source_row_counts,
+  n = Inf
+)
+```
+
+Calculate total:
+
+```r
+sum(
+  source_row_counts$rows
+)
+```
+
+Compare with:
+
+```r
+nrow(
+  cbc_primary_1999_2018
+)
+```
+
+## Possible causes
+
+- a source was omitted;
+- a source was included twice;
+- filtering occurred before binding;
+- the wrong source list was used;
+- a supplementary source entered the primary list;
+- a source object was overwritten.
+
+# Problem 11: The join multiplies rows
+
+## Typical message
+
+```text
+Each row in x is expected to match at most 1 row in y
+```
+
+or the merged row count is larger than the CBC row count.
+
+## Check CBC key uniqueness
+
+```r
+cbc_premerge_duplicate_keys <-
+  cbc_primary_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+## Check Demographic key uniqueness
+
+```r
+demographic_premerge_duplicate_keys <-
+  demographics_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Inspect both:
+
+```r
+print(
+  cbc_premerge_duplicate_keys,
+  n = Inf
+)
+```
+
+```r
+print(
+  demographic_premerge_duplicate_keys,
+  n = Inf
+)
+```
+
+## Confirm the join key
+
+The intended join key is:
+
+```r
+c(
+  "survey_cycle",
+  "SEQN"
+)
+```
+
+## Confirm the relationship
+
+Use:
+
+```r
+relationship = "one-to-one"
+```
+
+This causes the join to fail when the uniqueness assumption is violated.
+
+## Do not remove the relationship declaration
+
+The declaration is a protective validation feature.
+
+It should not be removed merely to make the join run.
+
+# Problem 12: Non-key columns overlap before the join
+
+## Typical message
+
+```text
+Unresolved non-key column-name overlaps remain
+```
+
+## Identify the overlaps
+
+```r
+overlapping_nonkey_columns <- intersect(
+  setdiff(
+    names(
+      cbc_for_merge
+    ),
+    merge_key
+  ),
+  setdiff(
+    names(
+      demographics_for_merge
+    ),
+    merge_key
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  overlapping_nonkey_columns
+)
+```
+
+## Fix
+
+Determine whether each overlap represents:
+
+- the same variable from two components;
+- different variables with the same name;
+- duplicated provenance metadata;
+- an accidental local column.
+
+Rename component-specific provenance columns before joining.
+
+Do not accept automatic suffixes without understanding the conflict.
+
+# Problem 13: A required analysis variable is missing
+
+## Typical message
+
+```text
+The final dataset is missing required analytical variables
+```
+
+## Check available variables
+
+```r
+names(
+  cbc_demographics_labelled
+)
+```
+
+Search for a name fragment:
+
+```r
+grep(
+  "HGB",
+  names(
+    cbc_demographics_labelled
+  ),
+  value = TRUE,
+  ignore.case = TRUE
+)
+```
+
+## Trace the variable through each stage
+
+Check the imported CBC sources:
+
+```r
+purrr::imap_dfr(
+  primary_cbc_sources,
+  function(
+      data,
+      dataset_id) {
+
+    tibble::tibble(
+      dataset_id = dataset_id,
+      variable_present =
+        "LBXHGB" %in%
+          names(
+            data
+          )
+    )
+  }
+)
+```
+
+Check the combined CBC dataset:
+
+```r
+"LBXHGB" %in%
+  names(
+    cbc_primary_1999_2018
+  )
+```
+
+Check the merged dataset:
+
+```r
+"LBXHGB" %in%
+  names(
+    cbc_demographics_1999_2018
+  )
+```
+
+## Possible causes
+
+- the variable does not exist in one or more source cycles;
+- the wrong CBC file was used;
+- the variable was renamed;
+- it was removed during `select()`;
+- a join conflict changed its name;
+- a source schema changed.
+
+# Problem 14: Variable labels disappeared
+
+## Typical symptom
+
+```r
+attr(
+  data$LBXHGB,
+  "label"
+)
+```
+
+returns:
+
+```text
+NULL
+```
+
+## Possible causes
+
+- the dataset was exported to CSV and reloaded;
+- a transformation removed attributes;
+- the variable was recreated;
+- a conversion stripped the label.
+
+## Check the RDS file
+
+```r
+rds_data <- readRDS(
+  "data/processed/cbc_demographics_labelled_1999_2018.rds"
+)
+```
+
+```r
+attr(
+  rds_data$LBXHGB,
+  "label"
+)
+```
+
+## Remember
+
+CSV does not preserve R variable-label attributes.
+
+Use:
+
+- RDS for analytical metadata;
+- CSV for portability;
+- the variable dictionary for documentation.
+
+# Problem 15: A factor contains missing values unexpectedly
+
+## Typical symptom
+
+A recoded variable such as:
+
+```text
+sex
+```
+
+or:
+
+```text
+survey_cycle_factor
+```
+
+contains `NA` even when the source variable is present.
+
+## Inspect the original and recoded values
+
+```r
+data |>
+  dplyr::count(
+    RIAGENDR,
+    sex,
+    .drop = FALSE,
+    name = "records"
+  )
+```
+
+For cycles:
+
+```r
+data |>
+  dplyr::count(
+    survey_cycle,
+    survey_cycle_factor,
+    .drop = FALSE,
+    name = "records"
+  )
+```
+
+## Possible causes
+
+- a source code was omitted from the factor levels;
+- a label was misspelled;
+- whitespace is present;
+- the factor level order is incomplete;
+- the source code differs from the expected coding.
+
+## Do not replace unexpected values silently
+
+Inspect and document them before changing the recode.
+
+# Problem 16: A validation check fails
+
+## Typical message
+
+```text
+Final validation failed
+```
+
+```text
+Hemoglobin figure-data validation failed
+```
+
+```text
+Complete pipeline validation failed
+```
+
+## Inspect the saved validation table
+
+For example:
+
+```bash
+cat outputs/validation/complete_pipeline_validation.csv
+```
+
+Or in R:
+
+```r
+validation_results <- readr::read_csv(
+  "outputs/validation/complete_pipeline_validation.csv",
+  show_col_types = FALSE
+)
+```
+
+```r
+validation_results |>
+  dplyr::filter(
+    !passed
+  )
+```
+
+## Investigate the named check
+
+Each validation row corresponds to a specific expectation.
+
+Examples:
+
+```text
+Final composite key is unique
+```
+
+Investigate duplicate keys.
+
+```text
+All ten expected cycles are present
+```
+
+Investigate source coverage.
+
+```text
+All expected figure files exist
+```
+
+Investigate figure creation or export.
+
+## Do not change `FALSE` to `TRUE`
+
+Validation results must reflect the data.
+
+Fix the underlying problem rather than editing the validation table.
+
+# Problem 17: The hemoglobin summary contains `NaN` or `Inf`
+
+## Typical symptom
+
+Summary columns contain:
+
+```text
+NaN
+Inf
+-Inf
+```
+
+## Diagnose
+
+Check group sizes:
+
+```r
+hemoglobin_by_cycle_and_sex |>
+  dplyr::select(
+    survey_cycle,
+    sex,
+    records,
+    nonmissing_hemoglobin
+  )
+```
+
+Check nonfinite values:
+
+```r
+hemoglobin_by_cycle_and_sex |>
+  dplyr::filter(
+    !is.finite(
+      mean_hemoglobin
+    ) |
+      !is.finite(
+        standard_deviation
+      ) |
+      !is.finite(
+        standard_error
+      )
+  )
+```
+
+## Possible causes
+
+- a group contains no nonmissing values;
+- a group contains only one observation;
+- the wrong object was summarized;
+- missing values were not handled;
+- a calculation divided by zero.
+
+## Fix
+
+Use the safe summary function from Lesson 16.
+
+Do not replace nonfinite results with zero unless zero is scientifically correct.
+
+# Problem 18: Figure 1 does not display both groups correctly
+
+## Typical symptoms
+
+- one line is missing;
+- both lines have the same color;
+- points do not align with intervals;
+- the legend is duplicated;
+- the order is incorrect.
+
+## Inspect factor levels
+
+```r
+levels(
+  hemoglobin_trend_figure_data$sex
+)
+```
+
+Expected:
+
+```text
+Male
+Female
+```
+
+## Check group counts
+
+```r
+hemoglobin_trend_figure_data |>
+  dplyr::count(
+    survey_cycle,
+    sex,
+    name = "rows"
+  )
+```
+
+## Check the palette names
+
+```r
+hemoglobin_palette
+```
+
+The names must match the factor labels exactly:
+
+```r
+c(
+  "Male" = "#0072B2",
+  "Female" = "#D55E00"
+)
+```
+
+## Confirm grouping
+
+The main mapping should include:
+
+```r
+group = sex
+```
+
+## Confirm color and shape scales
+
+The manual scales must use the same group names as the data.
+
+# Problem 19: The figure annotation overlaps the data
+
+## Diagnose the annotation position
+
+Inspect:
+
+```r
+trend_annotation_x
+```
+
+```r
+trend_annotation_y
+```
+
+Inspect the plotted means and intervals:
+
+```r
+hemoglobin_trend_figure_data |>
+  dplyr::arrange(
+    dplyr::desc(
+      upper_descriptive_95
+    )
+  )
+```
+
+## Fix
+
+Move the annotation to a region with less data.
+
+For example:
+
+```r
+trend_annotation_x <- 1
+```
+
+or:
+
+```r
+trend_annotation_x <- 6
+```
+
+Adjust vertical placement:
+
+```r
+trend_annotation_y <-
+  trend_y_axis_upper -
+    0.02 *
+      (
+        trend_y_axis_upper -
+          trend_y_axis_lower
+      )
+```
+
+Keep the warning inside the visible plotting area.
+
+# Problem 20: The figure scale hides intervals
+
+## Typical message
+
+```text
+The selected y-axis scale excludes one or more trend intervals
+```
+
+## Diagnose
+
+Run:
+
+```r
+hemoglobin_trend_figure_data |>
+  dplyr::summarise(
+    minimum_interval =
+      min(
+        lower_descriptive_95,
+        na.rm = TRUE
+      ),
+    maximum_interval =
+      max(
+        upper_descriptive_95,
+        na.rm = TRUE
+      )
+  )
+```
+
+Compare with:
+
+```r
+trend_y_axis_lower
+```
+
+```r
+trend_y_axis_upper
+```
+
+## Fix
+
+Recalculate the scale using the Lesson 16 code.
+
+Do not use `ylim()` to remove values.
+
+Use:
+
+```r
+ggplot2::coord_cartesian(
+  ylim = c(
+    trend_y_axis_lower,
+    trend_y_axis_upper
+  )
+)
+```
+
+only when the limits contain every plotted mean and interval.
+
+# Problem 21: `ggsave()` fails
+
+## Typical messages
+
+```text
+cannot open file
+```
+
+```text
+failed to load cairo DLL
+```
+
+```text
+Unknown graphics device
+```
+
+```text
+Directory does not exist
+```
+
+## Confirm the directory
+
+```bash
+ls -ld outputs/figures
+```
+
+Create it if missing:
+
+```bash
+mkdir -p outputs/figures
+```
+
+## Test a PNG export
+
+```r
+ggplot2::ggsave(
+  filename = file.path(
+    "outputs",
+    "figures",
+    "test_figure.png"
+  ),
+  plot = hemoglobin_trend_plot,
+  width = 8,
+  height = 5,
+  units = "in",
+  dpi = 150,
+  bg = "white"
+)
+```
+
+## Test SVG support
+
+```r
+ggplot2::ggsave(
+  filename = file.path(
+    "outputs",
+    "figures",
+    "test_figure.svg"
+  ),
+  plot = hemoglobin_trend_plot,
+  width = 8,
+  height = 5,
+  units = "in",
+  device = "svg",
+  bg = "white"
+)
+```
+
+## Cairo PDF problem
+
+When this fails:
+
+```r
+device = grDevices::cairo_pdf
+```
+
+test the default PDF device:
+
+```r
+ggplot2::ggsave(
+  filename = file.path(
+    "outputs",
+    "figures",
+    "test_figure.pdf"
+  ),
+  plot = hemoglobin_trend_plot,
+  width = 8,
+  height = 5,
+  units = "in",
+  device = "pdf",
+  bg = "white"
+)
+```
+
+Use the default PDF device only after confirming that the exported result is acceptable.
+
+# Problem 22: The PNG exists but Lesson 17 does not show it
+
+## Confirm the file exists
+
+```bash
+ls -lh outputs/figures/figure_1_hemoglobin_mean_trend.png
+```
+
+## Confirm the path used in Lesson 17
+
+Because Lesson 17 is inside:
+
+```text
+tutorial/
+```
+
+the image path is:
+
+```markdown
+../outputs/figures/figure_1_hemoglobin_mean_trend.png
+```
+
+## Inspect the exact reference
+
+```bash
+grep -n 'figure_1_hemoglobin_mean_trend.png' tutorial/17-create-graph.qmd
+```
+
+## Confirm filename case
+
+These are different on case-sensitive systems:
+
+```text
+Figure_1_Hemoglobin_Mean_Trend.png
+figure_1_hemoglobin_mean_trend.png
+```
+
+The filename in the Markdown must match exactly.
+
+## Confirm the PNG is valid
+
+```bash
+file outputs/figures/figure_1_hemoglobin_mean_trend.png
+```
+
+## Open it directly
+
+```bash
+open outputs/figures/figure_1_hemoglobin_mean_trend.png
+```
+
+If it opens correctly, the remaining issue is probably the Quarto path or render.
+
+# Problem 23: Quarto cannot find an image
+
+## Typical message
+
+```text
+File not found
+```
+
+```text
+Unable to resolve image
+```
+
+## Diagnose all Lesson 17 image references
+
+```bash
+grep -n '../outputs/figures/' tutorial/17-create-graph.qmd
+```
+
+Confirm every referenced file exists:
+
+```bash
+ls -lh outputs/figures
+```
+
+## Correct sequence
+
+Run:
+
+```bash
+Rscript nhanes_pipeline.R
+```
+
+Confirm the PNG files.
+
+Then run:
+
+```bash
+quarto render
+```
+
+The website renderer does not automatically create the analytical figures.
+
+# Problem 24: Quarto reports malformed YAML
+
+## Typical messages
+
+```text
+YAML parse error
+```
+
+```text
+mapping values are not allowed
+```
+
+```text
+did not find expected key
+```
+
+## Inspect the top of the lesson
+
+```bash
+sed -n '1,20p' tutorial/FILE_NAME.qmd
+```
+
+The front matter should begin with:
+
+```yaml
+---
+title: "Lesson title"
+subtitle: "Lesson subtitle"
+description: "Lesson description"
+sidebar: tutorials
+format: html
+---
+```
+
+## Common causes
+
+- missing opening or closing `---`;
+- tabs instead of spaces;
+- unmatched quotation marks;
+- incorrect indentation;
+- a colon in unquoted text;
+- an outer Markdown code fence around the file content.
+
+## Test one lesson
+
+```bash
+quarto render tutorial/FILE_NAME.qmd
+```
+
+Do this only after all required embedded images exist.
+
+# Problem 25: Quarto reports a missing HTML file during project render
+
+## Typical message
+
+```text
+No such file or directory: rename 'tutorial/FILE.html' -> '_site/tutorial/FILE.html'
+```
+
+## Possible causes
+
+- the source file is not producing HTML;
+- the YAML requests a different format;
+- the document is malformed;
+- the file is wrapped in an outer code fence;
+- the source filename differs from the sidebar path;
+- hidden characters are present in the filename.
+
+## Inspect the file
+
+```bash
+sed -n '1,30p' tutorial/FILE.qmd
+```
+
+Inspect the ending:
+
+```bash
+tail -n 20 tutorial/FILE.qmd
+```
+
+Confirm the exact filename:
+
+```bash
+ls -lb tutorial
+```
+
+## Confirm HTML format
+
+The YAML should include:
+
+```yaml
+format: html
+```
+
+## Test the file alone
+
+```bash
+quarto render tutorial/FILE.qmd --to html
+```
+
+## Do not continue full rendering yet
+
+During the lesson-development stage, finish the remaining lesson files first.
+
+After all lessons are complete, test individual problem files and then run the complete render.
+
+# Problem 26: Port 7841 is already in use
+
+## Typical message
+
+```text
+Address already in use
+```
+
+## Identify the process
+
+```bash
+lsof -i :7841
+```
+
+## Stop the existing process
+
+```bash
+lsof -ti tcp:7841 | xargs kill -9 2>/dev/null || true
+```
+
+Start preview again:
+
+```bash
+quarto preview --port 7841
+```
+
+Leave that terminal window open.
+
+## Why the browser shows connection refused
+
+The preview server stops when:
+
+- the terminal is closed;
+- the process is interrupted;
+- Quarto exits after an error;
+- the computer sleeps;
+- another command kills the process.
+
+`quarto render` does not keep a preview server running.
+
+# Problem 27: The site uses old cached output
+
+## Symptoms
+
+- changes do not appear;
+- old text remains;
+- an old figure is displayed;
+- deleted pages still appear.
+
+## Clear Quarto build artifacts
+
+From the project root:
+
+```bash
+rm -rf .quarto
+rm -rf _site
+```
+
+Then render:
+
+```bash
+quarto render
+```
+
+Do this only after the lesson files and required figures are complete.
+
+## Browser cache
+
+Use a hard refresh:
+
+```text
+Command + Shift + R
+```
+
+Or open the page in a private browser window.
+
+# Problem 28: The landing page design changes unexpectedly
+
+## Likely cause
+
+A sitewide CSS rule affects:
+
+- headings;
+- paragraphs;
+- cards;
+- navigation;
+- layout;
+- page width.
+
+## Diagnose modified files
+
+```bash
+git status
+```
+
+Inspect CSS changes:
+
+```bash
+git diff -- styles.css
+```
+
+Inspect Quarto configuration changes:
+
+```bash
+git diff -- _quarto.yml
+```
+
+## Principle
+
+Changes intended for tutorial pages should not alter the landing page unless that effect is intentional.
+
+Avoid broad selectors such as:
+
+```css
+h1
+p
+main
+section
+```
+
+when only one content area should change.
+
+# Problem 29: The pipeline works interactively but fails with `Rscript`
+
+## Cause
+
+The interactive R session may already contain:
+
+- loaded packages;
+- helper functions;
+- imported data;
+- intermediate objects;
+- variables created during testing.
+
+## Diagnose
+
+Restart R and run:
+
+```bash
+Rscript nhanes_pipeline.R
+```
+
+## Fix
+
+Ensure the script itself:
+
+- loads every required package;
+- sources every helper file;
+- creates every directory;
+- reads every configuration file;
+- creates every required object;
+- does not rely on the Global Environment.
+
+# Problem 30: Output files exist but are empty
+
+## Diagnose
+
+```bash
+find data/processed outputs -type f -size 0 -print
+```
+
+## Inspect one file
+
+```bash
+ls -lh PATH_TO_FILE
+```
+
+## Possible causes
+
+- export failed partway;
+- the source object was empty;
+- a connection was interrupted;
+- a placeholder file was created;
+- the process stopped before writing finished.
+
+## Fix
+
+Investigate the object before exporting:
+
+```r
+dim(
+  object_name
+)
+```
+
+```r
+dplyr::glimpse(
+  object_name
+)
+```
+
+Delete the empty output and rerun the responsible section.
+
+# Problem 31: A CSV reload changes variable classes
+
+## Symptom
+
+Factors become character after reading CSV.
+
+## Explanation
+
+CSV does not preserve:
+
+- factors;
+- ordered factors;
+- labels;
+- dates without parsing instructions;
+- other R attributes.
+
+## Use the RDS output
+
+```r
+analysis_data <- readRDS(
+  "data/processed/cbc_demographics_analysis_1999_2018.rds"
+)
+```
+
+Use the CSV only when portability is more important than preserving R metadata.
+
+# Problem 32: The full pipeline takes too long
+
+## Diagnose execution time
+
+Inspect:
+
+```text
+outputs/validation/complete_pipeline_run_summary.csv
+```
+
+Check file sizes:
+
+```bash
+du -sh data/raw
+du -sh data/processed
+du -sh outputs
+```
+
+## Potential causes
+
+- repeated downloads;
+- repeated hashing of large outputs;
+- repeated CSV exports;
+- high-resolution figure exports;
+- running from a network-synchronized folder;
+- antivirus or cloud backup scanning;
+- low available memory.
+
+## Safe improvements
+
+- reuse validated local raw files;
+- avoid rerunning during lesson writing;
+- debug one section at a time;
+- retain RDS files for faster reload;
+- run the complete pipeline only after changes are finalized.
+
+Do not remove scientific validation merely to reduce runtime.
+
+# Problem 33: The pipeline stops because one output manifest includes itself
+
+## Why this can happen
+
+If `output_manifest.csv` already exists before the file list is created, the manifest may include the previous version of itself.
+
+When rewritten, its hash and file size change.
+
+## Safer approach
+
+Exclude the manifest file from its own input list:
+
+```r
+output_manifest_path <- file.path(
+  "outputs",
+  "validation",
+  "output_manifest.csv"
+)
+```
+
+```r
+manifest_files <- setdiff(
+  manifest_files,
+  output_manifest_path
+)
+```
+
+Then create and save the manifest.
+
+This prevents self-referential output metadata.
+
+# Problem 34: A graph label is clipped
+
+## Symptoms
+
+- caption text is cut off;
+- the annotation is partly outside the figure;
+- axis labels are truncated;
+- the legend is clipped.
+
+## Fixes
+
+Increase export dimensions:
+
+```r
+width = 11
+height = 7.2
+```
+
+Increase margins:
+
+```r
+plot.margin = ggplot2::margin(
+  t = 16,
+  r = 24,
+  b = 18,
+  l = 20
+)
+```
+
+Use:
+
+```r
+clip = "off"
+```
+
+inside:
+
+```r
+ggplot2::coord_cartesian()
+```
+
+Shorten overly long annotations when necessary.
+
+# Problem 35: The figure colors are not distinct enough
+
+## Confirm group mappings
+
+```r
+hemoglobin_palette
+```
+
+Current palette:
+
+```r
+c(
+  "Male" = "#0072B2",
+  "Female" = "#D55E00"
+)
+```
+
+## Additional protection
+
+The principal trend figure also uses:
+
+```text
+Male = circle
+Female = triangle
+```
+
+Do not depend on color alone.
+
+## Check grayscale readability
+
+Export the figure and inspect it in grayscale before manuscript submission.
+
+# Problem 36: The figure is visually polished but scientifically incomplete
+
+This is not a software error.
+
+The figures remain unweighted.
+
+Before using the principal trend as a national NHANES estimate, the analysis requires:
+
+- the correct survey weight;
+- cycle-combination weight adjustment;
+- `SDMVSTRA`;
+- `SDMVPSU`;
+- complex-survey estimation;
+- analysis-specific eligibility;
+- method-comparability review.
+
+A professional theme cannot replace correct inferential methods.
+
+# Create a troubleshooting report
+
+When a problem cannot be solved immediately, record it systematically.
+
+Add this helper function to a temporary diagnostic script:
+
+```r
+create_troubleshooting_record <- function(
+    section,
+    error_message,
+    suspected_cause = NA_character_,
+    action_taken = NA_character_,
+    resolved = FALSE) {
+
+  tibble::tibble(
+    recorded_at_utc = format(
+      Sys.time(),
+      tz = "UTC",
+      usetz = TRUE
+    ),
+    section = section,
+    error_message = error_message,
+    suspected_cause = suspected_cause,
+    action_taken = action_taken,
+    resolved = resolved
+  )
+}
+```
+
+Create a record:
+
+```r
+troubleshooting_record <-
+  create_troubleshooting_record(
+    section =
+      "Source acquisition",
+    error_message =
+      "Download failed for one source file",
+    suspected_cause =
+      "Incomplete network response",
+    action_taken =
+      "Deleted the incomplete file and repeated the download",
+    resolved =
+      TRUE
+  )
+```
+
+Save it:
+
+```r
+readr::write_csv(
+  troubleshooting_record,
+  file.path(
+    "outputs",
+    "validation",
+    "troubleshooting_record.csv"
+  )
+)
+```
+
+# Capture a failing pipeline log
+
+Run:
+
+```bash
+Rscript nhanes_pipeline.R 2>&1 | tee outputs/validation/failed_pipeline_console.log
+```
+
+The log preserves:
+
+- messages;
+- warnings;
+- errors;
+- the point where execution stopped.
+
+Inspect the end:
+
+```bash
+tail -n 50 outputs/validation/failed_pipeline_console.log
+```
+
+Search for errors:
+
+```bash
+grep -n -i 'error' outputs/validation/failed_pipeline_console.log
+```
+
+Search for warnings:
+
+```bash
+grep -n -i 'warning' outputs/validation/failed_pipeline_console.log
+```
+
+# Minimal information to collect before asking for help
+
+Provide:
+
+1. the exact command you ran;
+2. the complete first error message;
+3. the last 30–50 lines of terminal output;
+4. the section of the pipeline where it failed;
+5. the result of `pwd`;
+6. the result of `Rscript --version`;
+7. the result of `quarto --version` when relevant;
+8. the relevant file path;
+9. whether the pipeline was run from a clean session;
+10. whether the problem is reproducible.
+
+Avoid reporting only:
+
+```text
+It does not work.
+```
+
+The exact error usually contains the best diagnostic clue.
+
+# A disciplined recovery workflow
+
+Use this sequence after a failure.
+
+## Step 1
+
+Stop running later sections.
+
+## Step 2
+
+Save the complete console output.
+
+## Step 3
+
+Identify the first meaningful error.
+
+## Step 4
+
+Confirm the working directory.
+
+## Step 5
+
+Confirm the relevant input file or object exists.
+
+## Step 6
+
+Inspect dimensions, names, classes, and key counts.
+
+## Step 7
+
+Correct the underlying cause.
+
+## Step 8
+
+Restart from a clean R process.
+
+## Step 9
+
+Rerun the complete pipeline.
+
+## Step 10
+
+Confirm all validations pass before rendering the website.
+
+# What not to do
+
+Do not:
+
+- delete records without understanding them;
+- remove validation checks merely to continue;
+- convert every variable to character;
+- use `distinct()` as a universal duplicate fix;
+- join without key validation;
+- edit binary XPT files;
+- treat warnings as harmless automatically;
+- rename files without updating references;
+- change figure paths without checking Quarto location;
+- render the website before required figures exist;
+- describe unweighted results as national estimates.
+
+# Final troubleshooting checklist
+
+Before concluding that the pipeline is broken, confirm:
+
+- [ ] You are in the project root.
+- [ ] `nhanes_pipeline.R` exists.
+- [ ] The R script parses.
+- [ ] Required packages are installed.
+- [ ] The catalog exists and validates.
+- [ ] Source URLs are present.
+- [ ] Raw files exist and are not empty.
+- [ ] XPT files can be imported.
+- [ ] Every source contains `SEQN`.
+- [ ] Supplementary CBC records remain separate.
+- [ ] Primary source counts are correct.
+- [ ] Variable classes are compatible.
+- [ ] Component row counts reconcile.
+- [ ] Merge keys are unique.
+- [ ] The merge preserves CBC rows.
+- [ ] Required analysis variables exist.
+- [ ] Factor recodes are complete.
+- [ ] Validation failures were investigated.
+- [ ] Figure data contain complete finite values.
+- [ ] Figure scales include all intervals.
+- [ ] Figure directories exist.
+- [ ] PNG, PDF, and SVG exports succeed.
+- [ ] Lesson 17 paths match generated filenames.
+- [ ] Required PNG files exist before Quarto rendering.
+- [ ] Quarto YAML is valid.
+- [ ] The preview port is available.
+- [ ] Cached site output was cleared only when appropriate.
+- [ ] The first meaningful error was fixed before later errors.
+
+# Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why should the first meaningful error be fixed before later errors?
+
+Later failures are often consequences of an earlier problem. Fixing the original failure may resolve several downstream errors automatically.
+:::
+
+::: {.callout-note collapse="true"}
+## Why should duplicate keys not be resolved automatically with `distinct()`?
+
+Repeated keys can represent repeat examinations, complementary records, exact duplicates, or conflicting observations. Their meaning must be investigated before records are removed.
+:::
+
+::: {.callout-note collapse="true"}
+## Why might a PNG open correctly but fail to appear in Lesson 17?
+
+The image path in the Quarto file may be incorrect, the filename may differ in capitalization, or the site may not have been rendered after the image was created.
+:::
+
+::: {.callout-note collapse="true"}
+## Why can a script work interactively but fail with `Rscript`?
+
+The interactive session may contain packages, functions, or objects that the script did not create itself. A clean `Rscript` run exposes those hidden dependencies.
+:::
+
+::: {.callout-note collapse="true"}
+## Should a failed validation check be removed to allow the pipeline to finish?
+
+No. The failed check identifies an unmet analytical or structural expectation. The underlying cause should be investigated and corrected.
+:::
+
+# Lesson summary
+
+You have learned how to:
+
+- distinguish R, Quarto rendering, and preview-server problems;
+- diagnose working-directory and syntax errors;
+- investigate package, catalog, download, and import failures;
+- troubleshoot duplicate keys, row binding, and joins;
+- trace missing variables through the pipeline;
+- inspect failed validation checks;
+- diagnose figure, export, scale, and embedding problems;
+- capture reproducible error logs;
+- create structured troubleshooting records;
+- recover from failures without compromising scientific integrity.
+
+[Continue to Lesson 20: Complete the tutorial](20-completion.qmd){.button .button-primary}

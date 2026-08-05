@@ -1,0 +1,2438 @@
+---
+title: "Lesson 16: Analyze and Prepare Hemoglobin Data for Visualization"
+subtitle: "Create descriptive summaries, distribution data, record counts, and missingness tables for professional figures"
+description: "Analyze hemoglobin across NHANES survey cycles and prepare validated datasets for four publication-style visualizations."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- load the saved analysis-ready dataset;
+- define the hemoglobin analytical population;
+- document inclusion and exclusion criteria;
+- summarize hemoglobin overall;
+- summarize hemoglobin by survey cycle and sex;
+- calculate descriptive intervals around unweighted means;
+- prepare participant-level data for a distribution figure;
+- prepare analytical record counts by cycle and sex;
+- summarize hemoglobin missingness by cycle and sex;
+- create scale recommendations for the principal trend figure;
+- validate every visualization dataset;
+- save the tables required for Lesson 17.
+:::
+
+## What this lesson prepares
+
+Lesson 17 will use the outputs from this lesson to create four figures:
+
+1. **Mean hemoglobin trend by survey cycle and sex**
+2. **Hemoglobin distribution by survey cycle and sex**
+3. **Analytical record counts by survey cycle and sex**
+4. **Hemoglobin missingness by survey cycle and sex**
+
+The first figure will be the principal result.
+
+The remaining figures will help learners evaluate:
+
+- the underlying distribution;
+- the number of records contributing to each mean;
+- whether missingness changes across cycles;
+- whether a mean-only figure hides important information.
+
+## Important statistical scope
+
+All summaries in this lesson are:
+
+```text
+unweighted descriptive summaries
+```
+
+They describe the analytical records in the dataset.
+
+They are not automatically nationally representative.
+
+Formal NHANES population estimates require:
+
+- the appropriate examination or subsample weight;
+- `SDMVSTRA`;
+- `SDMVPSU`;
+- correct multi-cycle weight construction;
+- complex-survey variance estimation.
+
+::: {.callout-warning icon="true"}
+## Do not describe these results as national estimates
+
+The analyses in this lesson are designed to demonstrate the completed data pipeline and prepare professional exploratory figures.
+
+They should be described as:
+
+```text
+unweighted descriptive summaries of the analytical records
+```
+
+They should not be described as:
+
+```text
+nationally representative hemoglobin estimates
+```
+:::
+
+## Where you are in the workflow
+
+You previously created and saved:
+
+```text
+data/processed/cbc_demographics_analysis_1999_2018.rds
+```
+
+The file contains:
+
+- survey cycle;
+- participant identifier;
+- hemoglobin;
+- coded sex;
+- readable sex;
+- Demographic merge status;
+- masked variance strata;
+- masked primary sampling units;
+- available weight variables.
+
+## Add the analysis section
+
+Add this below the reusable-output section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 14: ANALYZE AND PREPARE HEMOGLOBIN DATA
+# ============================================================
+```
+
+## Load the saved analysis dataset
+
+Define the path:
+
+```r
+analysis_data_path <- file.path(
+  "data",
+  "processed",
+  "cbc_demographics_analysis_1999_2018.rds"
+)
+```
+
+Confirm that the file exists:
+
+```r
+if (
+  !file.exists(
+    analysis_data_path
+  )
+) {
+  stop(
+    "The analysis-ready RDS file does not exist: ",
+    analysis_data_path
+  )
+}
+```
+
+Load the dataset:
+
+```r
+hemoglobin_analysis_data <- readRDS(
+  analysis_data_path
+)
+```
+
+Inspect its structure:
+
+```r
+dplyr::glimpse(
+  hemoglobin_analysis_data
+)
+```
+
+## Confirm required variables
+
+Define the required variables:
+
+```r
+required_hemoglobin_variables <- c(
+  "survey_cycle",
+  "survey_cycle_factor",
+  "SEQN",
+  "LBXHGB",
+  "RIAGENDR",
+  "sex",
+  "demographic_match",
+  "SDMVSTRA",
+  "SDMVPSU"
+)
+```
+
+Identify missing variables:
+
+```r
+missing_hemoglobin_variables <- setdiff(
+  required_hemoglobin_variables,
+  names(
+    hemoglobin_analysis_data
+  )
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  length(
+    missing_hemoglobin_variables
+  ) > 0
+) {
+  stop(
+    "The analysis dataset is missing required variables: ",
+    paste(
+      missing_hemoglobin_variables,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Validate the analytical key
+
+Check for duplicated participant-cycle keys:
+
+```r
+analysis_duplicate_keys <-
+  hemoglobin_analysis_data |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  analysis_duplicate_keys,
+  n = Inf
+)
+```
+
+Expected:
+
+```r
+nrow(
+  analysis_duplicate_keys
+)
+```
+
+```text
+[1] 0
+```
+
+Stop if duplicates exist:
+
+```r
+if (
+  nrow(
+    analysis_duplicate_keys
+  ) > 0
+) {
+  stop(
+    "The analysis dataset contains duplicate survey_cycle + SEQN keys."
+  )
+}
+```
+
+## Validate the hemoglobin variable
+
+Check its class:
+
+```r
+class(
+  hemoglobin_analysis_data$LBXHGB
+)
+```
+
+Validate that it is numeric:
+
+```r
+if (
+  !is.numeric(
+    hemoglobin_analysis_data$LBXHGB
+  )
+) {
+  stop(
+    "LBXHGB must be numeric."
+  )
+}
+```
+
+Inspect its distribution:
+
+```r
+summary(
+  hemoglobin_analysis_data$LBXHGB
+)
+```
+
+## Inspect the imported hemoglobin label
+
+Run:
+
+```r
+hemoglobin_source_label <- attr(
+  hemoglobin_analysis_data$LBXHGB,
+  "label"
+)
+```
+
+Inspect:
+
+```r
+hemoglobin_source_label
+```
+
+This may contain the descriptive label imported from the NHANES XPT source.
+
+Before adding a measurement unit to the final figure, confirm the unit using the retained source label and official documentation.
+
+## Validate the sex variable
+
+Inspect levels:
+
+```r
+levels(
+  hemoglobin_analysis_data$sex
+)
+```
+
+Expected:
+
+```text
+Male
+Female
+```
+
+Set the order explicitly:
+
+```r
+hemoglobin_analysis_data <-
+  hemoglobin_analysis_data |>
+  dplyr::mutate(
+    sex = factor(
+      sex,
+      levels = c(
+        "Male",
+        "Female"
+      )
+    )
+  )
+```
+
+Validate that no unexpected nonmissing categories remain:
+
+```r
+unexpected_sex_levels <-
+  hemoglobin_analysis_data |>
+  dplyr::filter(
+    !is.na(
+      sex
+    ),
+    !as.character(
+      sex
+    ) %in% c(
+      "Male",
+      "Female"
+    )
+  )
+```
+
+Expected:
+
+```r
+nrow(
+  unexpected_sex_levels
+)
+```
+
+```text
+[1] 0
+```
+
+## Validate survey-cycle order
+
+Define the expected order:
+
+```r
+survey_cycle_levels <- c(
+  "1999-2000",
+  "2001-2002",
+  "2003-2004",
+  "2005-2006",
+  "2007-2008",
+  "2009-2010",
+  "2011-2012",
+  "2013-2014",
+  "2015-2016",
+  "2017-2018"
+)
+```
+
+Restore the ordered factor:
+
+```r
+hemoglobin_analysis_data <-
+  hemoglobin_analysis_data |>
+  dplyr::mutate(
+    survey_cycle_factor = factor(
+      survey_cycle,
+      levels = survey_cycle_levels,
+      ordered = TRUE
+    )
+  )
+```
+
+Check for unrecognized cycles:
+
+```r
+unrecognized_survey_cycles <-
+  hemoglobin_analysis_data |>
+  dplyr::filter(
+    is.na(
+      survey_cycle_factor
+    )
+  ) |>
+  dplyr::distinct(
+    survey_cycle
+  )
+```
+
+Inspect:
+
+```r
+print(
+  unrecognized_survey_cycles,
+  n = Inf
+)
+```
+
+Stop if any exist:
+
+```r
+if (
+  nrow(
+    unrecognized_survey_cycles
+  ) > 0
+) {
+  stop(
+    "One or more survey-cycle values could not be ordered."
+  )
+}
+```
+
+## Define the complete analytical population
+
+The primary descriptive analysis requires nonmissing:
+
+- hemoglobin;
+- sex;
+- survey cycle.
+
+Create:
+
+```r
+hemoglobin_complete_cases <-
+  hemoglobin_analysis_data |>
+  dplyr::filter(
+    !is.na(
+      LBXHGB
+    ),
+    !is.na(
+      sex
+    ),
+    !is.na(
+      survey_cycle_factor
+    )
+  )
+```
+
+Inspect:
+
+```r
+dim(
+  hemoglobin_complete_cases
+)
+```
+
+## Create an inclusion summary
+
+Run:
+
+```r
+hemoglobin_inclusion_summary <- tibble::tibble(
+  category = c(
+    "All analysis records",
+    "Records with hemoglobin",
+    "Records with readable sex",
+    "Complete hemoglobin-sex-cycle records",
+    "Excluded from primary descriptive analysis"
+  ),
+  records = c(
+    nrow(
+      hemoglobin_analysis_data
+    ),
+    sum(
+      !is.na(
+        hemoglobin_analysis_data$LBXHGB
+      )
+    ),
+    sum(
+      !is.na(
+        hemoglobin_analysis_data$sex
+      )
+    ),
+    nrow(
+      hemoglobin_complete_cases
+    ),
+    nrow(
+      hemoglobin_analysis_data
+    ) -
+      nrow(
+        hemoglobin_complete_cases
+      )
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_inclusion_summary
+)
+```
+
+## Create an exclusion summary
+
+Assign one primary exclusion reason to each record:
+
+```r
+hemoglobin_exclusion_summary <-
+  hemoglobin_analysis_data |>
+  dplyr::mutate(
+    exclusion_reason = dplyr::case_when(
+      is.na(
+        LBXHGB
+      ) &
+        is.na(
+          sex
+        ) ~
+        "Missing hemoglobin and sex",
+
+      is.na(
+        LBXHGB
+      ) ~
+        "Missing hemoglobin",
+
+      is.na(
+        sex
+      ) ~
+        "Missing sex",
+
+      is.na(
+        survey_cycle_factor
+      ) ~
+        "Missing or invalid survey cycle",
+
+      TRUE ~
+        "Included"
+    )
+  ) |>
+  dplyr::count(
+    exclusion_reason,
+    name = "records"
+  ) |>
+  dplyr::arrange(
+    dplyr::desc(
+      records
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_exclusion_summary,
+  n = Inf
+)
+```
+
+## Create broad value-review flags
+
+Create a participant-level review dataset:
+
+```r
+hemoglobin_value_review <-
+  hemoglobin_complete_cases |>
+  dplyr::mutate(
+    review_flag =
+      LBXHGB < 3 |
+      LBXHGB > 25
+  )
+```
+
+Count flagged records:
+
+```r
+hemoglobin_value_review |>
+  dplyr::count(
+    review_flag,
+    name = "records"
+  )
+```
+
+Extract them:
+
+```r
+hemoglobin_flagged_records <-
+  hemoglobin_value_review |>
+  dplyr::filter(
+    review_flag
+  ) |>
+  dplyr::select(
+    survey_cycle,
+    survey_cycle_factor,
+    SEQN,
+    sex,
+    LBXHGB
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor,
+    sex,
+    LBXHGB
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_flagged_records,
+  n = Inf
+)
+```
+
+::: {.callout-warning icon="true"}
+## A review flag is not an exclusion rule
+
+The broad thresholds in this lesson are used to identify records for inspection.
+
+They should not be used to remove records automatically.
+
+An unusual value may reflect:
+
+- a true extreme result;
+- a measurement issue;
+- a coding problem;
+- a unit problem;
+- a laboratory-method difference;
+- a source-data problem.
+:::
+
+## Create a safe descriptive-summary function
+
+Add:
+
+```r
+summarize_hemoglobin <- function(
+    data) {
+
+  nonmissing_values <- data$LBXHGB[
+    !is.na(
+      data$LBXHGB
+    )
+  ]
+
+  if (
+    length(
+      nonmissing_values
+    ) == 0
+  ) {
+    return(
+      tibble::tibble(
+        records = nrow(
+          data
+        ),
+        nonmissing_hemoglobin = 0L,
+        mean_hemoglobin = NA_real_,
+        standard_deviation = NA_real_,
+        standard_error = NA_real_,
+        minimum = NA_real_,
+        first_quartile = NA_real_,
+        median_hemoglobin = NA_real_,
+        third_quartile = NA_real_,
+        maximum = NA_real_
+      )
+    )
+  }
+
+  records <- length(
+    nonmissing_values
+  )
+
+  standard_deviation <- if (
+    records > 1
+  ) {
+    stats::sd(
+      nonmissing_values
+    )
+  } else {
+    NA_real_
+  }
+
+  standard_error <- if (
+    records > 1
+  ) {
+    standard_deviation /
+      sqrt(
+        records
+      )
+  } else {
+    NA_real_
+  }
+
+  tibble::tibble(
+    records = nrow(
+      data
+    ),
+    nonmissing_hemoglobin =
+      records,
+    mean_hemoglobin =
+      mean(
+        nonmissing_values
+      ),
+    standard_deviation =
+      standard_deviation,
+    standard_error =
+      standard_error,
+    minimum =
+      min(
+        nonmissing_values
+      ),
+    first_quartile =
+      stats::quantile(
+        nonmissing_values,
+        probabilities = 0.25,
+        names = FALSE
+      ),
+    median_hemoglobin =
+      stats::median(
+        nonmissing_values
+      ),
+    third_quartile =
+      stats::quantile(
+        nonmissing_values,
+        probabilities = 0.75,
+        names = FALSE
+      ),
+    maximum =
+      max(
+        nonmissing_values
+      )
+  )
+}
+```
+
+## Create the overall hemoglobin summary
+
+Run:
+
+```r
+overall_hemoglobin_summary <-
+  hemoglobin_complete_cases |>
+  summarize_hemoglobin() |>
+  dplyr::mutate(
+    analysis_scope =
+      "Unweighted descriptive summary",
+    .before = 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  overall_hemoglobin_summary
+)
+```
+
+## Summarize hemoglobin by survey cycle
+
+Run:
+
+```r
+hemoglobin_by_cycle <-
+  hemoglobin_complete_cases |>
+  dplyr::group_by(
+    survey_cycle,
+    survey_cycle_factor
+  ) |>
+  dplyr::group_modify(
+    ~ summarize_hemoglobin(
+      .x
+    )
+  ) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    lower_descriptive_95 =
+      mean_hemoglobin -
+      1.96 *
+      standard_error,
+    upper_descriptive_95 =
+      mean_hemoglobin +
+      1.96 *
+      standard_error,
+    analysis_scope =
+      "Unweighted descriptive summary"
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_by_cycle,
+  n = Inf
+)
+```
+
+## Summarize hemoglobin by sex
+
+Run:
+
+```r
+hemoglobin_by_sex <-
+  hemoglobin_complete_cases |>
+  dplyr::group_by(
+    sex
+  ) |>
+  dplyr::group_modify(
+    ~ summarize_hemoglobin(
+      .x
+    )
+  ) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    lower_descriptive_95 =
+      mean_hemoglobin -
+      1.96 *
+      standard_error,
+    upper_descriptive_95 =
+      mean_hemoglobin +
+      1.96 *
+      standard_error,
+    analysis_scope =
+      "Unweighted descriptive summary"
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_by_sex,
+  n = Inf
+)
+```
+
+## Summarize by survey cycle and sex
+
+This will provide the data for the principal trend figure.
+
+```r
+hemoglobin_by_cycle_and_sex <-
+  hemoglobin_complete_cases |>
+  dplyr::group_by(
+    survey_cycle,
+    survey_cycle_factor,
+    sex
+  ) |>
+  dplyr::group_modify(
+    ~ summarize_hemoglobin(
+      .x
+    )
+  ) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    lower_descriptive_95 =
+      mean_hemoglobin -
+      1.96 *
+      standard_error,
+    upper_descriptive_95 =
+      mean_hemoglobin +
+      1.96 *
+      standard_error,
+    analysis_scope =
+      "Unweighted descriptive summary"
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor,
+    sex
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_by_cycle_and_sex,
+  n = Inf
+)
+```
+
+## Why the intervals are called descriptive intervals
+
+The calculation:
+
+```r
+mean ± 1.96 × standard error
+```
+
+treats the records as though they came from a simple random sample.
+
+NHANES uses a complex, multistage survey design.
+
+The variables in this lesson are therefore named:
+
+```text
+lower_descriptive_95
+upper_descriptive_95
+```
+
+rather than simply:
+
+```text
+lower_95
+upper_95
+```
+
+This reduces the risk that learners will mistake them for survey-adjusted confidence intervals.
+
+## Validate group coverage
+
+Count sex groups per cycle:
+
+```r
+cycle_sex_group_validation <-
+  hemoglobin_by_cycle_and_sex |>
+  dplyr::count(
+    survey_cycle,
+    survey_cycle_factor,
+    name = "sex_groups"
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cycle_sex_group_validation,
+  n = Inf
+)
+```
+
+Identify incomplete cycles:
+
+```r
+incomplete_cycle_sex_groups <-
+  cycle_sex_group_validation |>
+  dplyr::filter(
+    sex_groups != 2
+  )
+```
+
+Inspect:
+
+```r
+print(
+  incomplete_cycle_sex_groups,
+  n = Inf
+)
+```
+
+Stop if any cycle does not contain both groups:
+
+```r
+if (
+  nrow(
+    incomplete_cycle_sex_groups
+  ) > 0
+) {
+  stop(
+    "One or more survey cycles do not contain both sex groups."
+  )
+}
+```
+
+## Prepare the principal trend-figure data
+
+Create a concise plotting table:
+
+```r
+hemoglobin_trend_figure_data <-
+  hemoglobin_by_cycle_and_sex |>
+  dplyr::transmute(
+    survey_cycle =
+      as.character(
+        survey_cycle
+      ),
+    survey_cycle_factor =
+      survey_cycle_factor,
+    sex =
+      factor(
+        sex,
+        levels = c(
+          "Male",
+          "Female"
+        )
+      ),
+    records =
+      nonmissing_hemoglobin,
+    mean_hemoglobin =
+      mean_hemoglobin,
+    standard_deviation =
+      standard_deviation,
+    standard_error =
+      standard_error,
+    lower_descriptive_95 =
+      lower_descriptive_95,
+    upper_descriptive_95 =
+      upper_descriptive_95,
+    analysis_scope =
+      analysis_scope
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor,
+    sex
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_trend_figure_data,
+  n = Inf
+)
+```
+
+## Validate the principal figure data
+
+Expected rows:
+
+```text
+10 cycles × 2 sex groups = 20 rows
+```
+
+Create:
+
+```r
+trend_figure_group_validation <- tibble::tibble(
+  expected_groups = 20L,
+  observed_groups = nrow(
+    hemoglobin_trend_figure_data
+  ),
+  groups_complete =
+    expected_groups ==
+      observed_groups
+)
+```
+
+Inspect:
+
+```r
+print(
+  trend_figure_group_validation
+)
+```
+
+Stop if incomplete:
+
+```r
+if (
+  !trend_figure_group_validation$groups_complete
+) {
+  stop(
+    "The principal trend-figure dataset does not contain 20 cycle-sex groups."
+  )
+}
+```
+
+Check duplicated groups:
+
+```r
+duplicate_trend_groups <-
+  hemoglobin_trend_figure_data |>
+  dplyr::count(
+    survey_cycle,
+    sex,
+    name = "rows"
+  ) |>
+  dplyr::filter(
+    rows > 1
+  )
+```
+
+Stop if duplicates exist:
+
+```r
+if (
+  nrow(
+    duplicate_trend_groups
+  ) > 0
+) {
+  stop(
+    "The trend-figure dataset contains duplicate cycle-sex groups."
+  )
+}
+```
+
+Check missing values:
+
+```r
+missing_trend_values <-
+  hemoglobin_trend_figure_data |>
+  dplyr::filter(
+    is.na(
+      mean_hemoglobin
+    ) |
+      is.na(
+        lower_descriptive_95
+      ) |
+      is.na(
+        upper_descriptive_95
+      )
+  )
+```
+
+Stop if missing:
+
+```r
+if (
+  nrow(
+    missing_trend_values
+  ) > 0
+) {
+  stop(
+    "The principal trend-figure dataset contains missing summary values."
+  )
+}
+```
+
+## Prepare distribution-figure data
+
+The second figure will show participant-level hemoglobin distributions.
+
+Create:
+
+```r
+hemoglobin_distribution_figure_data <-
+  hemoglobin_complete_cases |>
+  dplyr::transmute(
+    survey_cycle =
+      as.character(
+        survey_cycle
+      ),
+    survey_cycle_factor =
+      survey_cycle_factor,
+    SEQN =
+      SEQN,
+    sex =
+      factor(
+        sex,
+        levels = c(
+          "Male",
+          "Female"
+        )
+      ),
+    hemoglobin =
+      LBXHGB,
+    review_flag =
+      LBXHGB < 3 |
+      LBXHGB > 25
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor,
+    sex,
+    hemoglobin
+  )
+```
+
+Inspect:
+
+```r
+dplyr::glimpse(
+  hemoglobin_distribution_figure_data
+)
+```
+
+This dataset will support:
+
+- boxplots;
+- violin plots;
+- point overlays;
+- distribution comparisons.
+
+## Validate distribution-figure data
+
+Check missing values:
+
+```r
+missing_distribution_values <-
+  hemoglobin_distribution_figure_data |>
+  dplyr::filter(
+    is.na(
+      survey_cycle_factor
+    ) |
+      is.na(
+        sex
+      ) |
+      is.na(
+        hemoglobin
+      )
+  )
+```
+
+Expected:
+
+```r
+nrow(
+  missing_distribution_values
+)
+```
+
+```text
+[1] 0
+```
+
+Check row reconciliation:
+
+```r
+distribution_row_validation <- tibble::tibble(
+  complete_case_records =
+    nrow(
+      hemoglobin_complete_cases
+    ),
+  distribution_figure_records =
+    nrow(
+      hemoglobin_distribution_figure_data
+    ),
+  rows_reconciled =
+    complete_case_records ==
+      distribution_figure_records
+)
+```
+
+Inspect:
+
+```r
+print(
+  distribution_row_validation
+)
+```
+
+Stop if counts differ:
+
+```r
+if (
+  !distribution_row_validation$rows_reconciled
+) {
+  stop(
+    "The distribution-figure data do not reconcile with the complete-case population."
+  )
+}
+```
+
+## Prepare analytical record-count data
+
+The third figure will show how many complete records contribute to each group mean.
+
+Create:
+
+```r
+hemoglobin_record_count_figure_data <-
+  hemoglobin_complete_cases |>
+  dplyr::count(
+    survey_cycle,
+    survey_cycle_factor,
+    sex,
+    name = "analytical_records"
+  ) |>
+  dplyr::mutate(
+    sex = factor(
+      sex,
+      levels = c(
+        "Male",
+        "Female"
+      )
+    )
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor,
+    sex
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_record_count_figure_data,
+  n = Inf
+)
+```
+
+## Validate analytical record counts
+
+Reconcile grouped counts:
+
+```r
+record_count_validation <- tibble::tibble(
+  complete_case_records =
+    nrow(
+      hemoglobin_complete_cases
+    ),
+  grouped_records =
+    sum(
+      hemoglobin_record_count_figure_data$analytical_records
+    ),
+  records_reconciled =
+    complete_case_records ==
+      grouped_records
+)
+```
+
+Inspect:
+
+```r
+print(
+  record_count_validation
+)
+```
+
+Stop if they differ:
+
+```r
+if (
+  !record_count_validation$records_reconciled
+) {
+  stop(
+    "The analytical record-count data do not reconcile with the complete-case population."
+  )
+}
+```
+
+## Prepare missingness-figure data
+
+The fourth figure will show hemoglobin missingness by cycle and sex.
+
+Start from all records with known sex and cycle:
+
+```r
+hemoglobin_missingness_figure_data <-
+  hemoglobin_analysis_data |>
+  dplyr::filter(
+    !is.na(
+      sex
+    ),
+    !is.na(
+      survey_cycle_factor
+    )
+  ) |>
+  dplyr::group_by(
+    survey_cycle,
+    survey_cycle_factor,
+    sex
+  ) |>
+  dplyr::summarise(
+    available_records =
+      dplyr::n(),
+    hemoglobin_present =
+      sum(
+        !is.na(
+          LBXHGB
+        )
+      ),
+    hemoglobin_missing =
+      sum(
+        is.na(
+          LBXHGB
+        )
+      ),
+    hemoglobin_missing_percent =
+      100 *
+      hemoglobin_missing /
+      available_records,
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    sex = factor(
+      sex,
+      levels = c(
+        "Male",
+        "Female"
+      )
+    )
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor,
+    sex
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_missingness_figure_data,
+  n = Inf
+)
+```
+
+## Validate missingness calculations
+
+Check that counts reconcile within every group:
+
+```r
+invalid_missingness_counts <-
+  hemoglobin_missingness_figure_data |>
+  dplyr::filter(
+    available_records !=
+      hemoglobin_present +
+        hemoglobin_missing
+  )
+```
+
+Expected:
+
+```r
+nrow(
+  invalid_missingness_counts
+)
+```
+
+```text
+[1] 0
+```
+
+Stop if invalid:
+
+```r
+if (
+  nrow(
+    invalid_missingness_counts
+  ) > 0
+) {
+  stop(
+    "One or more missingness groups do not reconcile."
+  )
+}
+```
+
+Check percentage boundaries:
+
+```r
+invalid_missingness_percentages <-
+  hemoglobin_missingness_figure_data |>
+  dplyr::filter(
+    hemoglobin_missing_percent < 0 |
+      hemoglobin_missing_percent > 100
+  )
+```
+
+Stop if invalid:
+
+```r
+if (
+  nrow(
+    invalid_missingness_percentages
+  ) > 0
+) {
+  stop(
+    "One or more hemoglobin missingness percentages are outside 0 to 100."
+  )
+}
+```
+
+## Calculate descriptive sex differences by cycle
+
+Create a wide summary:
+
+```r
+hemoglobin_sex_difference_by_cycle <-
+  hemoglobin_by_cycle_and_sex |>
+  dplyr::select(
+    survey_cycle,
+    survey_cycle_factor,
+    sex,
+    nonmissing_hemoglobin,
+    mean_hemoglobin
+  ) |>
+  tidyr::pivot_wider(
+    names_from =
+      sex,
+    values_from = c(
+      nonmissing_hemoglobin,
+      mean_hemoglobin
+    ),
+    names_sep =
+      "_"
+  ) |>
+  dplyr::mutate(
+    male_minus_female_mean =
+      mean_hemoglobin_Male -
+      mean_hemoglobin_Female
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_sex_difference_by_cycle,
+  n = Inf
+)
+```
+
+This is an unadjusted descriptive difference.
+
+It should not be interpreted as:
+
+- causal;
+- survey-adjusted;
+- clinically significant by itself;
+- representative of the national population.
+
+## Create a trend-table for reporting
+
+Run:
+
+```r
+hemoglobin_trend_table <-
+  hemoglobin_trend_figure_data |>
+  dplyr::transmute(
+    survey_cycle =
+      survey_cycle,
+    sex =
+      as.character(
+        sex
+      ),
+    analytical_records =
+      records,
+    mean_hemoglobin =
+      round(
+        mean_hemoglobin,
+        2
+      ),
+    standard_deviation =
+      round(
+        standard_deviation,
+        2
+      ),
+    standard_error =
+      round(
+        standard_error,
+        3
+      ),
+    lower_descriptive_95 =
+      round(
+        lower_descriptive_95,
+        2
+      ),
+    upper_descriptive_95 =
+      round(
+        upper_descriptive_95,
+        2
+      ),
+    analysis_scope =
+      analysis_scope
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_trend_table,
+  n = Inf
+)
+```
+
+## Prepare scale recommendations for the principal figure
+
+The principal graph should use a scale based on the observed descriptive intervals rather than an arbitrary range.
+
+Calculate the displayed minimum and maximum:
+
+```r
+trend_interval_minimum <- min(
+  hemoglobin_trend_figure_data$lower_descriptive_95,
+  na.rm = TRUE
+)
+```
+
+```r
+trend_interval_maximum <- max(
+  hemoglobin_trend_figure_data$upper_descriptive_95,
+  na.rm = TRUE
+)
+```
+
+Add a small amount of visual space:
+
+```r
+trend_axis_padding <- max(
+  0.5,
+  0.10 *
+    (
+      trend_interval_maximum -
+        trend_interval_minimum
+    )
+)
+```
+
+Create recommended limits:
+
+```r
+trend_y_axis_lower <- floor(
+  (
+    trend_interval_minimum -
+      trend_axis_padding
+  ) *
+    2
+) /
+  2
+```
+
+```r
+trend_y_axis_upper <- ceiling(
+  (
+    trend_interval_maximum +
+      trend_axis_padding
+  ) *
+    2
+) /
+  2
+```
+
+Choose an appropriate break interval:
+
+```r
+trend_y_axis_range <-
+  trend_y_axis_upper -
+    trend_y_axis_lower
+```
+
+```r
+trend_y_axis_break <- dplyr::case_when(
+  trend_y_axis_range <= 3 ~
+    0.5,
+
+  trend_y_axis_range <= 8 ~
+    1,
+
+  trend_y_axis_range <= 15 ~
+    2,
+
+  TRUE ~
+    5
+)
+```
+
+Create a scale summary:
+
+```r
+hemoglobin_trend_scale_recommendation <-
+  tibble::tibble(
+    observed_interval_minimum =
+      trend_interval_minimum,
+    observed_interval_maximum =
+      trend_interval_maximum,
+    recommended_axis_lower =
+      trend_y_axis_lower,
+    recommended_axis_upper =
+      trend_y_axis_upper,
+    recommended_break_interval =
+      trend_y_axis_break,
+    recommendation =
+      paste(
+        "Use the data-informed range for readability,",
+        "state the unweighted scope clearly,",
+        "and avoid interpreting visual differences as national estimates."
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_trend_scale_recommendation
+)
+```
+
+::: {.callout-important icon="true"}
+## A focused y-axis must be transparent
+
+The principal trend graph may use a focused range because it is intended to show relatively small differences in mean hemoglobin.
+
+To avoid misleading readers:
+
+- the axis must be clearly numbered;
+- the scale must be based on the observed data;
+- the caption must identify the descriptive scope;
+- the figure must not imply that zero is the meaningful reference point;
+- the selected limits must not hide any mean or interval.
+:::
+
+## Validate that all intervals fit inside the proposed scale
+
+Run:
+
+```r
+intervals_outside_recommended_scale <-
+  hemoglobin_trend_figure_data |>
+  dplyr::filter(
+    lower_descriptive_95 <
+      trend_y_axis_lower |
+      upper_descriptive_95 >
+        trend_y_axis_upper
+  )
+```
+
+Expected:
+
+```r
+nrow(
+  intervals_outside_recommended_scale
+)
+```
+
+```text
+[1] 0
+```
+
+Stop if any interval falls outside:
+
+```r
+if (
+  nrow(
+    intervals_outside_recommended_scale
+  ) > 0
+) {
+  stop(
+    "The proposed trend-figure scale does not include every descriptive interval."
+  )
+}
+```
+
+## Create a consolidated figure-data validation table
+
+Run:
+
+```r
+hemoglobin_figure_data_validation <-
+  tibble::tibble(
+    check = c(
+      "Analysis key is unique",
+      "Both sex groups are present in every cycle",
+      "Trend data contain 20 cycle-sex groups",
+      "Trend groups are unique",
+      "Trend summary values are complete",
+      "Distribution rows reconcile",
+      "Record counts reconcile",
+      "Missingness counts reconcile",
+      "Missingness percentages are valid",
+      "All trend intervals fit proposed scale"
+    ),
+    passed = c(
+      nrow(
+        analysis_duplicate_keys
+      ) == 0,
+      nrow(
+        incomplete_cycle_sex_groups
+      ) == 0,
+      trend_figure_group_validation$groups_complete,
+      nrow(
+        duplicate_trend_groups
+      ) == 0,
+      nrow(
+        missing_trend_values
+      ) == 0,
+      distribution_row_validation$rows_reconciled,
+      record_count_validation$records_reconciled,
+      nrow(
+        invalid_missingness_counts
+      ) == 0,
+      nrow(
+        invalid_missingness_percentages
+      ) == 0,
+      nrow(
+        intervals_outside_recommended_scale
+      ) == 0
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_figure_data_validation,
+  n = Inf
+)
+```
+
+Identify failures:
+
+```r
+failed_figure_data_checks <-
+  hemoglobin_figure_data_validation |>
+  dplyr::filter(
+    !passed
+  )
+```
+
+Stop if any check fails:
+
+```r
+if (
+  nrow(
+    failed_figure_data_checks
+  ) > 0
+) {
+  stop(
+    "Hemoglobin figure-data validation failed: ",
+    paste(
+      failed_figure_data_checks$check,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Save the overall summary
+
+Run:
+
+```r
+readr::write_csv(
+  overall_hemoglobin_summary,
+  file.path(
+    "outputs",
+    "tables",
+    "overall_hemoglobin_summary.csv"
+  )
+)
+```
+
+## Save the cycle summary
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_by_cycle,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_by_cycle.csv"
+  )
+)
+```
+
+## Save the sex summary
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_by_sex,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_by_sex.csv"
+  )
+)
+```
+
+## Save the cycle-and-sex summary
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_by_cycle_and_sex,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_by_cycle_and_sex.csv"
+  )
+)
+```
+
+## Save the principal trend-figure data
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_trend_figure_data,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_trend_figure_data.csv"
+  )
+)
+```
+
+## Save the distribution-figure data
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_distribution_figure_data,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_distribution_figure_data.csv"
+  )
+)
+```
+
+## Save the record-count figure data
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_record_count_figure_data,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_record_count_figure_data.csv"
+  )
+)
+```
+
+## Save the missingness-figure data
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_missingness_figure_data,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_missingness_figure_data.csv"
+  )
+)
+```
+
+## Save the reporting table
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_trend_table,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_trend_table.csv"
+  )
+)
+```
+
+## Save the sex-difference summary
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_sex_difference_by_cycle,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_sex_difference_by_cycle.csv"
+  )
+)
+```
+
+## Save the inclusion summary
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_inclusion_summary,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_inclusion_summary.csv"
+  )
+)
+```
+
+## Save the exclusion summary
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_exclusion_summary,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_exclusion_summary.csv"
+  )
+)
+```
+
+## Save flagged records
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_flagged_records,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_flagged_records.csv"
+  )
+)
+```
+
+## Save cycle-sex validation
+
+Run:
+
+```r
+readr::write_csv(
+  cycle_sex_group_validation,
+  file.path(
+    "outputs",
+    "validation",
+    "cycle_sex_group_validation.csv"
+  )
+)
+```
+
+## Save the trend-scale recommendation
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_trend_scale_recommendation,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_trend_scale_recommendation.csv"
+  )
+)
+```
+
+## Save figure-data validation
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_figure_data_validation,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_figure_data_validation.csv"
+  )
+)
+```
+
+## Confirm all Lesson 16 outputs
+
+Define the expected files:
+
+```r
+lesson_16_output_files <- c(
+  file.path(
+    "outputs",
+    "tables",
+    "overall_hemoglobin_summary.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_by_cycle.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_by_sex.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_by_cycle_and_sex.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_trend_figure_data.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_distribution_figure_data.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_record_count_figure_data.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_missingness_figure_data.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_trend_table.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_sex_difference_by_cycle.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_inclusion_summary.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_exclusion_summary.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_flagged_records.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "cycle_sex_group_validation.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_trend_scale_recommendation.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_figure_data_validation.csv"
+  )
+)
+```
+
+Create the output check:
+
+```r
+lesson_16_output_check <-
+  tibble::tibble(
+    file =
+      lesson_16_output_files,
+    exists =
+      file.exists(
+        lesson_16_output_files
+      ),
+    size_bytes =
+      file.info(
+        lesson_16_output_files
+      )$size
+  )
+```
+
+Inspect:
+
+```r
+print(
+  lesson_16_output_check,
+  n = Inf
+)
+```
+
+Stop if any file is missing:
+
+```r
+missing_lesson_16_outputs <-
+  lesson_16_output_check |>
+  dplyr::filter(
+    !exists
+  )
+```
+
+```r
+if (
+  nrow(
+    missing_lesson_16_outputs
+  ) > 0
+) {
+  stop(
+    "Lesson 16 outputs are missing: ",
+    paste(
+      missing_lesson_16_outputs$file,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Stop if any file is empty:
+
+```r
+empty_lesson_16_outputs <-
+  lesson_16_output_check |>
+  dplyr::filter(
+    exists,
+    is.na(
+      size_bytes
+    ) |
+      size_bytes <= 0
+  )
+```
+
+```r
+if (
+  nrow(
+    empty_lesson_16_outputs
+  ) > 0
+) {
+  stop(
+    "Lesson 16 outputs are empty: ",
+    paste(
+      empty_lesson_16_outputs$file,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Expected message:
+
+```r
+message(
+  "Hemoglobin summaries and all four visualization datasets were created successfully."
+)
+```
+
+## What each visualization will contribute
+
+### Figure 1: Mean trend by cycle and sex
+
+This will be the principal figure.
+
+It will show:
+
+- unweighted mean hemoglobin;
+- separate male and female trends;
+- descriptive interval bars;
+- a data-informed vertical scale;
+- a prominent unweighted-analysis caveat.
+
+### Figure 2: Distribution by cycle and sex
+
+This will show:
+
+- medians;
+- interquartile ranges;
+- distributional spread;
+- extreme observations;
+- information hidden by means alone.
+
+### Figure 3: Analytical record counts
+
+This will show:
+
+- how many observations contribute to each mean;
+- whether group size changes across cycles;
+- whether interval width may partly reflect record count.
+
+### Figure 4: Hemoglobin missingness
+
+This will show:
+
+- missing-value percentages;
+- changes across survey cycles;
+- differences between sex groups;
+- whether missingness could influence interpretation.
+
+## How to describe the results
+
+Appropriate language:
+
+```text
+Hemoglobin was summarized descriptively among complete analytical records
+by two-year NHANES survey cycle and sex. All results are unweighted.
+```
+
+Avoid:
+
+```text
+National hemoglobin levels increased or decreased over time.
+```
+
+That statement would require correctly weighted complex-survey analysis.
+
+## Interpretation framework
+
+When reviewing the figures in Lesson 17, consider:
+
+1. whether mean and median patterns agree;
+2. whether distributional spread changes across cycles;
+3. whether extreme observations influence the means;
+4. whether the male-female difference is consistent;
+5. whether group sizes differ substantially;
+6. whether missingness changes across cycles;
+7. whether laboratory methods or eligibility changed;
+8. whether survey-weighted estimates would differ;
+9. whether the observed pattern is descriptively important;
+10. whether formal inferential analysis is justified.
+
+## Common mistakes
+
+### Preparing only a mean table
+
+A mean does not reveal the full distribution, record count, or missingness pattern.
+
+### Reporting descriptive intervals as survey confidence intervals
+
+The intervals in this lesson do not incorporate the NHANES complex sampling design.
+
+### Removing extreme values automatically
+
+Flag and investigate unusual values before exclusion.
+
+### Ignoring changes in analytical record count
+
+A group mean based on fewer records may be less stable.
+
+### Ignoring missingness
+
+Changes in missingness can affect comparisons across cycles.
+
+### Using an arbitrary graph scale
+
+The principal figure will use a scale derived from the displayed means and intervals.
+
+### Interpreting sex differences causally
+
+The summaries are unadjusted and descriptive.
+
+### Describing unweighted records as the U.S. population
+
+National inference requires survey weights and design variables.
+
+## Checkpoint
+
+Confirm:
+
+- [ ] The analysis-ready dataset was loaded.
+- [ ] Required variables are present.
+- [ ] Participant-cycle keys remain unique.
+- [ ] Hemoglobin is numeric.
+- [ ] Sex categories were validated.
+- [ ] Survey cycles were ordered.
+- [ ] The complete analytical population was defined.
+- [ ] Inclusion and exclusion counts were documented.
+- [ ] Unusual hemoglobin values were flagged without automatic deletion.
+- [ ] Overall hemoglobin was summarized.
+- [ ] Hemoglobin was summarized by cycle.
+- [ ] Hemoglobin was summarized by sex.
+- [ ] Hemoglobin was summarized by cycle and sex.
+- [ ] Descriptive intervals were clearly identified as unweighted.
+- [ ] Trend-figure data were created.
+- [ ] Distribution-figure data were created.
+- [ ] Record-count figure data were created.
+- [ ] Missingness-figure data were created.
+- [ ] Group counts and percentages were validated.
+- [ ] A data-informed trend scale was calculated.
+- [ ] All intervals fit within the proposed scale.
+- [ ] All figure-data checks passed.
+- [ ] All Lesson 16 tables were saved.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why prepare more than one figure?
+
+The mean trend shows the central pattern, but the distribution, record-count, and missingness figures reveal information that a mean-only graph can hide.
+:::
+
+::: {.callout-note collapse="true"}
+## Why are the interval variables named `lower_descriptive_95` and `upper_descriptive_95`?
+
+The names make clear that the intervals are conventional unweighted descriptive intervals rather than NHANES survey-adjusted confidence intervals.
+:::
+
+::: {.callout-note collapse="true"}
+## Why calculate the principal figure scale from the observed data?
+
+A data-informed scale includes all displayed means and intervals, avoids arbitrary choices, and supports a readable figure without hiding observations.
+:::
+
+::: {.callout-note collapse="true"}
+## Can a visually polished figure be considered a nationally representative result?
+
+No. Visual quality does not replace appropriate survey weighting, design specification, and complex-survey variance estimation.
+:::
+
+## Lesson summary
+
+You have:
+
+- defined and validated the analytical population;
+- documented inclusion and exclusion;
+- created overall and grouped hemoglobin summaries;
+- calculated clearly labelled descriptive intervals;
+- prepared four complementary visualization datasets;
+- validated record counts, group coverage, and missingness;
+- created a data-informed scale recommendation;
+- saved every table required for the redesigned Lesson 17.
+
+[Continue to Lesson 17: Create professional hemoglobin figures](17-create-graph.qmd){.button .button-primary}

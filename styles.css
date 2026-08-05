@@ -678,3 +678,61 @@ pre.sourceCode {
     transition: none !important;
   }
 }
+
+/* -------------------------------------------------
+   Global footer text visibility
+-------------------------------------------------- */
+
+.nav-footer,
+.nav-footer-left,
+.nav-footer-center,
+.nav-footer-right,
+.nav-footer-left *,
+.nav-footer-center *,
+.nav-footer-right * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.nav-footer {
+  background-color: #041f30 !important;
+}
+
+.nav-footer-left,
+.nav-footer-center,
+.nav-footer-right {
+  line-height: 1.35 !important;
+}
+
+.nav-footer-left {
+  font-size: 0.82rem !important;
+}
+
+.nav-footer-center {
+  font-size: 0.74rem !important;
+}
+
+.nav-footer-center div:last-child {
+  color: #e2edf2 !important;
+  -webkit-text-fill-color: #e2edf2 !important;
+}
+
+.nav-footer-left div:last-child {
+  color: #e2edf2 !important;
+  -webkit-text-fill-color: #e2edf2 !important;
+}
+
+.nav-footer-right a,
+.nav-footer a {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-decoration-color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.nav-footer-right a:hover,
+.nav-footer a:hover {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  text-decoration-color: #ffffff !important;
+}

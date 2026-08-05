@@ -1,0 +1,1400 @@
+---
+title: "Lesson 14: Create Readable Variable Labels"
+subtitle: "Preserve NHANES metadata and create clear analytical labels without changing the original variables"
+description: "Extract, review, and apply readable variable labels to the validated NHANES CBC and Demographic dataset."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- explain the difference between variable names and variable labels;
+- extract labels imported from NHANES XPT files;
+- create a variable dictionary;
+- identify variables without labels;
+- add clear labels to pipeline-created variables;
+- preserve original NHANES variable names;
+- create readable categorical variables for analysis;
+- save variable metadata for reuse.
+:::
+
+## Why variable labels matter
+
+NHANES variable names are designed to be compact and stable.
+
+For example:
+
+```text
+LBXHGB
+RIAGENDR
+RIDAGEYR
+SDMVSTRA
+SDMVPSU
+```
+
+These names are useful for programming, but they are not always immediately readable.
+
+Variable labels provide descriptive meaning, such as:
+
+```text
+Hemoglobin
+Gender
+Age in years
+Masked variance pseudo-stratum
+Masked variance pseudo-primary sampling unit
+```
+
+A reproducible pipeline should preserve both:
+
+```text
+machine-readable variable names
++
+human-readable variable labels
+```
+
+## Do not replace original variable names unnecessarily
+
+The original NHANES variable names should remain available because they:
+
+- correspond to official documentation;
+- make code easier to compare with NHANES examples;
+- reduce ambiguity;
+- support reproducibility;
+- help users locate variables in codebooks.
+
+Readable labels and derived categorical variables should be added without destroying the original source names.
+
+## Where you are in the workflow
+
+You currently have:
+
+```r
+cbc_demographics_validated
+```
+
+This is the validated merged analytical dataset.
+
+It contains:
+
+- CBC laboratory variables;
+- Demographic variables;
+- survey-design variables;
+- source provenance;
+- merge-status fields;
+- pipeline validation fields.
+
+## Add the variable-label section
+
+Add this below the final-validation section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 12: CREATE READABLE VARIABLE LABELS
+# ============================================================
+```
+
+## Inspect existing labels
+
+Check the label attached to hemoglobin:
+
+```r
+attr(
+  cbc_demographics_validated$LBXHGB,
+  "label"
+)
+```
+
+Check the label attached to sex:
+
+```r
+attr(
+  cbc_demographics_validated$RIAGENDR,
+  "label"
+)
+```
+
+Check a pipeline-created variable:
+
+```r
+attr(
+  cbc_demographics_validated$survey_cycle,
+  "label"
+)
+```
+
+NHANES variables imported from XPT files may retain labels.
+
+Variables created by the pipeline usually do not have labels unless you assign them.
+
+## Create a label-extraction function
+
+Add:
+
+```r
+extract_variable_label <- function(
+    variable) {
+
+  variable_label <- attr(
+    variable,
+    "label"
+  )
+
+  if (
+    is.null(
+      variable_label
+    ) ||
+      length(
+        variable_label
+      ) == 0
+  ) {
+    NA_character_
+  } else {
+    as.character(
+      variable_label[[1]]
+    )
+  }
+}
+```
+
+## Build the initial variable dictionary
+
+Run:
+
+```r
+variable_dictionary <-
+  tibble::tibble(
+    variable = names(
+      cbc_demographics_validated
+    ),
+    label = purrr::map_chr(
+      cbc_demographics_validated,
+      extract_variable_label
+    ),
+    variable_class = purrr::map_chr(
+      cbc_demographics_validated,
+      function(variable) {
+        paste(
+          class(
+            variable
+          ),
+          collapse = "; "
+        )
+      }
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  variable_dictionary,
+  n = Inf
+)
+```
+
+## Identify variables without labels
+
+Run:
+
+```r
+variables_without_labels <-
+  variable_dictionary |>
+  dplyr::filter(
+    is.na(
+      label
+    ) |
+      !nzchar(
+        label
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  variables_without_labels,
+  n = Inf
+)
+```
+
+Many of these will be variables created by the pipeline.
+
+Examples may include:
+
+- `survey_cycle`;
+- provenance columns;
+- `demographic_match`;
+- validation-status fields.
+
+## Count labelled and unlabelled variables
+
+Run:
+
+```r
+variable_label_summary <- tibble::tibble(
+  category = c(
+    "labelled_variables",
+    "unlabelled_variables",
+    "total_variables"
+  ),
+  count = c(
+    sum(
+      !is.na(
+        variable_dictionary$label
+      ) &
+        nzchar(
+          variable_dictionary$label
+        )
+    ),
+    sum(
+      is.na(
+        variable_dictionary$label
+      ) |
+        !nzchar(
+          variable_dictionary$label
+        )
+    ),
+    nrow(
+      variable_dictionary
+    )
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  variable_label_summary
+)
+```
+
+## Create a label-assignment helper
+
+Add:
+
+```r
+set_variable_label <- function(
+    variable,
+    label) {
+
+  attr(
+    variable,
+    "label"
+  ) <- label
+
+  variable
+}
+```
+
+This function returns the original variable with a label attached.
+
+## Label key and pipeline variables
+
+Add labels to key variables:
+
+```r
+cbc_demographics_labelled <-
+  cbc_demographics_validated |>
+  dplyr::mutate(
+    survey_cycle = set_variable_label(
+      survey_cycle,
+      "NHANES two-year survey cycle"
+    ),
+    SEQN = set_variable_label(
+      SEQN,
+      "Participant sequence number"
+    ),
+    demographic_match = set_variable_label(
+      demographic_match,
+      "Demographic record matched to CBC record"
+    ),
+    pipeline_validation_status =
+      set_variable_label(
+        pipeline_validation_status,
+        "Pipeline validation status"
+      ),
+    pipeline_validation_date_utc =
+      set_variable_label(
+        pipeline_validation_date_utc,
+        "Pipeline validation date and time in UTC"
+      )
+  )
+```
+
+## Label CBC provenance variables
+
+Run:
+
+```r
+cbc_demographics_labelled <-
+  cbc_demographics_labelled |>
+  dplyr::mutate(
+    cbc_source_dataset_id =
+      set_variable_label(
+        cbc_source_dataset_id,
+        "Internal identifier for the CBC source dataset"
+      ),
+    cbc_source_component =
+      set_variable_label(
+        cbc_source_component,
+        "NHANES source component for the CBC record"
+      ),
+    cbc_source_file_id =
+      set_variable_label(
+        cbc_source_file_id,
+        "Official NHANES CBC source file identifier"
+      ),
+    cbc_source_exam =
+      set_variable_label(
+        cbc_source_exam,
+        "CBC examination role"
+      ),
+    cbc_analysis_role =
+      set_variable_label(
+        cbc_analysis_role,
+        "CBC source analytical role"
+      ),
+    cbc_source_url =
+      set_variable_label(
+        cbc_source_url,
+        "Official CDC URL for the CBC source file"
+      ),
+    cbc_local_source_file =
+      set_variable_label(
+        cbc_local_source_file,
+        "Local path to the CBC source file"
+      ),
+    cbc_source_sha256 =
+      set_variable_label(
+        cbc_source_sha256,
+        "SHA-256 hash of the CBC source file"
+      )
+  )
+```
+
+## Label Demographic provenance variables
+
+Run:
+
+```r
+cbc_demographics_labelled <-
+  cbc_demographics_labelled |>
+  dplyr::mutate(
+    demographic_source_dataset_id =
+      set_variable_label(
+        demographic_source_dataset_id,
+        "Internal identifier for the Demographic source dataset"
+      ),
+    demographic_source_component =
+      set_variable_label(
+        demographic_source_component,
+        "NHANES source component for the Demographic record"
+      ),
+    demographic_source_file_id =
+      set_variable_label(
+        demographic_source_file_id,
+        "Official NHANES Demographic source file identifier"
+      ),
+    demographic_source_exam =
+      set_variable_label(
+        demographic_source_exam,
+        "Demographic examination role"
+      ),
+    demographic_analysis_role =
+      set_variable_label(
+        demographic_analysis_role,
+        "Demographic source analytical role"
+      ),
+    demographic_source_url =
+      set_variable_label(
+        demographic_source_url,
+        "Official CDC URL for the Demographic source file"
+      ),
+    demographic_local_source_file =
+      set_variable_label(
+        demographic_local_source_file,
+        "Local path to the Demographic source file"
+      ),
+    demographic_source_sha256 =
+      set_variable_label(
+        demographic_source_sha256,
+        "SHA-256 hash of the Demographic source file"
+      )
+  )
+```
+
+## Confirm important labels
+
+Run:
+
+```r
+important_label_check <- tibble::tibble(
+  variable = c(
+    "survey_cycle",
+    "SEQN",
+    "LBXHGB",
+    "RIAGENDR",
+    "demographic_match",
+    "cbc_source_file_id",
+    "demographic_source_file_id"
+  ),
+  label = purrr::map_chr(
+    variable,
+    function(variable_name) {
+      extract_variable_label(
+        cbc_demographics_labelled[[
+          variable_name
+        ]]
+      )
+    }
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  important_label_check,
+  n = Inf
+)
+```
+
+## Rebuild the variable dictionary
+
+Run:
+
+```r
+labelled_variable_dictionary <-
+  tibble::tibble(
+    variable = names(
+      cbc_demographics_labelled
+    ),
+    label = purrr::map_chr(
+      cbc_demographics_labelled,
+      extract_variable_label
+    ),
+    variable_class = purrr::map_chr(
+      cbc_demographics_labelled,
+      function(variable) {
+        paste(
+          class(
+            variable
+          ),
+          collapse = "; "
+        )
+      }
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  labelled_variable_dictionary,
+  n = Inf
+)
+```
+
+## Identify remaining unlabelled variables
+
+Run:
+
+```r
+remaining_unlabelled_variables <-
+  labelled_variable_dictionary |>
+  dplyr::filter(
+    is.na(
+      label
+    ) |
+      !nzchar(
+        label
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  remaining_unlabelled_variables,
+  n = Inf
+)
+```
+
+Do not assign labels blindly.
+
+For any remaining NHANES variable, consult the corresponding official documentation before creating a description.
+
+## Preserve original coded variables
+
+The variable:
+
+```text
+RIAGENDR
+```
+
+should remain in the dataset.
+
+Create an additional readable factor rather than replacing it.
+
+```r
+cbc_demographics_labelled <-
+  cbc_demographics_labelled |>
+  dplyr::mutate(
+    sex = factor(
+      RIAGENDR,
+      levels = c(
+        1,
+        2
+      ),
+      labels = c(
+        "Male",
+        "Female"
+      )
+    )
+  )
+```
+
+Assign a label:
+
+```r
+cbc_demographics_labelled$sex <-
+  set_variable_label(
+    cbc_demographics_labelled$sex,
+    "Participant sex"
+  )
+```
+
+## Why preserve `RIAGENDR`?
+
+Keeping the original coded variable:
+
+- preserves the official NHANES source value;
+- allows verification against documentation;
+- avoids losing provenance;
+- supports reproducible recoding;
+- makes it possible to revise labels later.
+
+The derived `sex` variable is intended for readable analysis and presentation.
+
+## Validate the sex recode
+
+Create a cross-tabulation:
+
+```r
+sex_recode_validation <-
+  cbc_demographics_labelled |>
+  dplyr::count(
+    RIAGENDR,
+    sex,
+    name = "records"
+  ) |>
+  dplyr::arrange(
+    RIAGENDR
+  )
+```
+
+Inspect:
+
+```r
+print(
+  sex_recode_validation,
+  n = Inf
+)
+```
+
+Expected mapping:
+
+```text
+RIAGENDR  sex
+1         Male
+2         Female
+```
+
+## Confirm no valid sex values were lost
+
+Run:
+
+```r
+sex_recode_missing_check <-
+  cbc_demographics_labelled |>
+  dplyr::filter(
+    !is.na(
+      RIAGENDR
+    ),
+    is.na(
+      sex
+    )
+  )
+```
+
+Expected:
+
+```r
+nrow(
+  sex_recode_missing_check
+)
+```
+
+```text
+[1] 0
+```
+
+Stop if valid source values failed to recode:
+
+```r
+if (
+  nrow(
+    sex_recode_missing_check
+  ) > 0
+) {
+  stop(
+    "One or more nonmissing RIAGENDR values did not receive a sex label."
+  )
+}
+```
+
+## Create an ordered survey-cycle factor
+
+Keep the original character variable:
+
+```text
+survey_cycle
+```
+
+Create an ordered factor for tables and graphs:
+
+```r
+survey_cycle_levels <- c(
+  "1999-2000",
+  "2001-2002",
+  "2003-2004",
+  "2005-2006",
+  "2007-2008",
+  "2009-2010",
+  "2011-2012",
+  "2013-2014",
+  "2015-2016",
+  "2017-2018"
+)
+```
+
+Create:
+
+```r
+cbc_demographics_labelled <-
+  cbc_demographics_labelled |>
+  dplyr::mutate(
+    survey_cycle_factor = factor(
+      survey_cycle,
+      levels = survey_cycle_levels,
+      ordered = TRUE
+    )
+  )
+```
+
+Assign a label:
+
+```r
+cbc_demographics_labelled$survey_cycle_factor <-
+  set_variable_label(
+    cbc_demographics_labelled$survey_cycle_factor,
+    "Ordered NHANES two-year survey cycle"
+  )
+```
+
+## Validate the survey-cycle factor
+
+Run:
+
+```r
+survey_cycle_factor_validation <-
+  cbc_demographics_labelled |>
+  dplyr::count(
+    survey_cycle,
+    survey_cycle_factor,
+    name = "records"
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor
+  )
+```
+
+Inspect:
+
+```r
+print(
+  survey_cycle_factor_validation,
+  n = Inf
+)
+```
+
+Confirm no cycle was lost:
+
+```r
+if (
+  any(
+    is.na(
+      cbc_demographics_labelled$survey_cycle_factor
+    )
+  )
+) {
+  stop(
+    "One or more survey-cycle values were not included in the ordered factor."
+  )
+}
+```
+
+## Create a readable Demographic match variable
+
+Keep the logical variable:
+
+```text
+demographic_match
+```
+
+Create a factor:
+
+```r
+cbc_demographics_labelled <-
+  cbc_demographics_labelled |>
+  dplyr::mutate(
+    demographic_match_label = factor(
+      demographic_match,
+      levels = c(
+        TRUE,
+        FALSE
+      ),
+      labels = c(
+        "Matched",
+        "Not matched"
+      )
+    )
+  )
+```
+
+Assign a label:
+
+```r
+cbc_demographics_labelled$demographic_match_label <-
+  set_variable_label(
+    cbc_demographics_labelled$demographic_match_label,
+    "Demographic merge status"
+  )
+```
+
+## Create a compact analysis dictionary
+
+The full variable dictionary may be large.
+
+Create a smaller dictionary for variables used in the tutorial analysis:
+
+```r
+tutorial_analysis_variables <- c(
+  "survey_cycle",
+  "survey_cycle_factor",
+  "SEQN",
+  "LBXHGB",
+  "RIAGENDR",
+  "sex",
+  "demographic_match",
+  "demographic_match_label",
+  "SDMVSTRA",
+  "SDMVPSU"
+)
+```
+
+Check that they exist:
+
+```r
+missing_tutorial_dictionary_variables <- setdiff(
+  tutorial_analysis_variables,
+  names(
+    cbc_demographics_labelled
+  )
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  length(
+    missing_tutorial_dictionary_variables
+  ) > 0
+) {
+  stop(
+    "Tutorial dictionary variables are missing: ",
+    paste(
+      missing_tutorial_dictionary_variables,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Create the dictionary:
+
+```r
+tutorial_variable_dictionary <-
+  labelled_variable_dictionary |>
+  dplyr::filter(
+    variable %in%
+      tutorial_analysis_variables
+  ) |>
+  dplyr::mutate(
+    display_order = match(
+      variable,
+      tutorial_analysis_variables
+    )
+  ) |>
+  dplyr::arrange(
+    display_order
+  ) |>
+  dplyr::select(
+    variable,
+    label,
+    variable_class
+  )
+```
+
+Inspect:
+
+```r
+print(
+  tutorial_variable_dictionary,
+  n = Inf
+)
+```
+
+## Add source descriptions
+
+Create a source-type field:
+
+```r
+tutorial_variable_dictionary <-
+  tutorial_variable_dictionary |>
+  dplyr::mutate(
+    source = dplyr::case_when(
+      variable %in% c(
+        "LBXHGB"
+      ) ~
+        "NHANES CBC laboratory file",
+
+      variable %in% c(
+        "RIAGENDR",
+        "SDMVSTRA",
+        "SDMVPSU"
+      ) ~
+        "NHANES Demographic file",
+
+      variable %in% c(
+        "SEQN"
+      ) ~
+        "NHANES participant identifier",
+
+      TRUE ~
+        "Created by this pipeline"
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  tutorial_variable_dictionary,
+  n = Inf
+)
+```
+
+## Add an analytical-use description
+
+Run:
+
+```r
+tutorial_variable_dictionary <-
+  tutorial_variable_dictionary |>
+  dplyr::mutate(
+    analytical_use = dplyr::case_when(
+      variable == "survey_cycle" ~
+        "Explicit participant-cycle key and cycle grouping",
+
+      variable == "survey_cycle_factor" ~
+        "Ordered cycle display in tables and graphs",
+
+      variable == "SEQN" ~
+        "Participant identifier within cycle",
+
+      variable == "LBXHGB" ~
+        "Hemoglobin outcome used in the tutorial analysis",
+
+      variable == "RIAGENDR" ~
+        "Original coded sex variable",
+
+      variable == "sex" ~
+        "Readable sex grouping variable",
+
+      variable == "demographic_match" ~
+        "Logical merge-validation indicator",
+
+      variable == "demographic_match_label" ~
+        "Readable merge-status category",
+
+      variable == "SDMVSTRA" ~
+        "Masked variance stratum for survey analysis",
+
+      variable == "SDMVPSU" ~
+        "Masked variance primary sampling unit for survey analysis",
+
+      TRUE ~
+        NA_character_
+    )
+  )
+```
+
+## Check for duplicate dictionary entries
+
+Run:
+
+```r
+duplicate_dictionary_variables <-
+  tutorial_variable_dictionary |>
+  dplyr::count(
+    variable,
+    name = "entries"
+  ) |>
+  dplyr::filter(
+    entries > 1
+  )
+```
+
+Expected:
+
+```r
+nrow(
+  duplicate_dictionary_variables
+)
+```
+
+```text
+[1] 0
+```
+
+Stop if duplicates appear:
+
+```r
+if (
+  nrow(
+    duplicate_dictionary_variables
+  ) > 0
+) {
+  stop(
+    "The tutorial variable dictionary contains duplicate entries."
+  )
+}
+```
+
+## Validate required labels
+
+Define variables that must have readable labels:
+
+```r
+required_labelled_variables <- c(
+  "survey_cycle",
+  "SEQN",
+  "LBXHGB",
+  "RIAGENDR",
+  "sex",
+  "survey_cycle_factor",
+  "demographic_match",
+  "demographic_match_label"
+)
+```
+
+Create a check:
+
+```r
+required_label_check <-
+  tibble::tibble(
+    variable =
+      required_labelled_variables,
+    label =
+      purrr::map_chr(
+        required_labelled_variables,
+        function(variable_name) {
+          extract_variable_label(
+            cbc_demographics_labelled[[
+              variable_name
+            ]]
+          )
+        }
+      )
+  ) |>
+  dplyr::mutate(
+    label_present =
+      !is.na(
+        label
+      ) &
+        nzchar(
+          label
+        )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  required_label_check,
+  n = Inf
+)
+```
+
+Stop if any required label is absent:
+
+```r
+if (
+  any(
+    !required_label_check$label_present
+  )
+) {
+  stop(
+    "Required labels are missing for: ",
+    paste(
+      required_label_check$variable[
+        !required_label_check$label_present
+      ],
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Save the complete variable dictionary
+
+Run:
+
+```r
+readr::write_csv(
+  labelled_variable_dictionary,
+  file.path(
+    "outputs",
+    "tables",
+    "complete_variable_dictionary.csv"
+  )
+)
+```
+
+## Save the tutorial analysis dictionary
+
+Run:
+
+```r
+readr::write_csv(
+  tutorial_variable_dictionary,
+  file.path(
+    "outputs",
+    "tables",
+    "tutorial_variable_dictionary.csv"
+  )
+)
+```
+
+## Save remaining unlabelled variables
+
+Run:
+
+```r
+readr::write_csv(
+  remaining_unlabelled_variables,
+  file.path(
+    "outputs",
+    "validation",
+    "remaining_unlabelled_variables.csv"
+  )
+)
+```
+
+## Save label validation
+
+Run:
+
+```r
+readr::write_csv(
+  required_label_check,
+  file.path(
+    "outputs",
+    "validation",
+    "required_variable_label_check.csv"
+  )
+)
+```
+
+## Save recode validation
+
+Run:
+
+```r
+readr::write_csv(
+  sex_recode_validation,
+  file.path(
+    "outputs",
+    "validation",
+    "sex_recode_validation.csv"
+  )
+)
+```
+
+## Save survey-cycle factor validation
+
+Run:
+
+```r
+readr::write_csv(
+  survey_cycle_factor_validation,
+  file.path(
+    "outputs",
+    "validation",
+    "survey_cycle_factor_validation.csv"
+  )
+)
+```
+
+## Save the labelled dataset
+
+Run:
+
+```r
+saveRDS(
+  cbc_demographics_labelled,
+  file.path(
+    "data",
+    "processed",
+    "cbc_demographics_labelled_1999_2018.rds"
+  )
+)
+```
+
+Confirm:
+
+```r
+file.exists(
+  file.path(
+    "data",
+    "processed",
+    "cbc_demographics_labelled_1999_2018.rds"
+  )
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+## Confirm saved metadata outputs
+
+Run:
+
+```r
+label_output_files <- c(
+  file.path(
+    "outputs",
+    "tables",
+    "complete_variable_dictionary.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "tutorial_variable_dictionary.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "remaining_unlabelled_variables.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "required_variable_label_check.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "sex_recode_validation.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "survey_cycle_factor_validation.csv"
+  )
+)
+```
+
+Check:
+
+```r
+label_output_check <- tibble::tibble(
+  file = label_output_files,
+  exists = file.exists(
+    label_output_files
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  label_output_check,
+  n = Inf
+)
+```
+
+Every result should be:
+
+```text
+TRUE
+```
+
+## Variable names, labels, and factor levels
+
+These three concepts are different.
+
+### Variable name
+
+Used directly in R code:
+
+```text
+RIAGENDR
+```
+
+### Variable label
+
+Describes the meaning of the variable:
+
+```text
+Gender
+```
+
+### Factor labels
+
+Describe individual coded values:
+
+```text
+1 = Male
+2 = Female
+```
+
+A well-documented analytical dataset can preserve all three.
+
+## Labels are metadata, not harmonization
+
+Adding a readable label does not prove that a variable is comparable across cycles.
+
+Before combining or interpreting a variable longitudinally, review:
+
+- wording;
+- units;
+- laboratory method;
+- specimen type;
+- eligibility;
+- lower detection limits;
+- coding;
+- documentation changes.
+
+A label improves readability. It does not establish scientific equivalence.
+
+## Common mistakes
+
+### Renaming all NHANES variables immediately
+
+This makes it harder to compare the data with official documentation and published code.
+
+### Replacing coded variables with factors
+
+Keep the original source variable and create a derived readable version.
+
+### Writing labels from memory
+
+Use the imported label or official documentation.
+
+### Assuming every unlabelled variable is wrong
+
+Pipeline-created variables may simply require locally defined labels.
+
+### Treating labels as harmonization evidence
+
+A common label does not prove that units, methods, or eligibility are consistent across cycles.
+
+### Losing labels during export
+
+CSV files do not preserve R variable-label attributes.
+
+Save an RDS dataset and a separate variable dictionary.
+
+## Checkpoint
+
+Confirm:
+
+- [ ] Existing NHANES labels were inspected.
+- [ ] A label-extraction function was created.
+- [ ] A complete variable dictionary was created.
+- [ ] Variables without labels were identified.
+- [ ] Key and pipeline variables received readable labels.
+- [ ] CBC provenance variables received labels.
+- [ ] Demographic provenance variables received labels.
+- [ ] Original NHANES variable names were preserved.
+- [ ] `RIAGENDR` was retained.
+- [ ] A readable `sex` factor was created.
+- [ ] The sex recode was validated.
+- [ ] An ordered survey-cycle factor was created.
+- [ ] A readable merge-status factor was created.
+- [ ] A compact tutorial dictionary was created.
+- [ ] Required labels were validated.
+- [ ] Variable dictionaries were saved.
+- [ ] The labelled RDS dataset was saved.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why should original NHANES variable names be preserved?
+
+They correspond to official documentation, support reproducibility, and make it easier to compare the pipeline with other NHANES code and publications.
+:::
+
+::: {.callout-note collapse="true"}
+## Why create `sex` instead of replacing `RIAGENDR`?
+
+`RIAGENDR` preserves the original coded source variable, while `sex` provides a readable factor for analysis and presentation.
+:::
+
+::: {.callout-note collapse="true"}
+## Does assigning the same label across cycles prove that a variable is harmonized?
+
+No. Harmonization also requires review of units, methods, eligibility, coding, specimen type, and documentation.
+:::
+
+## Lesson summary
+
+You have:
+
+- extracted existing NHANES labels;
+- created a complete variable dictionary;
+- labelled key and pipeline-created variables;
+- preserved original NHANES variable names;
+- created readable sex, cycle, and merge-status variables;
+- validated the recodes and required labels;
+- saved metadata tables and a labelled analytical dataset.
+
+[Continue to Lesson 15: Save reusable outputs](15-save-outputs.qmd){.button .button-primary}

@@ -1,126 +1,1230 @@
 ---
-title: "NHANES CBC and Demographics Data Guide"
-author: "Simon Aseno, MPH"
-date: last-modified
+title: "Project Architecture"
+subtitle: "How the educational site, R infrastructure, validation system, and generated outputs work together"
+description: "A technical reference for the repository structure, reproducible execution, modular R design, source catalogs, validation contracts, provenance, outputs, continuous integration, versioning, and extension of the NHANES Laboratory Data with R project."
 format:
   html:
     toc: true
-    code-fold: false
-execute:
-  eval: false
+    toc-depth: 2
 ---
 
-## Purpose
+```{=html}
+<style>
+.architecture-hero {
+  position: relative;
+  overflow: hidden;
+  margin: 1rem 0 2.3rem;
+  padding: 2.8rem 1.6rem;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle at 88% 16%,
+      rgba(77, 208, 187, 0.22),
+      transparent 27%
+    ),
+    radial-gradient(
+      circle at 8% 88%,
+      rgba(68, 120, 170, 0.18),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      #081923,
+      #123447 58%,
+      #165c65
+    );
+  color: #ffffff;
+  box-shadow: 0 16px 38px rgba(7, 26, 39, 0.23);
+}
 
-This project downloads, validates, and prepares public-use NHANES Complete Blood
-Count (CBC) and Demographics data for the ten continuous cycles from 1999–2000
-through 2017–2018. Acquisition is driven by a reviewed source catalog, and the
-scientific rules are implemented in testable R functions rather than embedded in
-this document.
+.architecture-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 920px;
+}
 
-## Reproducible execution
+.architecture-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.42rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #d9fffa;
+  font-size: 0.88rem;
+  font-weight: 760;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
 
-Restore the recorded environment and run the pipeline from the repository root:
+.architecture-hero h2 {
+  max-width: 860px;
+  margin: 0;
+  color: #ffffff !important;
+  font-size: clamp(2.3rem, 5.4vw, 4.5rem);
+  line-height: 1.03;
+  letter-spacing: -0.04em;
+}
+
+.architecture-hero p {
+  max-width: 840px;
+  margin: 1.2rem 0 0;
+  color: #e4f4f5 !important;
+  font-size: 1.13rem;
+  line-height: 1.7;
+}
+
+.architecture-layer-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.8rem 0 0;
+}
+
+.architecture-layer {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.architecture-layer strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #ffffff;
+}
+
+.architecture-layer span {
+  color: #d1e8e9;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.architecture-map {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0, 1fr)
+    );
+  gap: 0.75rem;
+  margin: 1.5rem 0 2.4rem;
+}
+
+.architecture-step {
+  position: relative;
+  padding: 1.05rem 0.8rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 13px;
+  background: #f8fbfb;
+  text-align: center;
+}
+
+.architecture-step strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #113244;
+}
+
+.architecture-step span {
+  color: #566270;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.architecture-step:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 50%;
+  right: -0.63rem;
+  z-index: 3;
+  transform: translateY(-50%);
+  color: #23a493;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.architecture-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(240px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2.4rem;
+}
+
+.architecture-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.3rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(17, 34, 51, 0.06);
+}
+
+.architecture-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(
+    90deg,
+    #0d5961,
+    #35b6a4
+  );
+}
+
+.architecture-card-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  margin-bottom: 0.8rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: #102b3a;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.architecture-card h3 {
+  margin: 0 0 0.5rem;
+  color: #102b3a;
+  font-size: 1.16rem;
+}
+
+.architecture-card p {
+  margin: 0;
+  color: #566270;
+  line-height: 1.55;
+}
+
+.architecture-code-map {
+  margin: 1.5rem 0 2.4rem;
+  padding: 1.4rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 17px;
+  background: #f7fbfb;
+}
+
+.architecture-code-map pre {
+  margin-bottom: 0;
+}
+
+.architecture-contract {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(230px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2.4rem;
+}
+
+.contract-card {
+  padding: 1.2rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.contract-card h3 {
+  margin-top: 0;
+  color: #0d5961;
+}
+
+.contract-card p {
+  margin-bottom: 0;
+  color: #566270;
+  line-height: 1.55;
+}
+
+.architecture-rule {
+  margin: 1rem 0;
+  padding: 1rem 1.1rem;
+  border-left: 5px solid #238b7e;
+  border-radius: 8px;
+  background: #f8fbfb;
+}
+
+.architecture-rule strong {
+  color: #123044;
+}
+
+.architecture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 2rem 0;
+}
+
+.architecture-action {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.8rem 1.15rem;
+  border: 2px solid #0d5961;
+  border-radius: 9px;
+  background: #0d5961 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 760;
+  text-decoration: none !important;
+}
+
+.architecture-action:hover {
+  background: #ffffff !important;
+  color: #0d5961 !important;
+  -webkit-text-fill-color: #0d5961 !important;
+}
+
+.architecture-action-secondary {
+  background: #ffffff !important;
+  color: #0d5961 !important;
+  -webkit-text-fill-color: #0d5961 !important;
+}
+
+.architecture-action-secondary:hover {
+  background: #0d5961 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+@media (max-width: 900px) {
+  .architecture-layer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-map {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-step:not(:last-child)::after {
+    content: "↓";
+    top: auto;
+    right: 50%;
+    bottom: -1.05rem;
+    transform: translateX(50%);
+  }
+}
+
+@media (max-width: 620px) {
+  .architecture-hero {
+    padding: 2.4rem 1rem;
+  }
+
+  .architecture-actions {
+    flex-direction: column;
+  }
+
+  .architecture-action {
+    width: 100%;
+  }
+}
+</style>
+```
+
+```{=html}
+<section class="architecture-hero">
+
+  <div class="architecture-hero-content">
+
+    <div class="architecture-eyebrow">
+      Repository design · reproducibility · validation
+    </div>
+
+    <h2>
+      A clear separation between learning content, executable infrastructure, and research outputs.
+    </h2>
+
+    <p>
+      This page explains how the NHANES Laboratory Data with R project is
+      organized technically. It focuses on repository structure, reproducible
+      execution, modular R code, validation contracts, provenance, output
+      management, testing, versioning, and extension.
+    </p>
+
+    <div class="architecture-layer-grid">
+
+      <div class="architecture-layer">
+        <strong>Educational layer</strong>
+        <span>
+          Foundations, laboratory guides, pipeline catalogs, and structured courses
+        </span>
+      </div>
+
+      <div class="architecture-layer">
+        <strong>Execution layer</strong>
+        <span>
+          Configuration files, R functions, scripts, validation rules, and tests
+        </span>
+      </div>
+
+      <div class="architecture-layer">
+        <strong>Output layer</strong>
+        <span>
+          Processed datasets, tables, figures, logs, and provenance records
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+```
+
+# Purpose of this page
+
+The rest of the website explains:
+
+- how NHANES is structured;
+- how laboratory data should be interpreted;
+- how survey design and weights work;
+- how cycles are combined;
+- how specific analytical pipelines are built.
+
+This page does not repeat those topics.
+
+Its purpose is to explain:
+
+```text
+how the repository itself works
+```
+
+and:
+
+```text
+how the technical design supports reproducibility
+```
+
+# The project architecture
+
+```{=html}
+<div class="architecture-map">
+
+  <div class="architecture-step">
+    <strong>Configure</strong>
+    <span>Declare sources, cycles, roles, and expectations.</span>
+  </div>
+
+  <div class="architecture-step">
+    <strong>Acquire</strong>
+    <span>Download and preserve official public-use files.</span>
+  </div>
+
+  <div class="architecture-step">
+    <strong>Validate</strong>
+    <span>Check structures, keys, rows, variables, and relationships.</span>
+  </div>
+
+  <div class="architecture-step">
+    <strong>Transform</strong>
+    <span>Harmonize, combine, merge, label, and document.</span>
+  </div>
+
+  <div class="architecture-step">
+    <strong>Publish</strong>
+    <span>Create datasets, tables, figures, lessons, and evidence.</span>
+  </div>
+
+</div>
+```
+
+# Repository structure
+
+A simplified repository structure is:
+
+```text
+NHANES/
+├── _quarto.yml
+├── styles.css
+├── renv.lock
+├── CITATION.cff
+├── LICENSE
+│
+├── config/
+│   └── nhanes_files.csv
+│
+├── R/
+│   ├── catalog.R
+│   ├── download.R
+│   ├── validate.R
+│   └── pipeline.R
+│
+├── scripts/
+│   └── run_pipeline.R
+│
+├── data/
+│   ├── raw/
+│   └── processed/
+│
+├── outputs/
+│   ├── figures/
+│   ├── tables/
+│   └── validation/
+│
+├── foundations/
+├── laboratory/
+├── pipelines/
+└── tutorial/
+```
+
+The exact files may grow over time, but the architectural roles should remain distinct.
+
+# What each layer does
+
+```{=html}
+<div class="architecture-grid">
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">1</div>
+    <h3>Website configuration</h3>
+    <p>
+      `_quarto.yml` defines navigation, sidebars, page order, rendering behavior,
+      and the overall website structure.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">2</div>
+    <h3>Source configuration</h3>
+    <p>
+      Files under `config/` declare official source files, cycles, URLs,
+      roles, expected structures, and local destinations.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">3</div>
+    <h3>Reusable R modules</h3>
+    <p>
+      Files under `R/` contain focused functions for catalog handling,
+      acquisition, validation, integration, and output generation.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">4</div>
+    <h3>Execution scripts</h3>
+    <p>
+      Files under `scripts/` provide controlled entry points that run the
+      pipeline in a defined order.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">5</div>
+    <h3>Research data</h3>
+    <p>
+      Raw files are preserved separately from processed datasets so source
+      evidence is not confused with derived analytical products.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">6</div>
+    <h3>Generated outputs</h3>
+    <p>
+      Tables, figures, validation records, logs, and provenance manifests are
+      written to dedicated output folders.
+    </p>
+  </div>
+
+</div>
+```
+
+# Website and pipeline execution are separate
+
+The Quarto website and the analytical pipeline serve different purposes.
+
+::: {.panel-tabset}
+
+## Website rendering
+
+Quarto processes `.qmd` files and produces HTML pages.
+
+Typical command:
+
+```bash
+quarto render
+```
+
+This builds the website.
+
+It should not silently:
+
+- install analytical packages;
+- refresh source data;
+- overwrite research datasets;
+- change raw files;
+- rerun long network-dependent workflows.
+
+## Pipeline execution
+
+The R pipeline performs the data work.
+
+A repository-level entry point may resemble:
+
+```bash
+Rscript scripts/run_pipeline.R
+```
+
+Depending on implementation, optional arguments may control:
+
+- source refresh;
+- CSV exports;
+- validation strictness;
+- output destinations;
+- logging behavior.
+
+## Why the separation matters
+
+Separating rendering from analytical execution makes it easier to:
+
+- preview documentation without rerunning the pipeline;
+- review website changes independently;
+- avoid unintended data modification;
+- keep network failures from breaking ordinary documentation work;
+- reproduce outputs through an explicit command.
+
+:::
+
+::: {.architecture-rule}
+**Architecture rule:** Rendering documentation should not silently mutate research data.
+:::
+
+# Reproducible software environment
+
+The project uses a recorded R environment so package versions can be restored.
+
+A typical restoration command is:
 
 ```bash
 Rscript -e 'renv::restore()'
-Rscript scripts/run_pipeline.R --refresh=true --write-csv=false
 ```
 
-The executable entry point sources the modules under `R/`. Quarto renders this
-guide but does not install packages, download data, or overwrite research outputs.
+The lockfile records the package environment expected by the project.
 
-## Source catalog
+Important files may include:
 
-Every upstream file is declared in `config/nhanes_files.csv`. The catalog records:
+```text
+renv.lock
+renv/
+.Rprofile
+```
 
-- the official release cycle and file identifier;
-- the direct CDC HTTPS URL;
-- expected row count;
-- record level and merge key;
-- exam and analytic role.
+A reproducible environment helps reduce differences caused by:
 
-An upstream row-count change stops the pipeline so the CDC revision can be
-reviewed instead of silently changing a research dataset.
+- package updates;
+- changed defaults;
+- dependency conflicts;
+- machine-specific library states;
+- inconsistent development environments.
 
-## CBC first and second examinations
+# Configuration-driven acquisition
 
-The 2001–2002 `L25_B` file contains the primary CBC examination. `L25_2_B`
-contains repeat measurements from a second examination. CDC documents the second
-exam as a convenience sample without survey weights.
+Every upstream file should be declared in a structured source catalog rather than being scattered across scripts.
 
-The legacy v1 workflow appended these files by rows, creating 557 duplicate
-participants in the combined CBC and CBC-demographic outputs. Version 0.2 keeps:
+The catalog may include:
 
-- `cbc_primary_1999_2018`: primary CBC observations used for representative
-  analyses when paired with the appropriate design and weights;
-- `cbc_second_exam_2001_2002`: supplementary repeat observations for methods
-  that explicitly account for repeat measures and the nonprobability subsample.
+```text
+survey_cycle
+component
+file_name
+file_role
+source_url
+local_path
+expected_rows
+record_level
+merge_key
+required_variables
+notes
+```
 
-The second-exam observations are never silently included in population trends.
+A configuration-driven approach provides:
 
-Official documentation:
-<https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2001/DataFiles/L25_2_B.htm>
+- one auditable source list;
+- explicit cycle coverage;
+- controlled primary and supplementary roles;
+- reusable acquisition logic;
+- easier extension to additional components.
 
-## Merge contract
+::: {.callout-important icon="true"}
+## Adding a catalog row is not enough to support a new analysis
 
-Primary person-level CBC and Demographics are each required to be unique on
-`SEQN + cycle`. Every CBC key must exist in Demographics. The protected left join
-must preserve the CBC row count and key uniqueness.
+A new source also requires:
 
-These checks are deliberately component-specific. Some other NHANES files have
-multiple records per participant and must not be merged until their granularity
-has been modeled appropriately.
+- record-level validation;
+- variable review;
+- eligibility documentation;
+- merge logic;
+- method review;
+- survey-weight guidance;
+- analytical tests.
+:::
 
-## Survey design and weights
+# Modular R architecture
 
-NHANES is a complex, multistage probability sample. Valid population estimates
-generally require:
+A modular design separates responsibilities.
 
-- the weight appropriate to the least inclusive analytic component;
-- strata (`SDMVSTRA`) and primary sampling units (`SDMVPSU`);
-- adjusted weights when compatible cycles are combined;
-- domain-analysis methods rather than deleting sampled records prematurely;
-- review of eligibility, nonresponse, and laboratory-method changes.
+```{=html}
+<div class="architecture-contract">
 
-This pipeline preserves design variables but does not select a universal weight,
-because the correct choice depends on each analysis. Consult the
-[NHANES weighting tutorial](https://wwwn.cdc.gov/nchs/nhanes/tutorials/weighting.aspx)
-before estimating population quantities.
+  <div class="contract-card">
+    <h3>`catalog.R`</h3>
+    <p>
+      Reads, validates, filters, and documents the source catalog.
+    </p>
+  </div>
 
-## Provenance and validation
+  <div class="contract-card">
+    <h3>`download.R`</h3>
+    <p>
+      Downloads files, records status, calculates hashes, and preserves raw sources.
+    </p>
+  </div>
 
-Each run produces:
+  <div class="contract-card">
+    <h3>`validate.R`</h3>
+    <p>
+      Checks files, variables, dimensions, keys, duplicates, and expected relationships.
+    </p>
+  </div>
 
-- `provenance.csv`, containing source URLs, retrieval time, byte size, SHA-256,
-  and imported dimensions;
-- `validation.csv`, containing output dimensions, participant counts, and
-  duplicate-participant counts;
-- compressed RDS datasets, with CSV copies only when requested.
+  <div class="contract-card">
+    <h3>`pipeline.R`</h3>
+    <p>
+      Coordinates import, harmonization, integration, analysis, and output creation.
+    </p>
+  </div>
 
-CI runs synthetic tests on every pull request. A separate scheduled workflow
-performs the network-dependent CDC refresh so temporary upstream availability
-does not make ordinary code review unreliable.
+</div>
+```
 
-## Expanding to more NHANES components
+The main entry script should coordinate these modules rather than contain every implementation detail.
 
-Adding catalog rows is only the acquisition step. Each new component also needs:
+A simplified pattern is:
 
-1. record-level and key validation;
-2. a variable harmonization crosswalk;
-3. eligibility and missing-data documentation;
-4. survey-weight guidance;
-5. tests for every merge or reshape;
-6. review of differences across survey cycles.
+```r
+source(
+  file.path(
+    "R",
+    "catalog.R"
+  )
+)
 
-This separation makes the repository extensible without implying that all NHANES
-files can be safely combined through one generic join.
+source(
+  file.path(
+    "R",
+    "download.R"
+  )
+)
 
-## Citation and license
+source(
+  file.path(
+    "R",
+    "validate.R"
+  )
+)
 
-Use the version-specific citation exposed by `CITATION.cff`, cite the original
-CDC/NCHS files, and report the pipeline version and provenance manifest used in
-the analysis.
+source(
+  file.path(
+    "R",
+    "pipeline.R"
+  )
+)
 
-The project code and documentation use the MIT License. CDC data remain governed
-by their official public-use documentation and terms.
+run_pipeline()
+```
+
+# Why modularity matters
+
+Modular functions make it easier to:
+
+- test one responsibility at a time;
+- reuse logic across pipelines;
+- isolate failures;
+- improve code review;
+- add new laboratory components;
+- avoid duplicating validation code;
+- preserve a readable execution sequence.
+
+# Validation contracts
+
+A validation contract is an explicit condition that must be true before the pipeline continues.
+
+Examples include:
+
+```text
+required file exists
+expected variables are present
+participant keys are complete
+primary records are unique
+row counts are plausible
+join relationships are valid
+output files were created
+```
+
+```{=html}
+<div class="architecture-contract">
+
+  <div class="contract-card">
+    <h3>Source contract</h3>
+    <p>
+      The expected file exists, imports successfully, and matches the declared source role.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3>Schema contract</h3>
+    <p>
+      Required variables, classes, labels, and identifiers are present.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3>Key contract</h3>
+    <p>
+      Participant keys are complete and unique where one-row-per-person structure is required.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3>Merge contract</h3>
+    <p>
+      The join preserves the intended analytical population and expected row count.
+    </p>
+  </div>
+
+  <div class="contract-card">
+    <h3>Output contract</h3>
+    <p>
+      Required datasets, tables, figures, logs, and validation records are created.
+    </p>
+  </div>
+
+</div>
+```
+
+::: {.architecture-rule}
+**Architecture rule:** A pipeline should stop when an essential contract fails rather than silently create a questionable dataset.
+:::
+
+# Component-specific validation
+
+Not every NHANES file has one row per participant.
+
+Some components may contain:
+
+- repeated examinations;
+- food-level records;
+- medication-level records;
+- event-level observations;
+- multiple specimens;
+- replicate measurements.
+
+Therefore, validation rules must reflect the declared record level.
+
+A generic uniqueness rule applied to every component would be incorrect.
+
+# Provenance and source integrity
+
+Each run should preserve enough information to establish:
+
+```text
+what source was used
+when it was obtained
+whether it changed
+how it was processed
+which outputs were generated
+```
+
+A provenance manifest may contain:
+
+```text
+source URL
+retrieval date and time
+local path
+file size
+SHA-256 hash
+imported row count
+imported column count
+survey cycle
+component
+file role
+pipeline version
+```
+
+# File hashes
+
+A cryptographic hash provides a reproducible fingerprint of a file.
+
+For example:
+
+```text
+SHA-256
+```
+
+If the same source filename later produces a different hash, the upstream file may have changed.
+
+That change should be reviewed rather than ignored.
+
+::: {.callout-warning icon="true"}
+## A stable URL does not guarantee stable content
+
+Public-use files may be revised while retaining the same general location or name.
+
+Hashes and dimensions help detect upstream changes.
+:::
+
+# Raw and processed data must remain separate
+
+The project should maintain a clear distinction:
+
+```text
+data/raw/
+```
+
+contains downloaded source files.
+
+```text
+data/processed/
+```
+
+contains derived and reusable analytical datasets.
+
+Raw files should not be manually edited.
+
+Transformations should be implemented in code and reflected in processed outputs.
+
+# Output-management rules
+
+Generated files should be written into defined locations.
+
+```text
+outputs/
+├── figures/
+├── tables/
+└── validation/
+```
+
+::: {.panel-tabset}
+
+## Figures
+
+May include:
+
+- PNG for web display;
+- PDF for publication or print;
+- SVG for scalable editing and presentation.
+
+## Tables
+
+May include:
+
+- descriptive summaries;
+- cycle-level diagnostics;
+- missingness reports;
+- figure source data;
+- variable dictionaries.
+
+## Validation
+
+May include:
+
+- source manifests;
+- file hashes;
+- row-count reports;
+- duplicate-key reports;
+- join validation;
+- session information;
+- execution logs.
+
+:::
+
+# RDS and CSV outputs
+
+RDS and CSV files serve different purposes.
+
+## RDS
+
+RDS can preserve:
+
+- factor structure;
+- variable classes;
+- labels;
+- attributes;
+- R-specific objects.
+
+## CSV
+
+CSV supports:
+
+- portability;
+- review outside R;
+- use in other analytical tools;
+- simple archival inspection.
+
+The pipeline may treat RDS as the primary reusable format and generate CSV copies only when requested.
+
+# Controlled execution
+
+A complete run should be initiated explicitly from the repository root.
+
+A general command may resemble:
+
+```bash
+Rscript scripts/run_pipeline.R
+```
+
+A configurable entry point may support options such as:
+
+```bash
+Rscript scripts/run_pipeline.R \
+  --refresh=true \
+  --write-csv=false
+```
+
+The exact arguments must match the implementation in the repository.
+
+# Continuous integration
+
+Continuous integration can test the repository automatically when code changes.
+
+Useful checks include:
+
+- R syntax;
+- function tests;
+- synthetic-data tests;
+- configuration validation;
+- expected output structure;
+- Quarto rendering;
+- broken links;
+- reproducibility checks.
+
+Network-dependent source refreshes should usually be separated from ordinary pull-request tests.
+
+This prevents temporary upstream outages from making every code review unreliable.
+
+# Scheduled refreshes
+
+A scheduled workflow may:
+
+- check official sources;
+- download updated files;
+- compare hashes;
+- inspect row counts;
+- detect revisions;
+- create a report;
+- require human review before accepting upstream changes.
+
+The pipeline should not silently approve a changed upstream file simply because the download succeeded.
+
+# Versioning and releases
+
+A reproducible analysis should identify the exact project version used.
+
+Versioning may include:
+
+- Git commit;
+- release tag;
+- pipeline version;
+- source manifest;
+- package lockfile;
+- output date;
+- provenance file.
+
+A formal release may contain:
+
+```text
+source code
+documentation
+citation metadata
+license
+release notes
+validation summaries
+```
+
+# Citation
+
+The project should provide a machine-readable citation file such as:
+
+```text
+CITATION.cff
+```
+
+A complete analytical report should cite:
+
+- the project version;
+- the original CDC or NCHS data sources;
+- the survey cycles used;
+- the source files or components;
+- the provenance manifest;
+- the relevant NHANES documentation.
+
+# Licensing
+
+The project code and documentation may be distributed under the MIT License.
+
+That license applies to the project’s own code and documentation.
+
+NHANES public-use data remain governed by their official documentation, release conditions, and applicable public-use requirements.
+
+# Extending the repository
+
+Adding another laboratory pipeline should follow a controlled sequence.
+
+```{=html}
+<div class="architecture-grid">
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">1</div>
+    <h3>Declare sources</h3>
+    <p>
+      Add reviewed source files, URLs, cycles, roles, expected variables, and record levels.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">2</div>
+    <h3>Model the records</h3>
+    <p>
+      Establish what one row represents and which keys define uniqueness.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">3</div>
+    <h3>Review compatibility</h3>
+    <p>
+      Assess units, methods, eligibility, detection limits, and cycle differences.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">4</div>
+    <h3>Define validation</h3>
+    <p>
+      Create component-specific schema, key, range, missingness, and merge checks.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">5</div>
+    <h3>Document weights</h3>
+    <p>
+      Identify the eligible sample, component weight, cycle adjustment, strata, and PSUs.
+    </p>
+  </div>
+
+  <div class="architecture-card">
+    <div class="architecture-card-number">6</div>
+    <h3>Publish evidence</h3>
+    <p>
+      Save processed datasets, dictionaries, diagnostics, limitations, and reproducibility records.
+    </p>
+  </div>
+
+</div>
+```
+
+# Contributor checklist
+
+Before merging a technical change, confirm:
+
+- [ ] The change has a clear architectural purpose.
+- [ ] Existing responsibilities remain separated.
+- [ ] New sources are declared in configuration.
+- [ ] Raw source files are not manually altered.
+- [ ] New functions have focused responsibilities.
+- [ ] Component-specific validation has been added.
+- [ ] Tests cover the intended behavior.
+- [ ] Failure conditions are explicit.
+- [ ] Output paths are controlled.
+- [ ] Provenance is preserved.
+- [ ] Documentation links to the correct educational pages.
+- [ ] Quarto renders successfully.
+- [ ] No personal computer paths are embedded.
+- [ ] Version and citation information remain accurate.
+
+# Where to find analytical guidance
+
+This page describes the repository architecture.
+
+For analytical guidance, use the relevant section of the site:
+
+```{=html}
+<div class="architecture-actions">
+
+  <a
+    class="architecture-action"
+    href="foundations/index.html"
+  >
+    Review NHANES foundations →
+  </a>
+
+  <a
+    class="architecture-action architecture-action-secondary"
+    href="laboratory/index.html"
+  >
+    Explore laboratory data
+  </a>
+
+  <a
+    class="architecture-action architecture-action-secondary"
+    href="pipelines/index.html"
+  >
+    Browse the pipeline catalog
+  </a>
+
+  <a
+    class="architecture-action architecture-action-secondary"
+    href="pipelines/cbc-demographics/index.html"
+  >
+    Open the CBC and Demographic pipeline
+  </a>
+
+</div>
+```
+
+# Page summary
+
+The project architecture separates:
+
+```text
+educational content
+executable infrastructure
+generated research outputs
+```
+
+Reproducibility is supported through:
+
+```text
+configuration-driven sources
+modular R functions
+explicit execution
+validation contracts
+source hashes
+provenance manifests
+controlled outputs
+automated tests
+versioned releases
+```
+
+The goal is not only to make the pipeline run.
+
+The goal is to make every important scientific and technical decision visible, testable, and reproducible.
