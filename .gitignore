@@ -25,3 +25,5 @@ nhanes_demo/
 # Quarto build products
 _site/
 /.quarto/
+
+**/*.quarto_ipynb
