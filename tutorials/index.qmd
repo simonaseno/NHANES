@@ -1,0 +1,138 @@
+---
+title: "R Tutorials for NHANES Laboratory Data"
+subtitle: "Guided courses for building, validating, and analyzing component-specific NHANES laboratory pipelines"
+description: "The tutorial catalog for the NHANES Laboratory Data Pipeline in R."
+---
+
+## Tutorial philosophy
+
+Each tutorial is designed to teach:
+
+- the structure of the relevant NHANES component;
+- the scientific decisions behind the pipeline;
+- the R code used to implement those decisions;
+- expected outputs;
+- validation checks;
+- survey-design implications;
+- limitations.
+
+The tutorials do not present code as a black box.
+
+## Available tutorial
+
+### Reproducing the NHANES CBC and Demographic Data Pipeline in R
+
+**Level:** Complete beginner
+
+**Coverage:** 1999–2000 through 2017–2018
+
+**Estimated guided time:** 2–3 hours
+
+**Tools:** R, Visual Studio Code, Quarto
+
+The course covers:
+
+- software installation;
+- R execution in VS Code;
+- project organization;
+- package management;
+- NHANES source-file mapping;
+- XPT downloads;
+- CBC and Demographic integration;
+- duplicate detection;
+- second-examination handling;
+- merge validation;
+- descriptive analysis;
+- visualization;
+- troubleshooting.
+
+[Start the CBC and Demographics tutorial](../tutorial/index.qmd){.button .button-primary}
+
+[Explore the CBC pipeline](../pipelines/cbc-demographics/index.qmd){.button .button-secondary}
+
+## Planned tutorials
+
+### Survey-weighted NHANES analysis in R
+
+Planned topics:
+
+- selecting weights;
+- constructing survey designs;
+- weighted means and proportions;
+- domains;
+- regression;
+- combined-cycle weights;
+- reliability of estimates.
+
+### Glycohemoglobin pipeline
+
+Planned topics:
+
+- HbA1c source files;
+- method changes;
+- diabetes-related supporting data;
+- harmonization;
+- weighted prevalence estimates.
+
+### Urine albumin and creatinine pipeline
+
+Planned topics:
+
+- urine collection;
+- albumin;
+- creatinine;
+- derived albumin-creatinine ratio;
+- detection limits;
+- kidney-disease definitions.
+
+### Lipid pipeline
+
+Planned topics:
+
+- total cholesterol;
+- HDL;
+- LDL;
+- triglycerides;
+- fasting subsamples;
+- medication variables;
+- component-specific weights.
+
+### Environmental biomarker pipeline
+
+Planned topics:
+
+- changing analyte panels;
+- lower detection limits;
+- specialized subsamples;
+- component-specific weights;
+- exposure distributions.
+
+## Standard tutorial structure
+
+Every future tutorial should include:
+
+1. course scope;
+2. prerequisites;
+3. learning objectives;
+4. component background;
+5. source-file mapping;
+6. stepwise R code;
+7. expected results;
+8. validation;
+9. survey-weight guidance;
+10. quizzes;
+11. complete script;
+12. troubleshooting;
+13. next steps.
+
+## Related foundational learning
+
+Before conducting formal population analysis, review:
+
+[How NHANES data are structured](../foundations/data-structure.qmd)
+
+[NHANES survey design](../foundations/survey-design.qmd)
+
+[Selecting and using survey weights](../foundations/survey-weights.qmd)
+
+[Combining survey cycles](../foundations/combining-cycles.qmd)

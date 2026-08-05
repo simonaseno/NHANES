@@ -1,0 +1,1103 @@
+---
+title: "Lesson 1: Welcome to the Automated CBC and Demographic Pipeline Course"
+subtitle: "Understand the course, the project, the tools, and where to run each type of command"
+description: "Begin the Automated NHANES CBC and Demographic Data Pipeline in R course within the broader NHANES Laboratory Data with R learning site."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- describe what the tutorial will build;
+- distinguish R code from terminal commands;
+- identify the project root;
+- recognize the main project files and folders;
+- understand the roles of R, VS Code, the terminal, and Quarto;
+- save a file in VS Code;
+- run a simple R command;
+- run a terminal command;
+- understand the difference between running the pipeline and rendering the website;
+- collect useful information when something does not work.
+:::
+
+# Welcome
+
+Welcome to the **Automated NHANES CBC and Demographic Data Pipeline in R** course.
+
+This course is part of the broader **NHANES Laboratory Data with R** learning site, which is designed to support multiple courses, analytical workflows, references, and reproducibility resources for working with NHANES laboratory data.
+
+In this course, you will construct a reproducible automated pipeline for acquiring, validating, combining, analyzing, and documenting NHANES CBC and Demographic data.
+
+The completed pipeline will:
+
+- identify the required NHANES source files;
+- download official XPT files;
+- inspect and validate each source;
+- distinguish primary and supplementary examinations;
+- combine CBC files across survey cycles;
+- combine Demographic files across survey cycles;
+- merge the two components safely;
+- create readable variables and labels;
+- save reusable analytical datasets;
+- summarize hemoglobin descriptively;
+- create professional figures;
+- generate validation and reproducibility reports.
+
+This course focuses specifically on:
+
+```text
+Automated NHANES CBC and Demographic Data Pipeline in R
+Survey cycles: 1999–2000 through 2017–2018
+```
+
+Other courses on the broader site may cover different laboratory components, analytes, survey methods, visualizations, or workflows that are not automated pipelines.
+
+# What makes this pipeline important?
+
+Using NHANES data involves more than downloading several files and joining them together.
+
+A defensible workflow must account for:
+
+- changing file names across survey cycles;
+- different component structures;
+- participant identifiers;
+- repeated or supplementary examinations;
+- variable availability;
+- variable classes;
+- missing values;
+- merge relationships;
+- survey-design variables;
+- reproducible outputs;
+- scientific interpretation.
+
+This tutorial teaches both:
+
+```text
+how to write the R code
+```
+
+and:
+
+```text
+how to check whether the result is trustworthy
+```
+
+# Who is this course for?
+
+This tutorial is designed for learners who may be:
+
+- new to R;
+- new to VS Code;
+- new to Quarto;
+- new to NHANES;
+- unfamiliar with the terminal;
+- learning reproducible research workflows;
+- experienced in laboratory science but less experienced in programming.
+
+You do not need to know every command before starting.
+
+Each lesson will explain:
+
+1. what you are doing;
+2. why you are doing it;
+3. where the code belongs;
+4. what result to expect;
+5. what to inspect when the result differs.
+
+# The four tools used in this tutorial
+
+You will use four main tools:
+
+1. R;
+2. VS Code;
+3. the terminal;
+4. Quarto.
+
+## R
+
+R performs the analytical work.
+
+R will:
+
+- read data;
+- transform variables;
+- combine datasets;
+- validate records;
+- calculate summaries;
+- create figures;
+- save outputs.
+
+An R command may look like:
+
+```r
+mean(
+  c(
+    10,
+    12,
+    14
+  )
+)
+```
+
+R commands belong in:
+
+- an `.R` script;
+- the R console;
+- an executable R code chunk in a `.qmd` file.
+
+## VS Code
+
+VS Code is the editor where you open and edit project files.
+
+You will use it to edit files such as:
+
+```text
+nhanes_pipeline.R
+tutorial/01-welcome.qmd
+_quarto.yml
+styles.css
+```
+
+VS Code itself does not perform the statistical analysis.
+
+It provides the workspace in which you write and organize the project.
+
+## Terminal
+
+The terminal runs system-level commands.
+
+Terminal commands are used to:
+
+- confirm your current folder;
+- list files;
+- run an R script;
+- render the Quarto website;
+- open generated files;
+- inspect logs.
+
+A terminal command may look like:
+
+```bash
+pwd
+```
+
+or:
+
+```bash
+Rscript nhanes_pipeline.R
+```
+
+Terminal commands do not belong inside the R console or directly inside an R script.
+
+## Quarto
+
+Quarto converts the tutorial’s `.qmd` files into a website.
+
+Quarto will:
+
+- read the lesson files;
+- process their YAML;
+- format headings and callout boxes;
+- include images;
+- create HTML pages;
+- build the tutorial website.
+
+A Quarto command may look like:
+
+```bash
+quarto render
+```
+
+This command is entered in the terminal.
+
+# Learn to recognize command types
+
+One of the most common beginner problems is running a correct command in the wrong place.
+
+## R code
+
+Example:
+
+```r
+x <- c(
+  10,
+  12,
+  14
+)
+
+mean(
+  x
+)
+```
+
+Run R code in:
+
+- an R script;
+- the R console;
+- an executable R code chunk.
+
+## Terminal command
+
+Example:
+
+```bash
+pwd
+```
+
+Run terminal commands in the VS Code terminal.
+
+## Quarto command
+
+Example:
+
+```bash
+quarto render
+```
+
+This is also a terminal command.
+
+## Markdown or Quarto text
+
+Example:
+
+```markdown
+## Inspect the downloaded files
+
+This section explains how to review the imported datasets.
+```
+
+This belongs in a `.qmd` file.
+
+It is explanatory content, not R code.
+
+::: {.callout-warning icon="true"}
+## Do not run the code-block markers
+
+When the tutorial shows a block beginning with:
+
+````text
+```r
+````
+
+or:
+
+````text
+```bash
+````
+
+the backticks and language name are formatting markers.
+
+Run only the code inside the block.
+:::
+
+# The project root
+
+The **project root** is the main folder containing the project.
+
+For this tutorial, the project folder is expected to be named:
+
+```text
+NHANES
+```
+
+Its exact location will differ from one computer to another.
+
+The project root contains files and folders such as:
+
+```text
+NHANES/
+├── _quarto.yml
+├── styles.css
+├── nhanes_pipeline.R
+├── config/
+├── data/
+├── outputs/
+├── R/
+└── tutorial/
+```
+
+# Why the project root matters
+
+The pipeline uses relative paths such as:
+
+```r
+file.path(
+  "data",
+  "processed",
+  "cbc_demographics_analysis_1999_2018.rds"
+)
+```
+
+R interprets this path relative to the current working directory.
+
+When the command is run from the project root, it refers to:
+
+```text
+NHANES/data/processed/cbc_demographics_analysis_1999_2018.rds
+```
+
+When the command is run from another folder, R may report:
+
+```text
+No such file or directory
+```
+
+The path may be correct, but the command may have been started from the wrong location.
+
+# Open the project correctly in VS Code
+
+The VS Code Explorer should show the contents of the `NHANES` folder.
+
+You should see items such as:
+
+```text
+_quarto.yml
+styles.css
+nhanes_pipeline.R
+config
+data
+outputs
+R
+tutorial
+```
+
+If the Explorer shows only one individual file, the complete project folder may not be open.
+
+Open the entire `NHANES` folder rather than opening a single file by itself.
+
+# Open the VS Code terminal
+
+In VS Code, use:
+
+```text
+Terminal → New Terminal
+```
+
+A terminal panel should appear at the bottom of the window.
+
+The command prompt may look different depending on the computer and shell.
+
+Type terminal commands after the prompt.
+
+# Confirm the current directory
+
+In the terminal, run:
+
+```bash
+pwd
+```
+
+`pwd` means:
+
+```text
+print working directory
+```
+
+The result should end with:
+
+```text
+/NHANES
+```
+
+The exact path before `/NHANES` will depend on where the project is stored on your computer.
+
+# List the project files
+
+In the terminal, run:
+
+```bash
+ls
+```
+
+You should see items including:
+
+```text
+_quarto.yml
+styles.css
+nhanes_pipeline.R
+config
+data
+outputs
+R
+tutorial
+```
+
+The exact order may differ.
+
+# Move into the project root when necessary
+
+If `pwd` shows another directory, change to the project folder using:
+
+```bash
+cd path/to/NHANES
+```
+
+Replace:
+
+```text
+path/to/NHANES
+```
+
+with the actual location of the project folder on your computer.
+
+Then confirm:
+
+```bash
+pwd
+```
+
+List the files:
+
+```bash
+ls
+```
+
+::: {.callout-tip icon="true"}
+## Check `pwd` before diagnosing a missing-file error
+
+Many apparent path problems are caused by running a command outside the project root.
+
+The first troubleshooting command should often be:
+
+```bash
+pwd
+```
+:::
+
+# Understand the major project files
+
+## `nhanes_pipeline.R`
+
+This is the main analytical script.
+
+It will eventually contain the complete pipeline in execution order.
+
+It creates:
+
+- downloaded-file records;
+- imported datasets;
+- validation reports;
+- processed datasets;
+- descriptive tables;
+- professional figures.
+
+## `_quarto.yml`
+
+This is the main Quarto website configuration file.
+
+It controls items such as:
+
+- the website structure;
+- navigation;
+- lesson order;
+- sidebar entries;
+- output format.
+
+## `styles.css`
+
+This contains the website’s custom visual styling.
+
+It may control:
+
+- fonts;
+- spacing;
+- buttons;
+- page width;
+- colors;
+- cards;
+- navigation styling.
+
+Do not make broad changes to this file unless the intended effect is understood.
+
+## `tutorial/`
+
+This folder contains the individual lessons.
+
+Examples include:
+
+```text
+tutorial/01-welcome.qmd
+tutorial/16-analyze-hemoglobin.qmd
+tutorial/17-create-graph.qmd
+tutorial/19-troubleshooting.qmd
+```
+
+## `R/`
+
+This folder contains reusable R helper functions.
+
+Helper functions reduce duplication and make the main pipeline easier to maintain.
+
+## `config/`
+
+This folder contains project configuration data.
+
+The NHANES source catalog will be stored here.
+
+## `data/raw/`
+
+This folder contains downloaded source files.
+
+Raw source files should not be edited manually.
+
+## `data/processed/`
+
+This folder contains reusable processed datasets.
+
+## `outputs/tables/`
+
+This folder contains analysis and reporting tables.
+
+## `outputs/figures/`
+
+This folder contains exported PNG, PDF, and SVG figures.
+
+## `outputs/validation/`
+
+This folder contains:
+
+- acquisition reports;
+- row-count checks;
+- key checks;
+- hashes;
+- session information;
+- validation summaries;
+- execution logs.
+
+# Save a file in VS Code
+
+After editing a file, save it using:
+
+```text
+Command + S
+```
+
+On Windows, the equivalent is generally:
+
+```text
+Control + S
+```
+
+An unsaved file may display a small dot beside its tab.
+
+The dot normally disappears after the file is saved.
+
+# Replace the entire content of a file
+
+Some lessons may instruct you to replace a complete file.
+
+The workflow is:
+
+1. open the named file;
+2. click inside the editor;
+3. press `Command + A`;
+4. paste the replacement content;
+5. press `Command + S`.
+
+Be careful to replace the content of the correct file.
+
+# Run a simple R command
+
+Open the R console and run:
+
+```r
+2 + 2
+```
+
+Expected:
+
+```text
+[1] 4
+```
+
+Try:
+
+```r
+mean(
+  c(
+    10,
+    12,
+    14
+  )
+)
+```
+
+Expected:
+
+```text
+[1] 12
+```
+
+This confirms that R can evaluate basic code.
+
+# Confirm that R is available from the terminal
+
+In the terminal, run:
+
+```bash
+Rscript --version
+```
+
+You should see an R version number.
+
+The exact version may differ.
+
+A result resembling the following is sufficient:
+
+```text
+Rscript (R) version ...
+```
+
+# Confirm that Quarto is available
+
+In the terminal, run:
+
+```bash
+quarto --version
+```
+
+You should see a Quarto version number.
+
+Do not worry if your version differs from another learner’s version unless a specific compatibility problem occurs.
+
+# Understand the main commands used later
+
+## Run the complete analytical pipeline
+
+```bash
+Rscript nhanes_pipeline.R
+```
+
+This command performs the data work.
+
+It may:
+
+- download source files;
+- import data;
+- validate records;
+- create processed datasets;
+- generate tables;
+- generate figures.
+
+## Render the website
+
+```bash
+quarto render
+```
+
+This command builds the HTML website.
+
+It does not automatically mean that the analytical pipeline has been run.
+
+## Preview the website
+
+```bash
+quarto preview
+```
+
+This command renders the website and starts a local preview server.
+
+The terminal must remain open while the preview server is running.
+
+# Running the pipeline and rendering the website are different
+
+This distinction is essential.
+
+## Analytical pipeline
+
+```bash
+Rscript nhanes_pipeline.R
+```
+
+Produces:
+
+```text
+processed data
+tables
+validation reports
+figures
+```
+
+## Quarto render
+
+```bash
+quarto render
+```
+
+Produces:
+
+```text
+HTML website pages
+```
+
+Lesson 17 embeds PNG files created by the analytical pipeline.
+
+Therefore, the correct final sequence will be:
+
+```text
+1. Run the R pipeline
+2. Confirm that the figure files exist
+3. Render the Quarto website
+```
+
+::: {.callout-important icon="true"}
+## We are not rendering yet
+
+While the lesson files are still being written and revised, do not run:
+
+```bash
+quarto render
+```
+
+The complete render will be tested after the tutorial content is finalized.
+:::
+
+# How to read error messages
+
+An error message provides information about where a process stopped.
+
+It does not necessarily mean the entire project is broken.
+
+Consider:
+
+```text
+Error: The analysis-ready RDS file does not exist
+```
+
+This may mean:
+
+- the pipeline has not created the file yet;
+- the command was run from the wrong directory;
+- the filename differs;
+- an earlier pipeline section failed.
+
+# Fix the first meaningful error
+
+When several errors appear, focus on the earliest meaningful failure.
+
+For example:
+
+```text
+Download fails
+→ imported object is missing
+→ combined data are incomplete
+→ merge fails
+→ figures are missing
+→ Quarto cannot display the figures
+```
+
+The first problem is the failed download.
+
+The missing figure is a downstream consequence.
+
+::: {.callout-warning icon="true"}
+## Do not fix downstream symptoms before the original failure
+
+Random changes can hide the real problem and make the project less reproducible.
+
+Identify and correct the earliest failure first.
+:::
+
+# Basic troubleshooting sequence
+
+When a step does not work, use this sequence.
+
+## Step 1: Stop
+
+Do not continue running later sections that depend on the failed step.
+
+## Step 2: Read the first error
+
+Copy the complete first meaningful error message.
+
+## Step 3: Confirm the directory
+
+Run:
+
+```bash
+pwd
+```
+
+## Step 4: Confirm the file exists
+
+For example:
+
+```bash
+ls -l nhanes_pipeline.R
+```
+
+or:
+
+```bash
+ls -l config/nhanes_files.csv
+```
+
+## Step 5: Confirm the relevant program exists
+
+For R:
+
+```bash
+Rscript --version
+```
+
+For Quarto:
+
+```bash
+quarto --version
+```
+
+## Step 6: Inspect the relevant lesson
+
+Return to the section that created the missing file or object.
+
+## Step 7: Correct the underlying cause
+
+Do not bypass a validation merely to make the code continue.
+
+## Step 8: Rerun from the failed stage
+
+For a complete final test, rerun from a clean R process.
+
+# Information to collect when asking for help
+
+Provide:
+
+- the exact command you ran;
+- the complete first error message;
+- the file you were editing;
+- the lesson and section;
+- the result of `pwd`;
+- the last 20–50 lines of terminal output;
+- whether the file was saved;
+- whether the problem occurs again after restarting.
+
+This is much more useful than saying:
+
+```text
+It does not work.
+```
+
+# Important habits for this tutorial
+
+## Save before running
+
+Press:
+
+```text
+Command + S
+```
+
+before testing code or rendering a document.
+
+## Run one diagnostic command at a time
+
+When troubleshooting, do not paste many commands at once.
+
+Run one command and inspect its result before continuing.
+
+## Do not paste explanatory comments into the terminal
+
+A line beginning with:
+
+```text
+#
+```
+
+may be treated differently depending on the shell and paste mode.
+
+Copy only the specific terminal command you need to run.
+
+## Do not edit raw XPT files
+
+Raw source files should remain unchanged.
+
+## Do not remove validation checks casually
+
+A failed validation is evidence that an expected condition was not met.
+
+Investigate it.
+
+## Do not use `distinct()` as an automatic duplicate fix
+
+Repeated participant identifiers may represent:
+
+- exact duplicates;
+- repeat examinations;
+- supplementary examinations;
+- conflicting records.
+
+Their meaning must be investigated.
+
+## Do not describe unweighted results as national estimates
+
+The descriptive analyses later in this tutorial do not automatically represent the U.S. population.
+
+Formal NHANES inference requires the appropriate survey-design methods.
+
+# What this course will cover
+
+The tutorial progresses through five broad stages.
+
+## Stage 1: Orientation and setup
+
+You will learn:
+
+- how the project works;
+- what NHANES files are required;
+- how the folder structure is organized;
+- how packages and tools are checked.
+
+## Stage 2: Data acquisition and inspection
+
+You will:
+
+- define the source catalog;
+- download a test file;
+- download all required files;
+- inspect structures, variables, keys, and row counts.
+
+## Stage 3: Data integration
+
+You will:
+
+- investigate supplementary examinations;
+- establish the duplicate-handling policy;
+- combine primary CBC files;
+- combine Demographic files;
+- merge the components;
+- validate the result.
+
+## Stage 4: Analysis and visualization
+
+You will:
+
+- create readable variables;
+- save reusable datasets;
+- summarize hemoglobin;
+- prepare figure datasets;
+- create four professional figures.
+
+## Stage 5: Reproducibility and troubleshooting
+
+You will:
+
+- assemble the complete script;
+- run it from a clean process;
+- validate outputs;
+- diagnose common problems;
+- complete the tutorial.
+
+# Scientific scope of the tutorial
+
+The completed descriptive analysis will examine hemoglobin by:
+
+- survey cycle;
+- sex.
+
+The main figures will include:
+
+1. mean hemoglobin trend;
+2. hemoglobin distributions;
+3. analytical record counts;
+4. hemoglobin missingness.
+
+The results will be clearly identified as:
+
+```text
+unweighted descriptive summaries
+```
+
+They will not be presented as nationally representative estimates.
+
+# What success looks like
+
+At the end of the tutorial, you should have:
+
+- a documented source catalog;
+- validated raw-source files;
+- a primary CBC dataset covering ten cycles;
+- a separate supplementary second-examination dataset;
+- a Demographic dataset covering ten cycles;
+- a merged analytical dataset;
+- a compact analysis-ready dataset;
+- output dictionaries and validation reports;
+- descriptive hemoglobin tables;
+- four professional figures;
+- a complete reproducible R pipeline;
+- a completed HTML course within the broader NHANES Laboratory Data with R website.
+
+# Beginner checkpoint
+
+Before continuing, confirm:
+
+- [ ] The complete `NHANES` folder is open in VS Code.
+- [ ] The VS Code Explorer shows the project files.
+- [ ] You know where to open the terminal.
+- [ ] `pwd` returns a path ending in `/NHANES`.
+- [ ] `ls` shows `_quarto.yml` and `nhanes_pipeline.R`.
+- [ ] You understand that R code and terminal commands are different.
+- [ ] You understand that Quarto commands run in the terminal.
+- [ ] You know how to save a file.
+- [ ] `Rscript --version` returns an R version.
+- [ ] `quarto --version` returns a Quarto version.
+- [ ] You understand that the R pipeline and website render are separate.
+- [ ] You know to fix the first meaningful error first.
+- [ ] You know what information to collect when asking for help.
+- [ ] You have not run `quarto render` yet.
+
+# Knowledge check
+
+::: {.callout-note collapse="true"}
+## What is the project root?
+
+The project root is the main `NHANES` folder containing files such as `_quarto.yml`, `nhanes_pipeline.R`, and the `tutorial`, `data`, and `outputs` folders.
+:::
+
+::: {.callout-note collapse="true"}
+## Where should `pwd` be run?
+
+`pwd` is a terminal command and should be run in the VS Code terminal.
+:::
+
+::: {.callout-note collapse="true"}
+## Where should `mean(c(10, 12, 14))` be run?
+
+It is R code and should be run in an R script, the R console, or an executable R code chunk.
+:::
+
+::: {.callout-note collapse="true"}
+## What does `Rscript nhanes_pipeline.R` do?
+
+It runs the analytical R pipeline and creates processed data, tables, validation reports, and figures.
+:::
+
+::: {.callout-note collapse="true"}
+## What does `quarto render` do?
+
+It converts the Quarto lesson files into the HTML website.
+:::
+
+::: {.callout-note collapse="true"}
+## Why should the first meaningful error be fixed first?
+
+Later errors are often consequences of the original failure. Correcting the earliest problem may resolve several downstream problems automatically.
+:::
+
+# Lesson summary
+
+You have learned:
+
+- what the NHANES pipeline will build;
+- how R, VS Code, the terminal, and Quarto work together;
+- how to distinguish R code from terminal commands;
+- what the project root is;
+- how to confirm the working directory;
+- how to save files;
+- how the analytical pipeline differs from the website render;
+- how to approach errors systematically;
+- what information to collect when requesting help.
+
+[Continue to Lesson 2: Install R and Visual Studio Code](02-install-r-vscode.qmd){.button .button-primary}

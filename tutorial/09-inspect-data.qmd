@@ -1,0 +1,2212 @@
+---
+title: "Lesson 9: Import and Inspect the Downloaded NHANES Files"
+subtitle: "Read every XPT file, confirm its structure, and detect problems before combining datasets"
+description: "Import downloaded NHANES XPT files, inspect variables and keys, validate record structure, and troubleshoot common import problems."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- import an NHANES XPT file with `haven::read_xpt()`;
+- confirm that a downloaded file contains readable data;
+- inspect dimensions, variable names, classes, and labels;
+- verify that `SEQN` exists;
+- inspect participant-key completeness and uniqueness;
+- compare imported structure across source files;
+- identify HTML error pages or incomplete downloads;
+- diagnose missing variables and unexpected classes;
+- create an inspection report for all downloaded files;
+- stop the pipeline when a critical source fails validation.
+:::
+
+# Why inspect files before combining them?
+
+A downloaded file may exist and still be unsuitable for analysis.
+
+For example, it may:
+
+- contain zero records;
+- be incomplete;
+- contain an HTML error page;
+- fail to import;
+- omit the expected participant identifier;
+- use an unexpected variable class;
+- represent a different examination or record level;
+- contain duplicate participant identifiers.
+
+Inspection must occur before files are combined.
+
+The workflow is:
+
+```text
+Download
+→ import
+→ inspect
+→ validate
+→ classify
+→ combine
+```
+
+Do not move directly from downloading to row-binding.
+
+# Where this lesson fits
+
+You previously:
+
+- created the source catalog;
+- downloaded one test file;
+- downloaded all required source files;
+- created an acquisition manifest.
+
+This lesson verifies that the downloaded files are structurally usable.
+
+# Add the inspection section
+
+Open:
+
+```text
+nhanes_pipeline.R
+```
+
+Add this section below the acquisition code:
+
+```r
+# ============================================================
+# SECTION 7: IMPORT AND INSPECT ALL DOWNLOADED FILES
+# ============================================================
+```
+
+# Confirm that required packages are available
+
+This lesson uses:
+
+```r
+library(
+  haven
+)
+
+library(
+  dplyr
+)
+
+library(
+  purrr
+)
+
+library(
+  tibble
+)
+
+library(
+  readr
+)
+```
+
+These packages may already be loaded near the beginning of the pipeline.
+
+Do not repeat package-loading code unnecessarily.
+
+# Confirm that the acquisition manifest exists
+
+Run:
+
+```r
+exists(
+  "acquisition_manifest"
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+Stop if it does not exist:
+
+```r
+if (
+  !exists(
+    "acquisition_manifest"
+  )
+) {
+  stop(
+    "The acquisition_manifest object does not exist."
+  )
+}
+```
+
+Confirm that it is a data frame:
+
+```r
+if (
+  !is.data.frame(
+    acquisition_manifest
+  )
+) {
+  stop(
+    "acquisition_manifest is not a data frame."
+  )
+}
+```
+
+# Confirm that all required local paths are present
+
+Check for missing local-path values:
+
+```r
+missing_local_paths <-
+  acquisition_manifest |>
+  dplyr::filter(
+    is.na(
+      local_path
+    ) |
+      !nzchar(
+        local_path
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  missing_local_paths,
+  n = Inf
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  nrow(
+    missing_local_paths
+  ) > 0
+) {
+  stop(
+    "One or more acquisition records do not contain a local file path."
+  )
+}
+```
+
+# Confirm that all downloaded files exist
+
+Create:
+
+```r
+missing_downloaded_files <-
+  acquisition_manifest |>
+  dplyr::filter(
+    !file.exists(
+      local_path
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  missing_downloaded_files,
+  n = Inf
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  nrow(
+    missing_downloaded_files
+  ) > 0
+) {
+  stop(
+    "One or more downloaded files do not exist: ",
+    paste(
+      missing_downloaded_files$dataset_id,
+      collapse = ", "
+    )
+  )
+}
+```
+
+# Confirm that downloaded files are not empty
+
+Create:
+
+```r
+empty_downloaded_files <-
+  acquisition_manifest |>
+  dplyr::mutate(
+    current_size_bytes =
+      file.info(
+        local_path
+      )$size
+  ) |>
+  dplyr::filter(
+    is.na(
+      current_size_bytes
+    ) |
+      current_size_bytes <= 0
+  )
+```
+
+Inspect:
+
+```r
+print(
+  empty_downloaded_files,
+  n = Inf
+)
+```
+
+Stop if any are empty:
+
+```r
+if (
+  nrow(
+    empty_downloaded_files
+  ) > 0
+) {
+  stop(
+    "One or more downloaded files are empty or unreadable: ",
+    paste(
+      empty_downloaded_files$dataset_id,
+      collapse = ", "
+    )
+  )
+}
+```
+
+# Import one file first
+
+Before importing everything, test the first downloaded file.
+
+Select one acquisition record:
+
+```r
+test_import_record <-
+  acquisition_manifest |>
+  dplyr::filter(
+    status == "success"
+  ) |>
+  dplyr::arrange(
+    cycle_start,
+    cycle_end
+  ) |>
+  dplyr::slice(
+    1
+  )
+```
+
+Validate:
+
+```r
+if (
+  nrow(
+    test_import_record
+  ) != 1
+) {
+  stop(
+    "Exactly one test import record must be selected."
+  )
+}
+```
+
+Inspect:
+
+```r
+print(
+  test_import_record,
+  width = Inf
+)
+```
+
+# Read the test XPT file
+
+Run:
+
+```r
+test_import_data <- haven::read_xpt(
+  test_import_record$local_path
+)
+```
+
+Inspect its class:
+
+```r
+class(
+  test_import_data
+)
+```
+
+Inspect dimensions:
+
+```r
+dim(
+  test_import_data
+)
+```
+
+Inspect the first variable names:
+
+```r
+head(
+  names(
+    test_import_data
+  ),
+  20
+)
+```
+
+Inspect the structure:
+
+```r
+dplyr::glimpse(
+  test_import_data
+)
+```
+
+# Confirm that the imported file contains records
+
+Run:
+
+```r
+nrow(
+  test_import_data
+)
+```
+
+Stop if no records are present:
+
+```r
+if (
+  nrow(
+    test_import_data
+  ) < 1
+) {
+  stop(
+    "The test XPT file imported successfully but contains no records."
+  )
+}
+```
+
+# Confirm that the imported file contains variables
+
+Run:
+
+```r
+ncol(
+  test_import_data
+)
+```
+
+Stop if no variables are present:
+
+```r
+if (
+  ncol(
+    test_import_data
+  ) < 1
+) {
+  stop(
+    "The test XPT file contains no variables."
+  )
+}
+```
+
+# Confirm that `SEQN` exists
+
+Run:
+
+```r
+"SEQN" %in%
+  names(
+    test_import_data
+  )
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+Stop if it is missing:
+
+```r
+if (
+  !"SEQN" %in%
+    names(
+      test_import_data
+    )
+) {
+  stop(
+    "The imported test file does not contain SEQN."
+  )
+}
+```
+
+# Inspect the participant identifier
+
+Check its class:
+
+```r
+class(
+  test_import_data$SEQN
+)
+```
+
+Inspect its values:
+
+```r
+summary(
+  test_import_data$SEQN
+)
+```
+
+Count missing values:
+
+```r
+sum(
+  is.na(
+    test_import_data$SEQN
+  )
+)
+```
+
+Stop if missing keys exist:
+
+```r
+if (
+  any(
+    is.na(
+      test_import_data$SEQN
+    )
+  )
+) {
+  stop(
+    "The imported test file contains missing SEQN values."
+  )
+}
+```
+
+# Check participant-key uniqueness
+
+Create:
+
+```r
+test_import_duplicate_seqn <-
+  test_import_data |>
+  dplyr::count(
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  test_import_duplicate_seqn,
+  n = Inf
+)
+```
+
+Do not automatically assume that duplicates are errors.
+
+Their interpretation depends on:
+
+- the component;
+- the examination;
+- the record level;
+- whether repeat measurements are expected;
+- whether the source is primary or supplementary.
+
+The duplicate-handling policy will be established in Lesson 10.
+
+# Inspect variable labels
+
+NHANES XPT files commonly preserve variable labels.
+
+Check one variable:
+
+```r
+attr(
+  test_import_data$SEQN,
+  "label"
+)
+```
+
+Inspect all labelled variables:
+
+```r
+test_variable_labels <- tibble::tibble(
+  variable =
+    names(
+      test_import_data
+    ),
+  label =
+    purrr::map_chr(
+      test_import_data,
+      function(
+          variable) {
+
+        variable_label <- attr(
+          variable,
+          "label"
+        )
+
+        if (
+          is.null(
+            variable_label
+          )
+        ) {
+          return(
+            NA_character_
+          )
+        }
+
+        as.character(
+          variable_label
+        )
+      }
+    )
+)
+```
+
+Inspect:
+
+```r
+print(
+  test_variable_labels,
+  n = 30
+)
+```
+
+# Inspect variable classes
+
+Create:
+
+```r
+test_variable_classes <- tibble::tibble(
+  variable =
+    names(
+      test_import_data
+    ),
+  class =
+    purrr::map_chr(
+      test_import_data,
+      function(
+          variable) {
+
+        paste(
+          class(
+            variable
+          ),
+          collapse = "; "
+        )
+      }
+    )
+)
+```
+
+Inspect:
+
+```r
+print(
+  test_variable_classes,
+  n = 30
+)
+```
+
+# If the XPT file does not import
+
+Use this section immediately when `haven::read_xpt()` fails.
+
+::: {.callout-warning icon="true"}
+## Do not continue to combining files
+
+A file that cannot be imported must be investigated before row-binding or merging.
+:::
+
+## Confirm the project root
+
+In the terminal, run:
+
+```bash
+pwd
+```
+
+The result should end with:
+
+```text
+/NHANES
+```
+
+List the project files:
+
+```bash
+ls
+```
+
+## Confirm that the exact file exists
+
+In R, inspect:
+
+```r
+test_import_record$local_path
+```
+
+Then run in the terminal:
+
+```bash
+ls -lh path/to/the/file.xpt
+```
+
+Replace the placeholder with the exact local path shown in R.
+
+## Check the file size
+
+Run:
+
+```bash
+ls -lh data/raw
+```
+
+A file that is extremely small, zero bytes, or missing may indicate an incomplete download.
+
+## Inspect the file type
+
+Run:
+
+```bash
+file path/to/the/file.xpt
+```
+
+A downloaded file may have an `.xpt` extension but actually contain:
+
+- HTML;
+- plain text;
+- an error response;
+- incomplete binary content.
+
+If the result identifies HTML, the file is not a valid NHANES XPT dataset.
+
+## Inspect the beginning of a suspicious file
+
+Use:
+
+```bash
+head -n 10 path/to/the/file.xpt
+```
+
+Only use this when the `file` command suggests text or HTML.
+
+Do not use a text editor to modify a valid binary XPT file.
+
+An HTML response may contain text such as:
+
+```text
+Access denied
+Page not found
+Server error
+```
+
+## Test the file directly from R
+
+Run:
+
+```bash
+Rscript -e 'x <- haven::read_xpt("path/to/the/file.xpt"); print(dim(x)); print(head(names(x), 20))'
+```
+
+Replace the placeholder path.
+
+If the direct test fails, the problem is with:
+
+- the file;
+- the path;
+- the R environment;
+- the `haven` installation.
+
+## Confirm that `haven` is installed
+
+In the terminal, run:
+
+```bash
+Rscript -e 'cat(requireNamespace("haven", quietly = TRUE), "\n")'
+```
+
+Expected:
+
+```text
+TRUE
+```
+
+If the result is `FALSE`, install `haven` from R before continuing.
+
+## Remove only the failed file
+
+Do not delete the entire raw-data directory.
+
+Remove only the affected file:
+
+```bash
+rm path/to/the/file.xpt
+```
+
+Then return to the download lesson and acquire it again.
+
+## Do not rename an invalid file merely to make it end in `.xpt`
+
+The file extension does not change the file’s actual content.
+
+# If `SEQN` is missing
+
+A person-level NHANES source should contain the participant identifier expected by this pipeline.
+
+## Search variable names case-insensitively
+
+Run:
+
+```r
+grep(
+  "seqn",
+  names(
+    test_import_data
+  ),
+  value = TRUE,
+  ignore.case = TRUE
+)
+```
+
+## Inspect the first variable names
+
+Run:
+
+```r
+head(
+  names(
+    test_import_data
+  ),
+  30
+)
+```
+
+## Confirm that the correct source file was downloaded
+
+Inspect:
+
+```r
+test_import_record |>
+  dplyr::select(
+    dataset_id,
+    cycle,
+    component,
+    file_id,
+    exam,
+    record_level,
+    merge_key,
+    source_url,
+    local_path
+  ) |>
+  print(
+    width = Inf
+  )
+```
+
+Possible causes of missing `SEQN` include:
+
+- the wrong source file was downloaded;
+- the catalog points to an incorrect URL;
+- the file is not person-level;
+- an error page was saved instead of an XPT file;
+- the source schema differs from the catalog declaration.
+
+::: {.callout-important icon="true"}
+## Do not create a replacement participant identifier
+
+`SEQN` must come from the official source file.
+
+Do not generate row numbers or artificial IDs to replace a missing NHANES key.
+:::
+
+# If the variables look unexpected
+
+Unexpected variables may indicate:
+
+- a different NHANES component;
+- the wrong survey cycle;
+- the wrong examination;
+- an incorrect source URL;
+- a schema change;
+- an import problem.
+
+Inspect the catalog metadata:
+
+```r
+test_import_record |>
+  dplyr::select(
+    dataset_id,
+    cycle,
+    component,
+    file_id,
+    exam,
+    analysis_role,
+    record_level
+  ) |>
+  print()
+```
+
+Inspect variable names:
+
+```r
+names(
+  test_import_data
+)
+```
+
+Search for the expected laboratory variable:
+
+```r
+grep(
+  "HGB",
+  names(
+    test_import_data
+  ),
+  value = TRUE,
+  ignore.case = TRUE
+)
+```
+
+For the CBC files used in the hemoglobin analysis, the pipeline expects:
+
+```text
+LBXHGB
+```
+
+Do not assume every variable appears in every component.
+
+Demographic files and CBC files have different purposes and variable structures.
+
+# If a variable has an unexpected class
+
+Inspect the class:
+
+```r
+class(
+  test_import_data$VARIABLE_NAME
+)
+```
+
+Replace `VARIABLE_NAME` with the affected variable.
+
+Inspect values:
+
+```r
+unique(
+  test_import_data$VARIABLE_NAME
+)
+```
+
+Inspect the variable label:
+
+```r
+attr(
+  test_import_data$VARIABLE_NAME,
+  "label"
+)
+```
+
+Possible classes include:
+
+- numeric;
+- integer;
+- character;
+- `haven_labelled`;
+- date or time classes;
+- logical.
+
+Do not convert a variable merely because its class differs from another cycle.
+
+First determine whether:
+
+- the values have the same meaning;
+- the coding changed;
+- the label changed;
+- one source uses labelled numeric data;
+- one source stores text values.
+
+Class harmonization should be scientifically justified.
+
+# Import every downloaded file
+
+Create a safe import function:
+
+```r
+import_nhanes_xpt <- function(
+    local_path,
+    dataset_id) {
+
+  if (
+    !file.exists(
+      local_path
+    )
+  ) {
+    stop(
+      "Source file does not exist for ",
+      dataset_id,
+      ": ",
+      local_path
+    )
+  }
+
+  file_size <- file.info(
+    local_path
+  )$size
+
+  if (
+    is.na(
+      file_size
+    ) ||
+      file_size <= 0
+  ) {
+    stop(
+      "Source file is empty for ",
+      dataset_id,
+      ": ",
+      local_path
+    )
+  }
+
+  imported_data <- tryCatch(
+    haven::read_xpt(
+      local_path
+    ),
+    error = function(
+        error) {
+
+      stop(
+        "Failed to import ",
+        dataset_id,
+        " from ",
+        local_path,
+        ": ",
+        conditionMessage(
+          error
+        )
+      )
+    }
+  )
+
+  if (
+    !is.data.frame(
+      imported_data
+    )
+  ) {
+    stop(
+      "Imported source is not a data frame: ",
+      dataset_id
+    )
+  }
+
+  if (
+    nrow(
+      imported_data
+    ) < 1
+  ) {
+    stop(
+      "Imported source contains no records: ",
+      dataset_id
+    )
+  }
+
+  if (
+    ncol(
+      imported_data
+    ) < 1
+  ) {
+    stop(
+      "Imported source contains no variables: ",
+      dataset_id
+    )
+  }
+
+  if (
+    !"SEQN" %in%
+      names(
+        imported_data
+      )
+  ) {
+    stop(
+      "Imported source does not contain SEQN: ",
+      dataset_id
+    )
+  }
+
+  imported_data
+}
+```
+
+# Apply the import function
+
+Create a named list of imported datasets:
+
+```r
+imported_sources <-
+  purrr::map2(
+    acquisition_manifest$local_path,
+    acquisition_manifest$dataset_id,
+    import_nhanes_xpt
+  )
+```
+
+Assign dataset identifiers as names:
+
+```r
+names(
+  imported_sources
+) <- acquisition_manifest$dataset_id
+```
+
+Inspect the names:
+
+```r
+names(
+  imported_sources
+)
+```
+
+# Confirm the number of imported sources
+
+Compare:
+
+```r
+length(
+  imported_sources
+)
+```
+
+with:
+
+```r
+nrow(
+  acquisition_manifest
+)
+```
+
+Validate:
+
+```r
+if (
+  length(
+    imported_sources
+  ) !=
+    nrow(
+      acquisition_manifest
+    )
+) {
+  stop(
+    "The number of imported sources does not match the acquisition manifest."
+  )
+}
+```
+
+# Add catalog metadata to each imported dataset
+
+Create:
+
+```r
+imported_sources <-
+  purrr::map2(
+    imported_sources,
+    seq_len(
+      nrow(
+        acquisition_manifest
+      )
+    ),
+    function(
+        imported_data,
+        row_number) {
+
+      source_metadata <-
+        acquisition_manifest[
+          row_number,
+          ,
+          drop = FALSE
+        ]
+
+      imported_data |>
+        dplyr::mutate(
+          source_dataset_id =
+            source_metadata$dataset_id,
+          survey_cycle =
+            source_metadata$cycle,
+          source_component =
+            source_metadata$component,
+          source_file_id =
+            source_metadata$file_id,
+          source_exam =
+            source_metadata$exam,
+          analysis_role =
+            source_metadata$analysis_role,
+          .before = 1
+        )
+    }
+  )
+```
+
+Restore names:
+
+```r
+names(
+  imported_sources
+) <- acquisition_manifest$dataset_id
+```
+
+# Why add provenance columns?
+
+After files are combined, provenance columns allow each record to be traced back to:
+
+- the source dataset;
+- the survey cycle;
+- the NHANES component;
+- the file identifier;
+- the examination;
+- the analytical role.
+
+This is especially important for the 2001–2002 second CBC examination.
+
+# Create a source inspection function
+
+Add:
+
+```r
+inspect_nhanes_source <- function(
+    imported_data,
+    dataset_id) {
+
+  tibble::tibble(
+    dataset_id =
+      dataset_id,
+    rows =
+      nrow(
+        imported_data
+      ),
+    columns =
+      ncol(
+        imported_data
+      ),
+    seqn_present =
+      "SEQN" %in%
+        names(
+          imported_data
+        ),
+    missing_seqn =
+      if (
+        "SEQN" %in%
+          names(
+            imported_data
+          )
+      ) {
+        sum(
+          is.na(
+            imported_data$SEQN
+          )
+        )
+      } else {
+        NA_integer_
+      },
+    distinct_seqn =
+      if (
+        "SEQN" %in%
+          names(
+            imported_data
+          )
+      ) {
+        dplyr::n_distinct(
+          imported_data$SEQN,
+          na.rm = TRUE
+        )
+      } else {
+        NA_integer_
+      },
+    duplicated_seqn_records =
+      if (
+        "SEQN" %in%
+          names(
+            imported_data
+          )
+      ) {
+        sum(
+          duplicated(
+            imported_data$SEQN
+          ) |
+            duplicated(
+              imported_data$SEQN,
+              fromLast = TRUE
+            )
+        )
+      } else {
+        NA_integer_
+      },
+    first_variable =
+      names(
+        imported_data
+      )[1],
+    last_variable =
+      names(
+        imported_data
+      )[
+        ncol(
+          imported_data
+        )
+      ]
+  )
+}
+```
+
+# Inspect every source
+
+Run:
+
+```r
+source_inspection_report <-
+  purrr::imap_dfr(
+    imported_sources,
+    inspect_nhanes_source
+  )
+```
+
+Add catalog metadata:
+
+```r
+source_inspection_report <-
+  source_inspection_report |>
+  dplyr::left_join(
+    acquisition_manifest |>
+      dplyr::select(
+        dataset_id,
+        cycle,
+        cycle_start,
+        cycle_end,
+        component,
+        file_id,
+        exam,
+        analysis_role,
+        record_level,
+        expected_rows,
+        local_path
+      ),
+    by =
+      "dataset_id",
+    relationship =
+      "one-to-one"
+  ) |>
+  dplyr::relocate(
+    cycle,
+    component,
+    file_id,
+    exam,
+    analysis_role,
+    record_level,
+    .after =
+      dataset_id
+  ) |>
+  dplyr::arrange(
+    cycle_start,
+    component,
+    analysis_role,
+    file_id
+  )
+```
+
+Inspect:
+
+```r
+print(
+  source_inspection_report,
+  n = Inf,
+  width = Inf
+)
+```
+
+# Compare observed and expected rows
+
+Create:
+
+```r
+source_inspection_report <-
+  source_inspection_report |>
+  dplyr::mutate(
+    row_difference =
+      rows -
+        expected_rows,
+    expected_rows_match =
+      rows ==
+        expected_rows
+  )
+```
+
+Inspect differences:
+
+```r
+source_inspection_report |>
+  dplyr::select(
+    dataset_id,
+    cycle,
+    component,
+    file_id,
+    rows,
+    expected_rows,
+    row_difference,
+    expected_rows_match
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+::: {.callout-note icon="true"}
+## Expected row counts are validation expectations
+
+A mismatch does not automatically mean that records should be deleted or added.
+
+It means the source, catalog expectation, or import result should be reviewed.
+:::
+
+# Identify critical source problems
+
+Create:
+
+```r
+critical_source_problems <-
+  source_inspection_report |>
+  dplyr::filter(
+    rows < 1 |
+      columns < 1 |
+      !seqn_present |
+      missing_seqn > 0
+  )
+```
+
+Inspect:
+
+```r
+print(
+  critical_source_problems,
+  n = Inf,
+  width = Inf
+)
+```
+
+Stop if any exist:
+
+```r
+if (
+  nrow(
+    critical_source_problems
+  ) > 0
+) {
+  stop(
+    "One or more imported sources failed critical structural validation: ",
+    paste(
+      critical_source_problems$dataset_id,
+      collapse = ", "
+    )
+  )
+}
+```
+
+# Review sources with duplicated `SEQN`
+
+Create:
+
+```r
+sources_with_duplicate_seqn <-
+  source_inspection_report |>
+  dplyr::filter(
+    duplicated_seqn_records > 0
+  )
+```
+
+Inspect:
+
+```r
+print(
+  sources_with_duplicate_seqn,
+  n = Inf,
+  width = Inf
+)
+```
+
+Do not remove these records automatically.
+
+Lesson 10 will investigate:
+
+- whether duplicates occur within a file;
+- whether they reflect repeated examinations;
+- whether they arise only after files are combined;
+- whether the second CBC examination should remain supplementary.
+
+# Inspect expected hemoglobin availability
+
+Create:
+
+```r
+hemoglobin_variable_availability <-
+  purrr::imap_dfr(
+    imported_sources,
+    function(
+        imported_data,
+        dataset_id) {
+
+      tibble::tibble(
+        dataset_id =
+          dataset_id,
+        LBXHGB_present =
+          "LBXHGB" %in%
+            names(
+              imported_data
+            )
+      )
+    }
+  ) |>
+  dplyr::left_join(
+    acquisition_manifest |>
+      dplyr::select(
+        dataset_id,
+        cycle,
+        component,
+        file_id,
+        exam,
+        analysis_role
+      ),
+    by =
+      "dataset_id",
+    relationship =
+      "one-to-one"
+  ) |>
+  dplyr::relocate(
+    cycle,
+    component,
+    file_id,
+    exam,
+    analysis_role,
+    .after =
+      dataset_id
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_variable_availability,
+  n = Inf
+)
+```
+
+CBC files used in the hemoglobin analysis should contain `LBXHGB`.
+
+Demographic files are not expected to contain it.
+
+# Compare key variable classes across sources
+
+Create:
+
+```r
+key_variable_class_report <-
+  purrr::imap_dfr(
+    imported_sources,
+    function(
+        imported_data,
+        dataset_id) {
+
+      tibble::tibble(
+        dataset_id =
+          dataset_id,
+        SEQN_class =
+          paste(
+            class(
+              imported_data$SEQN
+            ),
+            collapse = "; "
+          ),
+        LBXHGB_class =
+          if (
+            "LBXHGB" %in%
+              names(
+                imported_data
+              )
+          ) {
+            paste(
+              class(
+                imported_data$LBXHGB
+              ),
+              collapse = "; "
+            )
+          } else {
+            NA_character_
+          },
+        RIAGENDR_class =
+          if (
+            "RIAGENDR" %in%
+              names(
+                imported_data
+              )
+          ) {
+            paste(
+              class(
+                imported_data$RIAGENDR
+              ),
+              collapse = "; "
+            )
+          } else {
+            NA_character_
+          }
+      )
+    }
+  ) |>
+  dplyr::left_join(
+    acquisition_manifest |>
+      dplyr::select(
+        dataset_id,
+        cycle,
+        component,
+        file_id,
+        analysis_role
+      ),
+    by =
+      "dataset_id",
+    relationship =
+      "one-to-one"
+  ) |>
+  dplyr::relocate(
+    cycle,
+    component,
+    file_id,
+    analysis_role,
+    .after =
+      dataset_id
+  )
+```
+
+Inspect:
+
+```r
+print(
+  key_variable_class_report,
+  n = Inf,
+  width = Inf
+)
+```
+
+# Create a variable-availability matrix
+
+Select important variables:
+
+```r
+important_variables <- c(
+  "SEQN",
+  "LBXHGB",
+  "RIAGENDR",
+  "SDMVSTRA",
+  "SDMVPSU"
+)
+```
+
+Create:
+
+```r
+important_variable_availability <-
+  purrr::imap_dfr(
+    imported_sources,
+    function(
+        imported_data,
+        dataset_id) {
+
+      tibble::tibble(
+        dataset_id =
+          dataset_id,
+        variable =
+          important_variables,
+        present =
+          important_variables %in%
+            names(
+              imported_data
+            )
+      )
+    }
+  ) |>
+  tidyr::pivot_wider(
+    names_from =
+      variable,
+    values_from =
+      present
+  ) |>
+  dplyr::left_join(
+    acquisition_manifest |>
+      dplyr::select(
+        dataset_id,
+        cycle,
+        component,
+        file_id,
+        exam,
+        analysis_role
+      ),
+    by =
+      "dataset_id",
+    relationship =
+      "one-to-one"
+  ) |>
+  dplyr::relocate(
+    cycle,
+    component,
+    file_id,
+    exam,
+    analysis_role,
+    .after =
+      dataset_id
+  )
+```
+
+Inspect:
+
+```r
+print(
+  important_variable_availability,
+  n = Inf,
+  width = Inf
+)
+```
+
+Expected patterns include:
+
+- `SEQN` in all person-level sources;
+- `LBXHGB` in CBC sources;
+- `RIAGENDR` in Demographic sources;
+- `SDMVSTRA` and `SDMVPSU` in Demographic sources.
+
+# Save the inspection report
+
+Confirm the validation directory exists:
+
+```r
+validation_directory <- file.path(
+  "outputs",
+  "validation"
+)
+```
+
+```r
+dir.create(
+  validation_directory,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+```
+
+Save:
+
+```r
+readr::write_csv(
+  source_inspection_report,
+  file.path(
+    validation_directory,
+    "source_inspection_report.csv"
+  )
+)
+```
+
+# Save variable availability
+
+Run:
+
+```r
+readr::write_csv(
+  important_variable_availability,
+  file.path(
+    validation_directory,
+    "important_variable_availability.csv"
+  )
+)
+```
+
+# Save key-variable classes
+
+Run:
+
+```r
+readr::write_csv(
+  key_variable_class_report,
+  file.path(
+    validation_directory,
+    "key_variable_class_report.csv"
+  )
+)
+```
+
+# Save the source variable inventory
+
+Create:
+
+```r
+source_variable_inventory <-
+  purrr::imap_dfr(
+    imported_sources,
+    function(
+        imported_data,
+        dataset_id) {
+
+      tibble::tibble(
+        dataset_id =
+          dataset_id,
+        variable =
+          names(
+            imported_data
+          ),
+        class =
+          purrr::map_chr(
+            imported_data,
+            function(
+                variable) {
+
+              paste(
+                class(
+                  variable
+                ),
+                collapse = "; "
+              )
+            }
+          ),
+        label =
+          purrr::map_chr(
+            imported_data,
+            function(
+                variable) {
+
+              variable_label <- attr(
+                variable,
+                "label"
+              )
+
+              if (
+                is.null(
+                  variable_label
+                )
+              ) {
+                return(
+                  NA_character_
+                )
+              }
+
+              as.character(
+                variable_label
+              )
+            }
+          )
+      )
+    }
+  ) |>
+  dplyr::left_join(
+    acquisition_manifest |>
+      dplyr::select(
+        dataset_id,
+        cycle,
+        component,
+        file_id,
+        exam,
+        analysis_role
+      ),
+    by =
+      "dataset_id",
+    relationship =
+      "many-to-one"
+  ) |>
+  dplyr::relocate(
+    cycle,
+    component,
+    file_id,
+    exam,
+    analysis_role,
+    .after =
+      dataset_id
+  )
+```
+
+Save:
+
+```r
+readr::write_csv(
+  source_variable_inventory,
+  file.path(
+    validation_directory,
+    "source_variable_inventory.csv"
+  )
+)
+```
+
+# Confirm inspection outputs
+
+Define:
+
+```r
+inspection_output_files <- c(
+  file.path(
+    validation_directory,
+    "source_inspection_report.csv"
+  ),
+  file.path(
+    validation_directory,
+    "important_variable_availability.csv"
+  ),
+  file.path(
+    validation_directory,
+    "key_variable_class_report.csv"
+  ),
+  file.path(
+    validation_directory,
+    "source_variable_inventory.csv"
+  )
+)
+```
+
+Create:
+
+```r
+inspection_output_check <-
+  tibble::tibble(
+    file =
+      inspection_output_files,
+    exists =
+      file.exists(
+        inspection_output_files
+      ),
+    size_bytes =
+      file.info(
+        inspection_output_files
+      )$size
+  )
+```
+
+Inspect:
+
+```r
+print(
+  inspection_output_check,
+  n = Inf
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  any(
+    !inspection_output_check$exists
+  )
+) {
+  stop(
+    "One or more inspection output files are missing."
+  )
+}
+```
+
+Stop if any are empty:
+
+```r
+if (
+  any(
+    is.na(
+      inspection_output_check$size_bytes
+    ) |
+      inspection_output_check$size_bytes <= 0
+  )
+) {
+  stop(
+    "One or more inspection output files are empty."
+  )
+}
+```
+
+# Create a final inspection validation table
+
+Run:
+
+```r
+source_import_validation <- tibble::tibble(
+  check = c(
+    "Acquisition manifest exists",
+    "All local paths are present",
+    "All downloaded files exist",
+    "All downloaded files are nonempty",
+    "All source files were imported",
+    "All imported sources contain records",
+    "All imported sources contain variables",
+    "All imported sources contain SEQN",
+    "All imported sources have complete SEQN",
+    "Inspection report was created",
+    "Important-variable report was created",
+    "Variable-class report was created",
+    "Variable inventory was created"
+  ),
+  passed = c(
+    exists(
+      "acquisition_manifest"
+    ),
+    nrow(
+      missing_local_paths
+    ) == 0,
+    nrow(
+      missing_downloaded_files
+    ) == 0,
+    nrow(
+      empty_downloaded_files
+    ) == 0,
+    length(
+      imported_sources
+    ) ==
+      nrow(
+        acquisition_manifest
+      ),
+    all(
+      source_inspection_report$rows > 0
+    ),
+    all(
+      source_inspection_report$columns > 0
+    ),
+    all(
+      source_inspection_report$seqn_present
+    ),
+    all(
+      source_inspection_report$missing_seqn == 0
+    ),
+    file.exists(
+      file.path(
+        validation_directory,
+        "source_inspection_report.csv"
+      )
+    ),
+    file.exists(
+      file.path(
+        validation_directory,
+        "important_variable_availability.csv"
+      )
+    ),
+    file.exists(
+      file.path(
+        validation_directory,
+        "key_variable_class_report.csv"
+      )
+    ),
+    file.exists(
+      file.path(
+        validation_directory,
+        "source_variable_inventory.csv"
+      )
+    )
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  source_import_validation,
+  n = Inf
+)
+```
+
+Identify failures:
+
+```r
+failed_source_import_checks <-
+  source_import_validation |>
+  dplyr::filter(
+    !passed
+  )
+```
+
+Stop if any fail:
+
+```r
+if (
+  nrow(
+    failed_source_import_checks
+  ) > 0
+) {
+  stop(
+    "Source import validation failed: ",
+    paste(
+      failed_source_import_checks$check,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Save:
+
+```r
+readr::write_csv(
+  source_import_validation,
+  file.path(
+    validation_directory,
+    "source_import_validation.csv"
+  )
+)
+```
+
+Expected message:
+
+```r
+message(
+  "All downloaded NHANES files were imported and inspected successfully."
+)
+```
+
+# What success looks like
+
+After this lesson, you should have:
+
+```text
+imported_sources
+source_inspection_report
+important_variable_availability
+key_variable_class_report
+source_variable_inventory
+source_import_validation
+```
+
+You should also have these files:
+
+```text
+outputs/validation/source_inspection_report.csv
+outputs/validation/important_variable_availability.csv
+outputs/validation/key_variable_class_report.csv
+outputs/validation/source_variable_inventory.csv
+outputs/validation/source_import_validation.csv
+```
+
+# Common mistakes
+
+## Assuming that a downloaded file is valid
+
+A file may exist but still contain an HTML error page or incomplete content.
+
+## Combining files before inspecting them
+
+A malformed source can contaminate the combined dataset.
+
+## Creating an artificial `SEQN`
+
+The participant identifier must come from the official source data.
+
+## Ignoring duplicate keys
+
+Repeated identifiers must be investigated before combining files.
+
+## Converting every variable to character
+
+This can destroy numeric meaning and create avoidable problems later.
+
+## Treating different components as though they should contain the same variables
+
+CBC and Demographic files have different schemas and purposes.
+
+## Ignoring labels
+
+Variable labels provide useful source documentation and should be preserved when possible.
+
+## Editing raw XPT files
+
+Raw source files should remain unchanged.
+
+# Checkpoint
+
+Confirm:
+
+- [ ] The acquisition manifest exists.
+- [ ] All local paths are present.
+- [ ] All downloaded files exist.
+- [ ] All downloaded files are nonempty.
+- [ ] One test XPT file was imported.
+- [ ] The test file contains records and variables.
+- [ ] `SEQN` is present.
+- [ ] Missing `SEQN` values were checked.
+- [ ] Duplicate `SEQN` values were reviewed.
+- [ ] Variable labels were inspected.
+- [ ] Variable classes were inspected.
+- [ ] All source files were imported.
+- [ ] Provenance columns were added.
+- [ ] A source inspection report was created.
+- [ ] Observed and expected rows were compared.
+- [ ] Critical structural problems were checked.
+- [ ] Hemoglobin-variable availability was reviewed.
+- [ ] Important variable classes were compared.
+- [ ] A variable-availability matrix was created.
+- [ ] Inspection reports were saved.
+- [ ] Every inspection output exists and is nonempty.
+- [ ] All source-import validation checks passed.
+- [ ] You know how to investigate a failed XPT import.
+- [ ] You know not to invent a replacement for `SEQN`.
+- [ ] You have not run `quarto render`.
+
+# Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why inspect an XPT file after downloading it?
+
+A file can exist and have a nonzero size while still containing invalid, incomplete, or unexpected content.
+:::
+
+::: {.callout-note collapse="true"}
+## Why is `SEQN` essential?
+
+`SEQN` is the NHANES participant identifier used to connect person-level component files.
+:::
+
+::: {.callout-note collapse="true"}
+## Should duplicated `SEQN` values be removed automatically?
+
+No. They may reflect repeat examinations, supplementary records, or a structural issue that must be understood first.
+:::
+
+::: {.callout-note collapse="true"}
+## What should you check when `haven::read_xpt()` fails?
+
+Confirm the path, file existence, file size, actual file type, `haven` installation, and whether an HTML error response was saved instead of an XPT file.
+:::
+
+::: {.callout-note collapse="true"}
+## Why compare variable classes across source files?
+
+Variables with the same name may be stored differently across cycles. These differences must be understood before row-binding.
+:::
+
+# Lesson summary
+
+You have:
+
+- imported and inspected one test XPT file;
+- verified records, variables, and participant keys;
+- learned how to diagnose invalid or unreadable XPT files;
+- imported all downloaded sources;
+- added source-provenance metadata;
+- created structural inspection reports;
+- compared key variables and classes across files;
+- saved inspection outputs and validation reports;
+- prepared the source datasets for duplicate investigation and component combination.
+
+[Continue to Lesson 10: Investigate duplicate records](10-handle-duplicates.qmd){.button .button-primary}

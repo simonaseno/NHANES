@@ -1,0 +1,951 @@
+---
+title: "Lesson 8: Download All Required NHANES Files"
+subtitle: "Scale the tested single-file workflow to the complete CBC and Demographic source catalog"
+description: "Download, validate, and document all CBC and Demographic XPT files used by the pipeline."
+sidebar: tutorials
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- generate official CDC URLs for every catalog row;
+- construct component-specific local file paths;
+- download all declared source files;
+- continue processing while recording individual failures;
+- calculate file sizes and SHA-256 hashes;
+- create a complete acquisition manifest;
+- distinguish downloaded, reused, and failed files;
+- stop the pipeline when required primary sources are unavailable.
+:::
+
+## Where you are in the workflow
+
+In Lesson 7, you tested the acquisition process with one file:
+
+```text
+CBC_J.xpt
+```
+
+You confirmed that the workflow could:
+
+- contact the official CDC source;
+- download through a temporary `.part` file;
+- validate the HTTP result;
+- save the file locally;
+- calculate a hash;
+- read the file with `haven`;
+- confirm that `SEQN` was present.
+
+You will now apply the same process to all source rows in the catalog.
+
+## Expected source count
+
+The source catalog contains:
+
+- 10 primary CBC files;
+- 1 supplementary second-examination CBC file;
+- 10 primary Demographic files.
+
+Total:
+
+```text
+21 source files
+```
+
+## Add the bulk-download section
+
+Add this below the single-file test section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 6: DOWNLOAD ALL REQUIRED NHANES FILES
+# ============================================================
+```
+
+## Generate official source URLs
+
+The NHANES public-use files in this tutorial follow this structure:
+
+```text
+https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/
+{cycle_start}/DataFiles/{file_id}.xpt
+```
+
+Create a URL function:
+
+```r
+build_nhanes_url <- function(
+    cycle_start,
+    file_id) {
+
+  if (
+    length(cycle_start) != 1 ||
+    is.na(cycle_start)
+  ) {
+    stop(
+      "cycle_start must contain one nonmissing value."
+    )
+  }
+
+  if (
+    length(file_id) != 1 ||
+    is.na(file_id) ||
+    !nzchar(file_id)
+  ) {
+    stop(
+      "file_id must contain one nonempty value."
+    )
+  }
+
+  paste0(
+    "https://wwwn.cdc.gov/",
+    "Nchs/Data/Nhanes/Public/",
+    cycle_start,
+    "/DataFiles/",
+    file_id,
+    ".xpt"
+  )
+}
+```
+
+Test it:
+
+```r
+build_nhanes_url(
+  cycle_start = 2017,
+  file_id = "CBC_J"
+)
+```
+
+Expected result:
+
+```text
+https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/CBC_J.xpt
+```
+
+## Populate every catalog URL
+
+Run:
+
+```r
+nhanes_catalog <- nhanes_catalog |>
+  dplyr::mutate(
+    url = purrr::map2_chr(
+      cycle_start,
+      file_id,
+      build_nhanes_url
+    )
+  )
+```
+
+Inspect:
+
+```r
+nhanes_catalog |>
+  dplyr::select(
+    dataset_id,
+    cycle,
+    component,
+    file_id,
+    url
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+## Validate every URL
+
+Run:
+
+```r
+invalid_catalog_urls <- nhanes_catalog |>
+  dplyr::filter(
+    is.na(url) |
+      !stringr::str_detect(
+        url,
+        "^https://wwwn\\.cdc\\.gov/"
+      )
+  )
+```
+
+Stop if an invalid URL exists:
+
+```r
+if (nrow(invalid_catalog_urls) > 0) {
+  stop(
+    "One or more catalog URLs are invalid."
+  )
+}
+
+message(
+  "All catalog URLs use the official CDC HTTPS host."
+)
+```
+
+Expected message:
+
+```text
+All catalog URLs use the official CDC HTTPS host.
+```
+
+## Construct local destination paths
+
+Create a function that assigns each source to its component folder:
+
+```r
+build_local_destination <- function(
+    component,
+    file_id) {
+
+  component_directory <- dplyr::case_when(
+    component == "cbc" ~
+      file.path(
+        "data",
+        "raw",
+        "cbc"
+      ),
+
+    component == "demographic" ~
+      file.path(
+        "data",
+        "raw",
+        "demographic"
+      ),
+
+    TRUE ~ NA_character_
+  )
+
+  if (is.na(component_directory)) {
+    stop(
+      "Unsupported component: ",
+      component
+    )
+  }
+
+  file.path(
+    component_directory,
+    paste0(
+      file_id,
+      ".xpt"
+    )
+  )
+}
+```
+
+Add destinations to the catalog:
+
+```r
+nhanes_catalog <- nhanes_catalog |>
+  dplyr::mutate(
+    local_destination = purrr::map2_chr(
+      component,
+      file_id,
+      build_local_destination
+    )
+  )
+```
+
+Inspect:
+
+```r
+nhanes_catalog |>
+  dplyr::select(
+    dataset_id,
+    component,
+    file_id,
+    local_destination
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+CBC files should point to:
+
+```text
+data/raw/cbc/
+```
+
+Demographic files should point to:
+
+```text
+data/raw/demographic/
+```
+
+## Create a safe wrapper
+
+The `download_nhanes_file()` function stops when one file fails.
+
+For a bulk process, we want to:
+
+- record the failure;
+- continue to the next file;
+- review all results afterward.
+
+Create a safe wrapper:
+
+```r
+download_catalog_row <- function(
+    dataset_id,
+    cycle,
+    component,
+    file_id,
+    analysis_role,
+    url,
+    local_destination,
+    overwrite = FALSE) {
+
+  started_at <- Sys.time()
+
+  result <- tryCatch(
+    {
+      local_file <- download_nhanes_file(
+        url = url,
+        destination = local_destination,
+        overwrite = overwrite
+      )
+
+      file_information <- file.info(
+        local_file
+      )
+
+      file_hash <- digest::digest(
+        local_file,
+        algorithm = "sha256",
+        file = TRUE
+      )
+
+      tibble::tibble(
+        dataset_id = dataset_id,
+        cycle = cycle,
+        component = component,
+        file_id = file_id,
+        analysis_role = analysis_role,
+        source_url = url,
+        local_file = local_file,
+        status = "success",
+        file_size_bytes = unname(
+          file_information$size
+        ),
+        sha256 = file_hash,
+        error_message = NA_character_,
+        started_at_utc = format(
+          started_at,
+          tz = "UTC",
+          usetz = TRUE
+        ),
+        completed_at_utc = format(
+          Sys.time(),
+          tz = "UTC",
+          usetz = TRUE
+        )
+      )
+    },
+    error = function(error_condition) {
+      tibble::tibble(
+        dataset_id = dataset_id,
+        cycle = cycle,
+        component = component,
+        file_id = file_id,
+        analysis_role = analysis_role,
+        source_url = url,
+        local_file = local_destination,
+        status = "failed",
+        file_size_bytes = NA_real_,
+        sha256 = NA_character_,
+        error_message = conditionMessage(
+          error_condition
+        ),
+        started_at_utc = format(
+          started_at,
+          tz = "UTC",
+          usetz = TRUE
+        ),
+        completed_at_utc = format(
+          Sys.time(),
+          tz = "UTC",
+          usetz = TRUE
+        )
+      )
+    }
+  )
+
+  result
+}
+```
+
+## Download all catalog sources
+
+Run:
+
+```r
+acquisition_manifest <- purrr::pmap_dfr(
+  nhanes_catalog |>
+    dplyr::select(
+      dataset_id,
+      cycle,
+      component,
+      file_id,
+      analysis_role,
+      url,
+      local_destination
+    ),
+  function(
+      dataset_id,
+      cycle,
+      component,
+      file_id,
+      analysis_role,
+      url,
+      local_destination) {
+
+    download_catalog_row(
+      dataset_id = dataset_id,
+      cycle = cycle,
+      component = component,
+      file_id = file_id,
+      analysis_role = analysis_role,
+      url = url,
+      local_destination = local_destination,
+      overwrite = FALSE
+    )
+  }
+)
+```
+
+This process may take several minutes depending on:
+
+- internet speed;
+- server response time;
+- whether some files already exist.
+
+## Inspect the acquisition manifest
+
+Run:
+
+```r
+print(
+  acquisition_manifest,
+  n = Inf
+)
+```
+
+Each row should report:
+
+- dataset identifier;
+- survey cycle;
+- component;
+- source filename;
+- analytical role;
+- source URL;
+- local path;
+- status;
+- file size;
+- hash;
+- any error message;
+- start and completion times.
+
+## Summarize acquisition status
+
+Run:
+
+```r
+acquisition_status_summary <- acquisition_manifest |>
+  dplyr::count(
+    status,
+    name = "source_files"
+  )
+
+print(
+  acquisition_status_summary
+)
+```
+
+The desired result is:
+
+```text
+status   source_files
+success  21
+```
+
+## Summarize by component
+
+Run:
+
+```r
+acquisition_component_summary <- acquisition_manifest |>
+  dplyr::count(
+    component,
+    status,
+    name = "source_files"
+  )
+
+print(
+  acquisition_component_summary
+)
+```
+
+A fully successful result should show:
+
+```text
+cbc          success   11
+demographic  success   10
+```
+
+## Identify failed downloads
+
+Run:
+
+```r
+failed_acquisitions <- acquisition_manifest |>
+  dplyr::filter(
+    status == "failed"
+  )
+
+print(
+  failed_acquisitions,
+  n = Inf
+)
+```
+
+If everything succeeded:
+
+```r
+nrow(
+  failed_acquisitions
+)
+```
+
+should return:
+
+```text
+[1] 0
+```
+
+## Stop when a primary source fails
+
+A failed supplementary source should be reported clearly.
+
+A failed primary source means the main pipeline is incomplete.
+
+Add:
+
+```r
+failed_primary_sources <- acquisition_manifest |>
+  dplyr::filter(
+    status == "failed",
+    analysis_role == "primary"
+  )
+
+if (nrow(failed_primary_sources) > 0) {
+  stop(
+    "One or more required primary source files failed to download: ",
+    paste(
+      failed_primary_sources$dataset_id,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Warn when a supplementary source fails
+
+Add:
+
+```r
+failed_supplementary_sources <- acquisition_manifest |>
+  dplyr::filter(
+    status == "failed",
+    analysis_role == "supplementary"
+  )
+
+if (nrow(failed_supplementary_sources) > 0) {
+  warning(
+    "One or more supplementary source files failed: ",
+    paste(
+      failed_supplementary_sources$dataset_id,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Validate successful local files
+
+Run:
+
+```r
+successful_acquisitions <- acquisition_manifest |>
+  dplyr::filter(
+    status == "success"
+  )
+```
+
+Check that every successful file exists:
+
+```r
+successful_acquisitions <- successful_acquisitions |>
+  dplyr::mutate(
+    local_file_exists = file.exists(
+      local_file
+    )
+  )
+```
+
+Inspect:
+
+```r
+successful_acquisitions |>
+  dplyr::count(
+    local_file_exists
+  )
+```
+
+Every successful row should be:
+
+```text
+TRUE
+```
+
+Stop otherwise:
+
+```r
+if (!all(
+  successful_acquisitions$local_file_exists
+)) {
+  stop(
+    "One or more successful acquisitions are missing locally."
+  )
+}
+```
+
+## Validate file sizes
+
+Run:
+
+```r
+invalid_file_sizes <- successful_acquisitions |>
+  dplyr::filter(
+    is.na(file_size_bytes) |
+      file_size_bytes <= 0
+  )
+```
+
+Stop if any are invalid:
+
+```r
+if (nrow(invalid_file_sizes) > 0) {
+  stop(
+    "One or more downloaded files have invalid file sizes."
+  )
+}
+```
+
+## Validate hashes
+
+Run:
+
+```r
+invalid_hashes <- successful_acquisitions |>
+  dplyr::filter(
+    is.na(sha256) |
+      nchar(sha256) != 64
+  )
+```
+
+Stop if any are invalid:
+
+```r
+if (nrow(invalid_hashes) > 0) {
+  stop(
+    "One or more downloaded files have invalid SHA-256 hashes."
+  )
+}
+```
+
+## Count local XPT files
+
+Run:
+
+```r
+local_cbc_files <- list.files(
+  file.path(
+    "data",
+    "raw",
+    "cbc"
+  ),
+  pattern = "\\.xpt$",
+  full.names = TRUE
+)
+
+local_demographic_files <- list.files(
+  file.path(
+    "data",
+    "raw",
+    "demographic"
+  ),
+  pattern = "\\.xpt$",
+  full.names = TRUE
+)
+```
+
+Inspect counts:
+
+```r
+length(
+  local_cbc_files
+)
+```
+
+Expected:
+
+```text
+[1] 11
+```
+
+```r
+length(
+  local_demographic_files
+)
+```
+
+Expected:
+
+```text
+[1] 10
+```
+
+## Save the acquisition manifest
+
+Run:
+
+```r
+readr::write_csv(
+  acquisition_manifest,
+  file.path(
+    "outputs",
+    "validation",
+    "acquisition_manifest.csv"
+  )
+)
+```
+
+Confirm:
+
+```r
+file.exists(
+  file.path(
+    "outputs",
+    "validation",
+    "acquisition_manifest.csv"
+  )
+)
+```
+
+Expected:
+
+```text
+[1] TRUE
+```
+
+## Save failed acquisitions separately
+
+Run:
+
+```r
+readr::write_csv(
+  failed_acquisitions,
+  file.path(
+    "outputs",
+    "validation",
+    "failed_acquisitions.csv"
+  )
+)
+```
+
+Even when there are no failures, the file documents that the check was performed.
+
+## Update the catalog file
+
+The catalog now contains populated URLs and local destinations.
+
+Save the updated version:
+
+```r
+readr::write_csv(
+  nhanes_catalog,
+  file.path(
+    "config",
+    "nhanes_files.csv"
+  ),
+  na = ""
+)
+```
+
+## Rerunning the acquisition
+
+Because the download function uses:
+
+```r
+overwrite = FALSE
+```
+
+existing files are reused.
+
+You should see messages such as:
+
+```text
+Using existing file: data/raw/cbc/CBC_J.xpt
+```
+
+This makes rerunning the pipeline faster.
+
+## Force a full redownload
+
+To deliberately download every file again, change:
+
+```r
+overwrite = FALSE
+```
+
+to:
+
+```r
+overwrite = TRUE
+```
+
+Do this only when:
+
+- a local file is suspected to be corrupted;
+- an official file has been revised;
+- you intentionally want a fresh source snapshot.
+
+## Why hashes matter across runs
+
+Suppose a file is downloaded again later.
+
+You can compare:
+
+```text
+previous SHA-256
+current SHA-256
+```
+
+If they differ, the local bytes changed.
+
+That may indicate:
+
+- an official file revision;
+- corruption;
+- incomplete prior download;
+- a different server response.
+
+A changed hash does not explain why the file changed, but it provides evidence that it did.
+
+## Common problems
+
+### Some files return HTTP 404
+
+Check:
+
+- `cycle_start`;
+- `file_id`;
+- capitalization;
+- historical naming differences;
+- official component documentation.
+
+### Downloads stop after one error
+
+Confirm that the bulk process calls `download_catalog_row()`, which catches individual errors.
+
+### The script stops after completing all attempts
+
+This may be intentional if one or more required primary files failed.
+
+Review:
+
+```r
+failed_primary_sources
+```
+
+### Fewer than 21 files appear locally
+
+Inspect:
+
+```r
+failed_acquisitions
+```
+
+and:
+
+```r
+acquisition_manifest
+```
+
+Do not create empty placeholder XPT files to satisfy the count.
+
+### A source file already exists
+
+The default behavior is to reuse it.
+
+Set `overwrite = TRUE` only when replacement is intentional.
+
+### A file has a zero-byte size
+
+Delete it and rerun the download. It should not be treated as a valid source.
+
+## Checkpoint
+
+Confirm:
+
+- [ ] Every catalog row has an official CDC URL.
+- [ ] Every catalog row has a local destination.
+- [ ] `download_catalog_row()` was created.
+- [ ] All 21 source rows were attempted.
+- [ ] The acquisition manifest contains 21 rows.
+- [ ] Primary failures trigger an error.
+- [ ] Supplementary failures trigger a warning.
+- [ ] Successful local files exist.
+- [ ] Successful files have positive sizes.
+- [ ] Successful files have 64-character SHA-256 hashes.
+- [ ] There are 11 local CBC XPT files.
+- [ ] There are 10 local Demographic XPT files.
+- [ ] `acquisition_manifest.csv` was saved.
+- [ ] `failed_acquisitions.csv` was saved.
+- [ ] The updated catalog was saved.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why catch errors separately for each source?
+
+It allows the pipeline to attempt every declared source and produce one complete failure report instead of stopping at the first problem.
+:::
+
+::: {.callout-note collapse="true"}
+## Why should a failed primary source stop the pipeline?
+
+The main analytical dataset would be incomplete, so later combination and trend analyses should not proceed as though all required cycles were present.
+:::
+
+::: {.callout-note collapse="true"}
+## What is the purpose of the acquisition manifest?
+
+It records what was requested, what succeeded, where files were saved, their sizes and hashes, and any errors encountered.
+:::
+
+## Lesson summary
+
+You have:
+
+- generated official URLs for the full catalog;
+- created local component-specific paths;
+- downloaded all declared source files;
+- recorded failures without hiding them;
+- validated file existence, size, and hashes;
+- created and saved a complete acquisition manifest.
+
+[Continue to Lesson 9: Inspect the downloaded data](09-inspect-data.qmd){.button .button-primary}

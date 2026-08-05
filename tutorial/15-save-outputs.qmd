@@ -1,0 +1,1473 @@
+---
+title: "Lesson 15: Save Reusable Outputs"
+subtitle: "Export validated data, metadata, validation reports, and reproducibility information"
+description: "Save the processed NHANES CBC and Demographic datasets in reusable formats with documentation and reproducibility metadata."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- explain the difference between RDS and CSV outputs;
+- save validated datasets in reusable formats;
+- preserve R-specific metadata;
+- create compact analysis-ready extracts;
+- save variable dictionaries and validation reports;
+- record package versions and session information;
+- create an output manifest;
+- validate that every required output exists.
+:::
+
+## Why output design matters
+
+A reproducible pipeline should not end with objects that exist only in the current R session.
+
+The results should be saved in formats appropriate for:
+
+- future R analysis;
+- review in spreadsheet software;
+- sharing with collaborators;
+- validation and audit;
+- documentation;
+- reproducibility;
+- downstream reporting.
+
+Different output formats serve different purposes.
+
+## RDS versus CSV
+
+### RDS
+
+An RDS file preserves one R object.
+
+It can preserve:
+
+- variable classes;
+- factors;
+- ordered factors;
+- labels;
+- dates;
+- logical variables;
+- list columns;
+- other R-specific attributes.
+
+Read an RDS file with:
+
+```r
+readRDS(
+  "path/to/file.rds"
+)
+```
+
+### CSV
+
+A CSV file is broadly accessible.
+
+It can be opened with:
+
+- R;
+- Python;
+- Excel;
+- Google Sheets;
+- database tools;
+- text editors.
+
+However, CSV does not preserve:
+
+- R factor levels;
+- ordered-factor status;
+- variable-label attributes;
+- object classes beyond plain text and numbers;
+- other R-specific metadata.
+
+For this reason, the pipeline saves both:
+
+```text
+RDS for analytical fidelity
+CSV for portability
+```
+
+## Where you are in the workflow
+
+You currently have:
+
+```r
+cbc_demographics_labelled
+```
+
+This is the validated and labelled merged dataset.
+
+You also have:
+
+```r
+cbc_second_exam_2001_2002
+```
+
+This is the supplementary second CBC examination preserved separately.
+
+You have also created:
+
+- source manifests;
+- duplicate-audit reports;
+- merge-validation reports;
+- final validation tables;
+- variable dictionaries.
+
+## Add the output section
+
+Add this below the variable-label section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 13: SAVE REUSABLE OUTPUTS
+# ============================================================
+```
+
+## Confirm output directories
+
+Define the required directories:
+
+```r
+output_directories <- c(
+  file.path(
+    "data",
+    "processed"
+  ),
+  file.path(
+    "outputs",
+    "duplicate-reports"
+  ),
+  file.path(
+    "outputs",
+    "figures"
+  ),
+  file.path(
+    "outputs",
+    "tables"
+  ),
+  file.path(
+    "outputs",
+    "validation"
+  )
+)
+```
+
+Create them:
+
+```r
+purrr::walk(
+  output_directories,
+  dir.create,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+```
+
+Confirm:
+
+```r
+tibble::tibble(
+  directory = output_directories,
+  exists = dir.exists(
+    output_directories
+  )
+)
+```
+
+Every result should be:
+
+```text
+TRUE
+```
+
+## Define final dataset filenames
+
+Create clear paths:
+
+```r
+final_labelled_rds_path <- file.path(
+  "data",
+  "processed",
+  "cbc_demographics_labelled_1999_2018.rds"
+)
+```
+
+```r
+final_labelled_csv_path <- file.path(
+  "data",
+  "processed",
+  "cbc_demographics_labelled_1999_2018.csv"
+)
+```
+
+```r
+final_analysis_rds_path <- file.path(
+  "data",
+  "processed",
+  "cbc_demographics_analysis_1999_2018.rds"
+)
+```
+
+```r
+final_analysis_csv_path <- file.path(
+  "data",
+  "processed",
+  "cbc_demographics_analysis_1999_2018.csv"
+)
+```
+
+## Save the complete labelled dataset as RDS
+
+Run:
+
+```r
+saveRDS(
+  cbc_demographics_labelled,
+  final_labelled_rds_path
+)
+```
+
+This is the preferred reusable R object because it preserves:
+
+- variable labels;
+- factors;
+- ordered survey cycles;
+- logical variables;
+- provenance columns;
+- validation fields.
+
+## Save the complete labelled dataset as CSV
+
+Run:
+
+```r
+readr::write_csv(
+  cbc_demographics_labelled,
+  final_labelled_csv_path,
+  na = ""
+)
+```
+
+::: {.callout-warning icon="true"}
+## CSV does not preserve variable-label attributes
+
+The CSV file contains the values and column names, but it does not preserve R label attributes.
+
+The separate variable dictionary remains essential.
+:::
+
+## Create a compact analysis-ready dataset
+
+The complete dataset contains many provenance and validation variables.
+
+Create a smaller dataset for the tutorial analysis:
+
+```r
+analysis_variables <- c(
+  "survey_cycle",
+  "survey_cycle_factor",
+  "SEQN",
+  "LBXHGB",
+  "RIAGENDR",
+  "sex",
+  "demographic_match",
+  "demographic_match_label",
+  "SDMVSTRA",
+  "SDMVPSU"
+)
+```
+
+Identify available weight variables:
+
+```r
+analysis_weight_variables <- grep(
+  "^WT",
+  names(
+    cbc_demographics_labelled
+  ),
+  value = TRUE
+)
+```
+
+Combine the requested columns:
+
+```r
+analysis_export_variables <- unique(
+  c(
+    analysis_variables,
+    analysis_weight_variables
+  )
+)
+```
+
+Check for missing required variables:
+
+```r
+missing_analysis_export_variables <- setdiff(
+  analysis_variables,
+  names(
+    cbc_demographics_labelled
+  )
+)
+```
+
+Stop if required columns are missing:
+
+```r
+if (
+  length(
+    missing_analysis_export_variables
+  ) > 0
+) {
+  stop(
+    "The analysis export is missing required variables: ",
+    paste(
+      missing_analysis_export_variables,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Create the compact dataset:
+
+```r
+cbc_demographics_analysis <-
+  cbc_demographics_labelled |>
+  dplyr::select(
+    dplyr::all_of(
+      analysis_export_variables
+    )
+  )
+```
+
+Inspect:
+
+```r
+dplyr::glimpse(
+  cbc_demographics_analysis
+)
+```
+
+## Validate the compact dataset row count
+
+The analysis extract should retain every row from the labelled dataset.
+
+Run:
+
+```r
+analysis_extract_validation <- tibble::tibble(
+  complete_dataset_rows =
+    nrow(
+      cbc_demographics_labelled
+    ),
+  analysis_dataset_rows =
+    nrow(
+      cbc_demographics_analysis
+    ),
+  rows_preserved =
+    complete_dataset_rows ==
+      analysis_dataset_rows
+)
+```
+
+Inspect:
+
+```r
+print(
+  analysis_extract_validation
+)
+```
+
+Stop if rows differ:
+
+```r
+if (
+  !analysis_extract_validation$rows_preserved
+) {
+  stop(
+    "The analysis extract does not preserve the complete dataset row count."
+  )
+}
+```
+
+## Save the compact dataset as RDS
+
+Run:
+
+```r
+saveRDS(
+  cbc_demographics_analysis,
+  final_analysis_rds_path
+)
+```
+
+## Save the compact dataset as CSV
+
+Run:
+
+```r
+readr::write_csv(
+  cbc_demographics_analysis,
+  final_analysis_csv_path,
+  na = ""
+)
+```
+
+## Save the supplementary second examination
+
+Define paths:
+
+```r
+second_exam_rds_path <- file.path(
+  "data",
+  "processed",
+  "cbc_second_exam_2001_2002.rds"
+)
+```
+
+```r
+second_exam_csv_path <- file.path(
+  "data",
+  "processed",
+  "cbc_second_exam_2001_2002.csv"
+)
+```
+
+Save as RDS:
+
+```r
+saveRDS(
+  cbc_second_exam_2001_2002,
+  second_exam_rds_path
+)
+```
+
+Save as CSV:
+
+```r
+readr::write_csv(
+  cbc_second_exam_2001_2002,
+  second_exam_csv_path,
+  na = ""
+)
+```
+
+## Save combined component datasets
+
+Save primary CBC:
+
+```r
+saveRDS(
+  cbc_primary_1999_2018,
+  file.path(
+    "data",
+    "processed",
+    "cbc_primary_1999_2018.rds"
+  )
+)
+```
+
+Save Demographics:
+
+```r
+saveRDS(
+  demographics_1999_2018,
+  file.path(
+    "data",
+    "processed",
+    "demographics_1999_2018.rds"
+  )
+)
+```
+
+These component files are useful when:
+
+- the merge needs to be repeated;
+- additional Demographic variables are needed;
+- component-specific validation is required;
+- a different analytical join is planned.
+
+## Save variable dictionaries
+
+Save the complete dictionary:
+
+```r
+readr::write_csv(
+  labelled_variable_dictionary,
+  file.path(
+    "outputs",
+    "tables",
+    "complete_variable_dictionary.csv"
+  ),
+  na = ""
+)
+```
+
+Save the tutorial dictionary:
+
+```r
+readr::write_csv(
+  tutorial_variable_dictionary,
+  file.path(
+    "outputs",
+    "tables",
+    "tutorial_variable_dictionary.csv"
+  ),
+  na = ""
+)
+```
+
+## Create an analysis dataset summary
+
+Run:
+
+```r
+analysis_dataset_summary <- tibble::tibble(
+  metric = c(
+    "records",
+    "variables",
+    "survey_cycles",
+    "unique_participant_cycle_keys",
+    "hemoglobin_nonmissing",
+    "hemoglobin_missing",
+    "sex_nonmissing",
+    "sex_missing",
+    "matched_demographics",
+    "unmatched_demographics"
+  ),
+  value = c(
+    nrow(
+      cbc_demographics_analysis
+    ),
+    ncol(
+      cbc_demographics_analysis
+    ),
+    dplyr::n_distinct(
+      cbc_demographics_analysis$survey_cycle
+    ),
+    dplyr::n_distinct(
+      paste(
+        cbc_demographics_analysis$survey_cycle,
+        cbc_demographics_analysis$SEQN,
+        sep = "::"
+      )
+    ),
+    sum(
+      !is.na(
+        cbc_demographics_analysis$LBXHGB
+      )
+    ),
+    sum(
+      is.na(
+        cbc_demographics_analysis$LBXHGB
+      )
+    ),
+    sum(
+      !is.na(
+        cbc_demographics_analysis$sex
+      )
+    ),
+    sum(
+      is.na(
+        cbc_demographics_analysis$sex
+      )
+    ),
+    sum(
+      cbc_demographics_analysis$demographic_match
+    ),
+    sum(
+      !cbc_demographics_analysis$demographic_match
+    )
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  analysis_dataset_summary
+)
+```
+
+Save:
+
+```r
+readr::write_csv(
+  analysis_dataset_summary,
+  file.path(
+    "outputs",
+    "tables",
+    "analysis_dataset_summary.csv"
+  )
+)
+```
+
+## Create a cycle-level dataset summary
+
+Run:
+
+```r
+analysis_cycle_summary <-
+  cbc_demographics_analysis |>
+  dplyr::group_by(
+    survey_cycle
+  ) |>
+  dplyr::summarise(
+    records =
+      dplyr::n(),
+    unique_participants =
+      dplyr::n_distinct(
+        SEQN
+      ),
+    hemoglobin_nonmissing =
+      sum(
+        !is.na(
+          LBXHGB
+        )
+      ),
+    hemoglobin_missing =
+      sum(
+        is.na(
+          LBXHGB
+        )
+      ),
+    matched_demographics =
+      sum(
+        demographic_match
+      ),
+    unmatched_demographics =
+      sum(
+        !demographic_match
+      ),
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor
+  )
+```
+
+If `survey_cycle_factor` is not retained after summarizing, use:
+
+```r
+analysis_cycle_summary <-
+  cbc_demographics_analysis |>
+  dplyr::group_by(
+    survey_cycle,
+    survey_cycle_factor
+  ) |>
+  dplyr::summarise(
+    records =
+      dplyr::n(),
+    unique_participants =
+      dplyr::n_distinct(
+        SEQN
+      ),
+    hemoglobin_nonmissing =
+      sum(
+        !is.na(
+          LBXHGB
+        )
+      ),
+    hemoglobin_missing =
+      sum(
+        is.na(
+          LBXHGB
+        )
+      ),
+    matched_demographics =
+      sum(
+        demographic_match
+      ),
+    unmatched_demographics =
+      sum(
+        !demographic_match
+      ),
+    .groups = "drop"
+  ) |>
+  dplyr::arrange(
+    survey_cycle_factor
+  )
+```
+
+Inspect:
+
+```r
+print(
+  analysis_cycle_summary,
+  n = Inf
+)
+```
+
+Save:
+
+```r
+readr::write_csv(
+  analysis_cycle_summary,
+  file.path(
+    "outputs",
+    "tables",
+    "analysis_cycle_summary.csv"
+  )
+)
+```
+
+## Record package versions
+
+Define packages used by the pipeline:
+
+```r
+pipeline_packages <- c(
+  "dplyr",
+  "tidyr",
+  "purrr",
+  "readr",
+  "haven",
+  "stringr",
+  "tibble",
+  "ggplot2",
+  "digest",
+  "httr"
+)
+```
+
+Create a version table:
+
+```r
+package_versions <- tibble::tibble(
+  package = pipeline_packages,
+  installed = purrr::map_lgl(
+    pipeline_packages,
+    requireNamespace,
+    quietly = TRUE
+  ),
+  version = purrr::map_chr(
+    pipeline_packages,
+    function(package_name) {
+      if (
+        requireNamespace(
+          package_name,
+          quietly = TRUE
+        )
+      ) {
+        as.character(
+          utils::packageVersion(
+            package_name
+          )
+        )
+      } else {
+        NA_character_
+      }
+    }
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  package_versions,
+  n = Inf
+)
+```
+
+Save:
+
+```r
+readr::write_csv(
+  package_versions,
+  file.path(
+    "outputs",
+    "validation",
+    "package_versions.csv"
+  )
+)
+```
+
+## Record R session information
+
+Capture session information:
+
+```r
+session_information <- capture.output(
+  sessionInfo()
+)
+```
+
+Save:
+
+```r
+writeLines(
+  session_information,
+  file.path(
+    "outputs",
+    "validation",
+    "session_info.txt"
+  )
+)
+```
+
+## Record pipeline execution time
+
+Create:
+
+```r
+pipeline_execution_record <- tibble::tibble(
+  executed_at_utc = format(
+    Sys.time(),
+    tz = "UTC",
+    usetz = TRUE
+  ),
+  r_version = R.version.string,
+  platform = R.version$platform,
+  working_directory = normalizePath(
+    getwd(),
+    mustWork = TRUE
+  )
+)
+```
+
+Save:
+
+```r
+readr::write_csv(
+  pipeline_execution_record,
+  file.path(
+    "outputs",
+    "validation",
+    "pipeline_execution_record.csv"
+  )
+)
+```
+
+## Create file hashes for final datasets
+
+Create:
+
+```r
+final_dataset_hashes <- tibble::tibble(
+  file = c(
+    final_labelled_rds_path,
+    final_labelled_csv_path,
+    final_analysis_rds_path,
+    final_analysis_csv_path,
+    second_exam_rds_path,
+    second_exam_csv_path
+  ),
+  sha256 = purrr::map_chr(
+    file,
+    function(file_path) {
+      digest::digest(
+        file_path,
+        algorithm = "sha256",
+        file = TRUE
+      )
+    }
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  final_dataset_hashes,
+  n = Inf
+)
+```
+
+Validate hash lengths:
+
+```r
+if (
+  any(
+    nchar(
+      final_dataset_hashes$sha256
+    ) != 64
+  )
+) {
+  stop(
+    "One or more final dataset hashes are invalid."
+  )
+}
+```
+
+Save:
+
+```r
+readr::write_csv(
+  final_dataset_hashes,
+  file.path(
+    "outputs",
+    "validation",
+    "final_dataset_hashes.csv"
+  )
+)
+```
+
+## Create an output manifest
+
+List all files under the processed-data and output directories:
+
+```r
+manifest_files <- c(
+  list.files(
+    file.path(
+      "data",
+      "processed"
+    ),
+    recursive = TRUE,
+    full.names = TRUE
+  ),
+  list.files(
+    "outputs",
+    recursive = TRUE,
+    full.names = TRUE
+  )
+)
+```
+
+Keep files only:
+
+```r
+manifest_files <- manifest_files[
+  file.exists(
+    manifest_files
+  ) &
+    !dir.exists(
+      manifest_files
+    )
+]
+```
+
+Create the manifest:
+
+```r
+output_manifest <- tibble::tibble(
+  file = manifest_files,
+  file_name = basename(
+    manifest_files
+  ),
+  directory = dirname(
+    manifest_files
+  ),
+  extension = tools::file_ext(
+    manifest_files
+  ),
+  size_bytes = file.info(
+    manifest_files
+  )$size,
+  modified_at = format(
+    file.info(
+      manifest_files
+    )$mtime,
+    tz = "UTC",
+    usetz = TRUE
+  )
+)
+```
+
+Add hashes to files with stable content:
+
+```r
+output_manifest <-
+  output_manifest |>
+  dplyr::mutate(
+    sha256 = purrr::map_chr(
+      file,
+      function(file_path) {
+        digest::digest(
+          file_path,
+          algorithm = "sha256",
+          file = TRUE
+        )
+      }
+    )
+  )
+```
+
+Sort:
+
+```r
+output_manifest <-
+  output_manifest |>
+  dplyr::arrange(
+    directory,
+    file_name
+  )
+```
+
+Inspect:
+
+```r
+print(
+  output_manifest,
+  n = Inf
+)
+```
+
+Save:
+
+```r
+readr::write_csv(
+  output_manifest,
+  file.path(
+    "outputs",
+    "validation",
+    "output_manifest.csv"
+  )
+)
+```
+
+## Define required final outputs
+
+Create:
+
+```r
+required_final_outputs <- c(
+  final_labelled_rds_path,
+  final_labelled_csv_path,
+  final_analysis_rds_path,
+  final_analysis_csv_path,
+  second_exam_rds_path,
+  second_exam_csv_path,
+  file.path(
+    "data",
+    "processed",
+    "cbc_primary_1999_2018.rds"
+  ),
+  file.path(
+    "data",
+    "processed",
+    "demographics_1999_2018.rds"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "complete_variable_dictionary.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "tutorial_variable_dictionary.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "analysis_dataset_summary.csv"
+  ),
+  file.path(
+    "outputs",
+    "tables",
+    "analysis_cycle_summary.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "package_versions.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "session_info.txt"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "pipeline_execution_record.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "final_dataset_hashes.csv"
+  ),
+  file.path(
+    "outputs",
+    "validation",
+    "output_manifest.csv"
+  )
+)
+```
+
+## Validate required outputs
+
+Run:
+
+```r
+required_output_check <- tibble::tibble(
+  file = required_final_outputs,
+  exists = file.exists(
+    required_final_outputs
+  ),
+  size_bytes = ifelse(
+    file.exists(
+      required_final_outputs
+    ),
+    file.info(
+      required_final_outputs
+    )$size,
+    NA_real_
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  required_output_check,
+  n = Inf
+)
+```
+
+Stop if any file is missing:
+
+```r
+missing_required_outputs <-
+  required_output_check |>
+  dplyr::filter(
+    !exists
+  )
+```
+
+```r
+if (
+  nrow(
+    missing_required_outputs
+  ) > 0
+) {
+  stop(
+    "Required outputs are missing: ",
+    paste(
+      missing_required_outputs$file,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Stop if any file is empty:
+
+```r
+empty_required_outputs <-
+  required_output_check |>
+  dplyr::filter(
+    exists,
+    is.na(
+      size_bytes
+    ) |
+      size_bytes <= 0
+  )
+```
+
+```r
+if (
+  nrow(
+    empty_required_outputs
+  ) > 0
+) {
+  stop(
+    "Required outputs are empty: ",
+    paste(
+      empty_required_outputs$file,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Expected message:
+
+```r
+message(
+  "All required reusable outputs were created successfully."
+)
+```
+
+Expected result:
+
+```text
+All required reusable outputs were created successfully.
+```
+
+## Test reading the saved RDS dataset
+
+Read it back:
+
+```r
+reloaded_analysis_data <- readRDS(
+  final_analysis_rds_path
+)
+```
+
+Validate dimensions:
+
+```r
+rds_reload_validation <- tibble::tibble(
+  original_rows =
+    nrow(
+      cbc_demographics_analysis
+    ),
+  reloaded_rows =
+    nrow(
+      reloaded_analysis_data
+    ),
+  original_columns =
+    ncol(
+      cbc_demographics_analysis
+    ),
+  reloaded_columns =
+    ncol(
+      reloaded_analysis_data
+    ),
+  dimensions_match =
+    original_rows ==
+      reloaded_rows &
+      original_columns ==
+        reloaded_columns
+)
+```
+
+Inspect:
+
+```r
+print(
+  rds_reload_validation
+)
+```
+
+Stop if the dimensions differ:
+
+```r
+if (
+  !rds_reload_validation$dimensions_match
+) {
+  stop(
+    "The reloaded RDS dataset does not match the original dimensions."
+  )
+}
+```
+
+## Test reading the saved CSV dataset
+
+Read:
+
+```r
+reloaded_analysis_csv <- readr::read_csv(
+  final_analysis_csv_path,
+  show_col_types = FALSE
+)
+```
+
+Validate dimensions:
+
+```r
+csv_reload_validation <- tibble::tibble(
+  original_rows =
+    nrow(
+      cbc_demographics_analysis
+    ),
+  reloaded_rows =
+    nrow(
+      reloaded_analysis_csv
+    ),
+  original_columns =
+    ncol(
+      cbc_demographics_analysis
+    ),
+  reloaded_columns =
+    ncol(
+      reloaded_analysis_csv
+    ),
+  dimensions_match =
+    original_rows ==
+      reloaded_rows &
+      original_columns ==
+        reloaded_columns
+)
+```
+
+Inspect:
+
+```r
+print(
+  csv_reload_validation
+)
+```
+
+## Why CSV classes may differ after reload
+
+A CSV file stores plain values.
+
+After reloading:
+
+- factors may become character;
+- ordered factors may become character;
+- labels are absent;
+- dates may require parsing;
+- logical values may be inferred differently.
+
+That is expected.
+
+Use the RDS file when R metadata must be preserved.
+
+## Create a README for processed outputs
+
+Define text:
+
+```r
+processed_data_readme <- c(
+  "# Processed NHANES CBC and Demographic outputs",
+  "",
+  "This directory contains processed datasets created by the",
+  "NHANES CBC and Demographic Data Pipeline in R.",
+  "",
+  "## Main files",
+  "",
+  "- cbc_demographics_labelled_1999_2018.rds",
+  "  Complete validated and labelled R dataset.",
+  "",
+  "- cbc_demographics_labelled_1999_2018.csv",
+  "  Portable CSV export of the complete dataset.",
+  "",
+  "- cbc_demographics_analysis_1999_2018.rds",
+  "  Compact analysis-ready R dataset.",
+  "",
+  "- cbc_demographics_analysis_1999_2018.csv",
+  "  Portable CSV export of the compact dataset.",
+  "",
+  "- cbc_primary_1999_2018.rds",
+  "  Combined primary CBC records from ten survey cycles.",
+  "",
+  "- demographics_1999_2018.rds",
+  "  Combined Demographic records from ten survey cycles.",
+  "",
+  "- cbc_second_exam_2001_2002.rds",
+  "  Supplementary second CBC examination preserved separately.",
+  "",
+  "## Important note",
+  "",
+  "The tutorial analysis is descriptive and unweighted.",
+  "Formal national inference requires the appropriate NHANES",
+  "survey weight, SDMVSTRA, SDMVPSU, and multi-cycle methods."
+)
+```
+
+Save:
+
+```r
+writeLines(
+  processed_data_readme,
+  file.path(
+    "data",
+    "processed",
+    "README.md"
+  )
+)
+```
+
+## Common mistakes
+
+### Saving only CSV
+
+CSV is portable but does not preserve R metadata.
+
+### Saving only RDS
+
+RDS preserves metadata but may be less convenient for collaborators using other software.
+
+### Overwriting raw source files
+
+Processed outputs should be stored separately from:
+
+```text
+data/raw/
+```
+
+### Failing to save validation reports
+
+A dataset without its validation evidence is harder to audit.
+
+### Omitting package versions
+
+Package behavior can change over time.
+
+### Assuming the CSV reload is identical to the RDS reload
+
+The values may be similar, but classes and labels can differ.
+
+### Publishing every output automatically
+
+Some files may be:
+
+- large;
+- temporary;
+- sensitive;
+- inappropriate for version control.
+
+Review `.gitignore` and repository size before committing generated data.
+
+## Checkpoint
+
+Confirm:
+
+- [ ] All output directories exist.
+- [ ] The complete labelled dataset was saved as RDS.
+- [ ] The complete labelled dataset was saved as CSV.
+- [ ] A compact analysis-ready dataset was created.
+- [ ] The compact dataset preserves all rows.
+- [ ] The compact dataset was saved as RDS and CSV.
+- [ ] The second examination was saved separately.
+- [ ] Primary CBC and Demographic component datasets were saved.
+- [ ] Variable dictionaries were saved.
+- [ ] Dataset summaries were saved.
+- [ ] Package versions were recorded.
+- [ ] Session information was recorded.
+- [ ] Pipeline execution information was recorded.
+- [ ] Final dataset hashes were created.
+- [ ] An output manifest was created.
+- [ ] Required files exist and are not empty.
+- [ ] The saved RDS file was successfully reloaded.
+- [ ] The saved CSV file was successfully reloaded.
+- [ ] A processed-data README was created.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why save both RDS and CSV files?
+
+RDS preserves R-specific classes, labels, and factors, while CSV provides broad compatibility with other software.
+:::
+
+::: {.callout-note collapse="true"}
+## Why create a separate variable dictionary?
+
+Portable formats such as CSV do not preserve variable-label attributes, so the dictionary documents the meaning, source, and analytical use of variables.
+:::
+
+::: {.callout-note collapse="true"}
+## Why calculate hashes for final datasets?
+
+Hashes provide reproducible file fingerprints that help identify whether output files changed between pipeline runs.
+:::
+
+## Lesson summary
+
+You have:
+
+- saved complete and compact datasets;
+- preserved R metadata with RDS;
+- created portable CSV exports;
+- saved the supplementary second examination separately;
+- recorded package and session information;
+- created dataset hashes;
+- built an output manifest;
+- validated every required output;
+- documented the processed-data directory.
+
+[Continue to Lesson 16: Analyze hemoglobin data](16-analyze-hemoglobin.qmd){.button .button-primary}

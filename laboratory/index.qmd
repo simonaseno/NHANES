@@ -1,0 +1,1204 @@
+---
+title: "NHANES Laboratory Data"
+subtitle: "From specimen collection to analysis-ready evidence"
+description: "Explore how NHANES laboratory data are collected, organized, documented, validated, and transformed into defensible analytical datasets."
+sidebar: laboratory
+format:
+  html:
+    toc: true
+    toc-depth: 2
+---
+
+```{=html}
+<style>
+.lab-hero {
+  position: relative;
+  overflow: hidden;
+  margin: 1rem 0 2.25rem;
+  padding: 3rem 1.6rem;
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      circle at 88% 12%,
+      rgba(68, 211, 187, 0.24),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 10% 90%,
+      rgba(70, 130, 180, 0.20),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      #071a27,
+      #0d3342 58%,
+      #145b62
+    );
+  color: #ffffff;
+  box-shadow: 0 16px 38px rgba(7, 26, 39, 0.24);
+}
+
+.lab-hero::after {
+  content: "";
+  position: absolute;
+  top: -90px;
+  right: -70px;
+  width: 250px;
+  height: 250px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 28px rgba(255, 255, 255, 0.04),
+    0 0 0 56px rgba(255, 255, 255, 0.025);
+}
+
+.lab-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+}
+
+.lab-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #d8fffa;
+  font-size: 0.88rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.lab-hero h2 {
+  max-width: 850px;
+  margin: 0;
+  color: #ffffff !important;
+  font-size: clamp(2.3rem, 5.5vw, 4.6rem);
+  line-height: 1.03;
+  letter-spacing: -0.04em;
+}
+
+.lab-hero p {
+  max-width: 820px;
+  margin: 1.25rem 0 0;
+  color: #e4f5f5 !important;
+  font-size: 1.14rem;
+  line-height: 1.7;
+}
+
+.lab-stat-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(165px, 1fr)
+    );
+  gap: 0.9rem;
+  margin: 1.8rem 0 0;
+}
+
+.lab-stat {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+}
+
+.lab-stat strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #ffffff;
+  font-size: 1.05rem;
+}
+
+.lab-stat span {
+  color: #cce8e8;
+  font-size: 0.91rem;
+  line-height: 1.4;
+}
+
+.lab-section-intro {
+  max-width: 850px;
+  margin: 0 0 1.5rem;
+  color: #4b5563;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.specimen-journey {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      6,
+      minmax(0, 1fr)
+    );
+  gap: 0.7rem;
+  margin: 1.5rem 0 2.3rem;
+}
+
+.specimen-step {
+  position: relative;
+  min-height: 150px;
+  padding: 1rem 0.8rem;
+  border: 1px solid #d5dee6;
+  border-radius: 14px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(17, 34, 51, 0.05);
+}
+
+.specimen-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-bottom: 0.7rem;
+  border-radius: 50%;
+  background: #0d5961;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.specimen-step strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #102b3a;
+}
+
+.specimen-step span {
+  color: #566270;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.specimen-step:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 50%;
+  right: -0.62rem;
+  z-index: 3;
+  transform: translateY(-50%);
+  color: #23a493;
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.lab-principles {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(230px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2.3rem;
+}
+
+.lab-principle {
+  position: relative;
+  overflow: hidden;
+  padding: 1.35rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(17, 34, 51, 0.06);
+}
+
+.lab-principle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(
+    90deg,
+    #0d5961,
+    #35b6a4
+  );
+}
+
+.lab-principle h3 {
+  margin: 0 0 0.55rem;
+  color: #102b3a;
+  font-size: 1.13rem;
+}
+
+.lab-principle p {
+  margin: 0;
+  color: #566270;
+  line-height: 1.55;
+}
+
+.component-explorer {
+  margin: 1.5rem 0 2.4rem;
+  padding: 1.4rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 18px;
+  background: #f7fbfb;
+}
+
+.component-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
+}
+
+.component-filter {
+  padding: 0.7rem 1rem;
+  border: 2px solid #0d5961;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0d5961;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.component-filter:hover,
+.component-filter.active {
+  background: #0d5961;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.component-panel {
+  display: none;
+  padding: 1.3rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.component-panel.active {
+  display: block;
+  animation: panel-enter 240ms ease-out both;
+}
+
+.component-panel h3 {
+  margin-top: 0;
+  color: #102b3a;
+}
+
+.component-panel p {
+  color: #566270;
+  line-height: 1.6;
+}
+
+.component-panel ul {
+  margin-bottom: 0;
+}
+
+.lab-decision-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+  gap: 0.8rem;
+  margin: 1.5rem 0 2.3rem;
+}
+
+.lab-decision {
+  position: relative;
+  padding: 1.15rem;
+  border-radius: 14px;
+  background: #102b3a;
+  color: #ffffff;
+  text-align: center;
+}
+
+.lab-decision strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #ffffff;
+}
+
+.lab-decision span {
+  color: #d5e7e9;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.lab-decision:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 50%;
+  right: -0.66rem;
+  z-index: 3;
+  transform: translateY(-50%);
+  color: #35b6a4;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.lab-case {
+  margin: 1.5rem 0 2.3rem;
+  padding: 1.5rem;
+  border: 1px solid #cfdce3;
+  border-left: 7px solid #0d5961;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(13, 89, 97, 0.08),
+      transparent 40%
+    ),
+    #ffffff;
+}
+
+.lab-case h3 {
+  margin-top: 0;
+  color: #102b3a;
+}
+
+.lab-case-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(200px, 1fr)
+    );
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.lab-case-item {
+  padding: 1rem;
+  border-radius: 11px;
+  background: #f4f8f9;
+}
+
+.lab-case-item strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #0d5961;
+}
+
+.lab-case-item span {
+  color: #566270;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.lab-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 2rem 0;
+}
+
+.lab-action {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 49px;
+  padding: 0.82rem 1.2rem;
+  border: 2px solid #0d5961;
+  border-radius: 9px;
+  background: #0d5961 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 760;
+  text-decoration: none !important;
+}
+
+.lab-action:hover {
+  background: #ffffff !important;
+  color: #0d5961 !important;
+  -webkit-text-fill-color: #0d5961 !important;
+}
+
+.lab-action-secondary {
+  background: #ffffff !important;
+  color: #0d5961 !important;
+  -webkit-text-fill-color: #0d5961 !important;
+}
+
+.lab-action-secondary:hover {
+  background: #0d5961 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 980px) {
+  .specimen-journey {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .specimen-step:not(:last-child)::after {
+    display: none;
+  }
+
+  .lab-decision-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lab-decision:not(:last-child)::after {
+    content: "↓";
+    top: auto;
+    right: 50%;
+    bottom: -1.1rem;
+    transform: translateX(50%);
+  }
+}
+
+@media (max-width: 620px) {
+  .lab-hero {
+    padding: 2.4rem 1rem;
+  }
+
+  .specimen-journey {
+    grid-template-columns: 1fr;
+  }
+
+  .component-buttons {
+    flex-direction: column;
+  }
+
+  .component-filter {
+    width: 100%;
+  }
+
+  .lab-actions {
+    flex-direction: column;
+  }
+
+  .lab-action {
+    width: 100%;
+  }
+}
+</style>
+```
+
+```{=html}
+<section class="lab-hero">
+  <div class="lab-hero-content">
+
+    <div class="lab-eyebrow">
+      Laboratory science · survey data · reproducibility
+    </div>
+
+    <h2>
+      Laboratory results become evidence only after their context is preserved.
+    </h2>
+
+    <p>
+      NHANES laboratory files connect specimen collection, analytical methods,
+      quality assurance, participant eligibility, survey design, and public-use
+      data. This section explains how to move from a released laboratory file
+      to a scientifically defensible analytical dataset.
+    </p>
+
+    <div class="lab-stat-grid">
+
+      <div class="lab-stat">
+        <strong>Specimen context</strong>
+        <span>Collection, handling, storage, and eligibility</span>
+      </div>
+
+      <div class="lab-stat">
+        <strong>Method context</strong>
+        <span>Instrument, procedure, calibration, and quality control</span>
+      </div>
+
+      <div class="lab-stat">
+        <strong>Data context</strong>
+        <span>Variables, units, detection limits, and missingness</span>
+      </div>
+
+      <div class="lab-stat">
+        <strong>Survey context</strong>
+        <span>Weights, strata, PSUs, cycles, and target population</span>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+```
+
+# The laboratory data journey
+
+Laboratory data pass through several scientific and operational stages before appearing in an NHANES XPT file.
+
+```{=html}
+<div class="specimen-journey">
+
+  <div class="specimen-step">
+    <div class="specimen-step-number">1</div>
+    <strong>Eligibility</strong>
+    <span>Determine who qualifies for the examination or laboratory component.</span>
+  </div>
+
+  <div class="specimen-step">
+    <div class="specimen-step-number">2</div>
+    <strong>Collection</strong>
+    <span>Obtain blood, urine, or another specimen under defined procedures.</span>
+  </div>
+
+  <div class="specimen-step">
+    <div class="specimen-step-number">3</div>
+    <strong>Handling</strong>
+    <span>Process, label, store, and transport the specimen appropriately.</span>
+  </div>
+
+  <div class="specimen-step">
+    <div class="specimen-step-number">4</div>
+    <strong>Measurement</strong>
+    <span>Analyze the specimen using a documented laboratory method.</span>
+  </div>
+
+  <div class="specimen-step">
+    <div class="specimen-step-number">5</div>
+    <strong>Quality review</strong>
+    <span>Apply calibration, controls, flags, and analytical validation.</span>
+  </div>
+
+  <div class="specimen-step">
+    <div class="specimen-step-number">6</div>
+    <strong>Public release</strong>
+    <span>Publish variables, documentation, weights, and analytical guidance.</span>
+  </div>
+
+</div>
+```
+
+::: {.callout-important icon="true"}
+## The released value is the final stage, not the whole story
+
+A laboratory result should be interpreted together with:
+
+- who was eligible;
+- how the specimen was collected;
+- how the method worked;
+- what units were reported;
+- whether limits of detection applied;
+- which survey weight represents the tested population.
+:::
+
+# Four laboratory-data principles
+
+```{=html}
+<div class="lab-principles">
+
+  <div class="lab-principle">
+    <h3>Methods matter</h3>
+    <p>
+      The same analyte may be measured using different instruments, procedures,
+      calibration systems, or laboratory sites across survey cycles.
+    </p>
+  </div>
+
+  <div class="lab-principle">
+    <h3>Eligibility defines the sample</h3>
+    <p>
+      Not every participant is eligible for every laboratory component.
+      Age, examination status, fasting, session, or subsample selection may apply.
+    </p>
+  </div>
+
+  <div class="lab-principle">
+    <h3>Units must be verified</h3>
+    <p>
+      A familiar variable name does not guarantee that units, coding,
+      reporting limits, or interpretation remained unchanged.
+    </p>
+  </div>
+
+  <div class="lab-principle">
+    <h3>Provenance must survive</h3>
+    <p>
+      Every analytical record should retain its survey cycle, source file,
+      component, variable origin, and processing history.
+    </p>
+  </div>
+
+</div>
+```
+
+# Explore laboratory component types
+
+Select a category to see how its analytical considerations may differ.
+
+```{=html}
+<div class="component-explorer">
+
+  <div
+    class="component-buttons"
+    role="tablist"
+    aria-label="Laboratory component categories"
+  >
+
+    <button
+      class="component-filter active"
+      type="button"
+      data-component="hematology"
+    >
+      Hematology
+    </button>
+
+    <button
+      class="component-filter"
+      type="button"
+      data-component="chemistry"
+    >
+      Clinical chemistry
+    </button>
+
+    <button
+      class="component-filter"
+      type="button"
+      data-component="exposure"
+    >
+      Exposure biomarkers
+    </button>
+
+    <button
+      class="component-filter"
+      type="button"
+      data-component="infectious"
+    >
+      Infectious disease
+    </button>
+
+    <button
+      class="component-filter"
+      type="button"
+      data-component="nutrition"
+    >
+      Nutrition biomarkers
+    </button>
+
+  </div>
+
+  <div
+    id="hematology"
+    class="component-panel active"
+  >
+    <h3>Hematology</h3>
+
+    <p>
+      Hematology components may include complete blood count variables such as
+      hemoglobin, hematocrit, erythrocyte indices, leukocyte counts, and platelets.
+    </p>
+
+    <ul>
+      <li>Review analyzer and method changes across cycles.</li>
+      <li>Verify units and age-specific interpretation.</li>
+      <li>Distinguish primary and repeat examinations.</li>
+      <li>Retain specimen and cycle provenance.</li>
+    </ul>
+  </div>
+
+  <div
+    id="chemistry"
+    class="component-panel"
+  >
+    <h3>Clinical chemistry</h3>
+
+    <p>
+      Chemistry components may include glucose, lipids, renal markers,
+      liver-associated measurements, electrolytes, and other biomarkers.
+    </p>
+
+    <ul>
+      <li>Determine whether fasting or examination-session restrictions apply.</li>
+      <li>Review specimen type and analytical platform.</li>
+      <li>Identify component-specific subsample weights.</li>
+      <li>Check method-comparison or calibration guidance.</li>
+    </ul>
+  </div>
+
+  <div
+    id="exposure"
+    class="component-panel"
+  >
+    <h3>Environmental exposure biomarkers</h3>
+
+    <p>
+      Exposure components may measure metals, pesticides, volatile compounds,
+      metabolites, or other environmental biomarkers.
+    </p>
+
+    <ul>
+      <li>Review limits of detection and substitution rules.</li>
+      <li>Identify dilution adjustments where relevant.</li>
+      <li>Check batch, specimen, and storage considerations.</li>
+      <li>Confirm the applicable laboratory subsample weight.</li>
+    </ul>
+  </div>
+
+  <div
+    id="infectious"
+    class="component-panel"
+  >
+    <h3>Infectious disease testing</h3>
+
+    <p>
+      Infectious disease components may include antibody, antigen,
+      molecular, or other evidence of infection or immunity.
+    </p>
+
+    <ul>
+      <li>Understand qualitative and quantitative result coding.</li>
+      <li>Review confirmatory testing algorithms.</li>
+      <li>Distinguish current infection, past exposure, and immunity.</li>
+      <li>Check age and specimen-availability restrictions.</li>
+    </ul>
+  </div>
+
+  <div
+    id="nutrition"
+    class="component-panel"
+  >
+    <h3>Nutrition biomarkers</h3>
+
+    <p>
+      Nutrition laboratory components may include vitamins, minerals,
+      metabolites, and other indicators of nutritional status.
+    </p>
+
+    <ul>
+      <li>Review fasting, supplement use, and collection timing.</li>
+      <li>Check specimen stability and assay changes.</li>
+      <li>Assess biomarker-specific reference considerations.</li>
+      <li>Identify the appropriate survey weight and analytical sample.</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const buttons =
+    document.querySelectorAll(
+      ".component-filter"
+    );
+
+  const panels =
+    document.querySelectorAll(
+      ".component-panel"
+    );
+
+  buttons.forEach(
+    function (button) {
+      button.addEventListener(
+        "click",
+        function () {
+          const target =
+            button.getAttribute(
+              "data-component"
+            );
+
+          buttons.forEach(
+            function (item) {
+              item.classList.remove(
+                "active"
+              );
+            }
+          );
+
+          panels.forEach(
+            function (panel) {
+              panel.classList.remove(
+                "active"
+              );
+            }
+          );
+
+          button.classList.add(
+            "active"
+          );
+
+          const selectedPanel =
+            document.getElementById(
+              target
+            );
+
+          if (selectedPanel) {
+            selectedPanel.classList.add(
+              "active"
+            );
+          }
+        }
+      );
+    }
+  );
+})();
+</script>
+```
+
+# Before using a laboratory variable
+
+```{=html}
+<div class="lab-decision-grid">
+
+  <div class="lab-decision">
+    <strong>Find the component</strong>
+    <span>Identify the correct file, cycle, and variable.</span>
+  </div>
+
+  <div class="lab-decision">
+    <strong>Read the documentation</strong>
+    <span>Review units, method, eligibility, flags, and notes.</span>
+  </div>
+
+  <div class="lab-decision">
+    <strong>Validate the data</strong>
+    <span>Inspect structure, keys, missingness, and value ranges.</span>
+  </div>
+
+  <div class="lab-decision">
+    <strong>Define the analysis</strong>
+    <span>Select the population, weight, cycles, and interpretation.</span>
+  </div>
+
+</div>
+```
+
+# Anatomy of a laboratory variable
+
+A laboratory variable should be understood through more than its short name.
+
+::: {.panel-tabset}
+
+## Variable identity
+
+Review:
+
+- variable name;
+- descriptive label;
+- source file;
+- survey cycle;
+- component;
+- specimen type.
+
+## Measurement context
+
+Review:
+
+- analytical method;
+- instrument or platform;
+- calibration;
+- laboratory site;
+- specimen handling;
+- quality-control procedures.
+
+## Reported result
+
+Review:
+
+- unit;
+- valid range;
+- categorical coding;
+- result flags;
+- comment codes;
+- missing-value conventions.
+
+## Analytical population
+
+Review:
+
+- age eligibility;
+- examination status;
+- fasting requirements;
+- subsample selection;
+- valid survey weight;
+- missing-result patterns.
+
+:::
+
+# Laboratory detection limits
+
+Some laboratory components include values below a method’s detection limit.
+
+The released data may provide:
+
+- a reported result variable;
+- a detection-limit indicator;
+- a lower detection limit;
+- an imputed or substituted result;
+- cycle-specific analytical guidance.
+
+::: {.callout-warning icon="true"}
+## Do not invent a universal substitution rule
+
+Rules such as:
+
+```text
+LOD / √2
+```
+
+or:
+
+```text
+LOD / 2
+```
+
+may be appropriate in some contexts but should not be applied automatically.
+
+Use the component documentation, analytical objective, distribution, and sensitivity analysis to justify the treatment of values below detection.
+:::
+
+# Missing laboratory values
+
+A missing result may indicate:
+
+- the participant was not eligible;
+- the participant did not attend the MEC examination;
+- the specimen was not collected;
+- specimen volume was insufficient;
+- the assay failed;
+- the result was excluded during quality review;
+- the analyte was not measured in that cycle;
+- the participant was not selected for the subsample.
+
+The meaning of missingness should be investigated before excluding records.
+
+# Case study: CBC and Demographic data
+
+```{=html}
+<div class="lab-case">
+
+  <h3>From separate source files to an analysis-ready CBC dataset</h3>
+
+  <p>
+    The CBC and Demographic pipeline demonstrates how laboratory science,
+    data engineering, and survey methodology work together.
+  </p>
+
+  <div class="lab-case-grid">
+
+    <div class="lab-case-item">
+      <strong>Source decision</strong>
+      <span>
+        Identify the primary CBC source for every survey cycle.
+      </span>
+    </div>
+
+    <div class="lab-case-item">
+      <strong>Repeat examination</strong>
+      <span>
+        Preserve the 2001–2002 second CBC examination separately.
+      </span>
+    </div>
+
+    <div class="lab-case-item">
+      <strong>Participant key</strong>
+      <span>
+        Merge CBC and Demographic records using survey cycle plus SEQN.
+      </span>
+    </div>
+
+    <div class="lab-case-item">
+      <strong>Scientific output</strong>
+      <span>
+        Produce validated datasets, summaries, figures, and provenance records.
+      </span>
+    </div>
+
+  </div>
+
+</div>
+```
+
+# Laboratory quality and analytical quality
+
+Laboratory quality assurance and data-analysis quality are related but distinct.
+
+::: {.panel-tabset}
+
+## Laboratory quality assurance
+
+May include:
+
+- calibration;
+- control materials;
+- proficiency testing;
+- instrument maintenance;
+- reagent review;
+- specimen acceptance;
+- corrective action;
+- analytical performance monitoring.
+
+## Data-analysis quality assurance
+
+May include:
+
+- source validation;
+- cycle tracking;
+- variable harmonization;
+- duplicate investigation;
+- merge validation;
+- missingness review;
+- weight selection;
+- reproducibility records.
+
+## Shared objective
+
+Both systems aim to ensure that:
+
+```text
+the reported result is accurate,
+traceable,
+interpretable,
+and fit for its intended use
+```
+
+:::
+
+# Common laboratory-data mistakes
+
+::: {.callout-warning icon="true"}
+## Mistake 1: Selecting a variable by name alone
+
+The variable’s method, unit, eligibility, and cycle documentation must also be reviewed.
+:::
+
+::: {.callout-warning icon="true"}
+## Mistake 2: Assuming every participant has every laboratory result
+
+Laboratory eligibility, examination completion, specimen availability, and subsampling affect record availability.
+:::
+
+::: {.callout-warning icon="true"}
+## Mistake 3: Combining cycles without reviewing method changes
+
+A consistent variable name does not prove analytical comparability.
+:::
+
+::: {.callout-warning icon="true"}
+## Mistake 4: Ignoring detection-limit variables
+
+Reported values near or below detection may require specific analytical treatment.
+:::
+
+::: {.callout-warning icon="true"}
+## Mistake 5: Using the wrong survey weight
+
+The weight must represent the smallest eligible sample associated with the laboratory variables used.
+:::
+
+# Laboratory-data knowledge check
+
+::: {.callout-note collapse="true"}
+## Is a laboratory variable name sufficient to establish comparability across cycles?
+
+No. Review the method, units, eligibility, instrument, documentation, and cycle-specific analytical guidance.
+:::
+
+::: {.callout-note collapse="true"}
+## Why might a participant have no laboratory result?
+
+They may have been ineligible, absent from the examination, missing a specimen, excluded during quality review, or outside the selected subsample.
+:::
+
+::: {.callout-note collapse="true"}
+## Should repeat examinations be appended automatically to the primary laboratory file?
+
+No. Their analytical role and eligibility must be investigated first.
+:::
+
+::: {.callout-note collapse="true"}
+## What information should remain attached to an imported laboratory record?
+
+At minimum, retain the survey cycle, source file, component, participant identifier, and file role.
+:::
+
+::: {.callout-note collapse="true"}
+## Does a correct assay result automatically produce a valid population estimate?
+
+No. Population inference also requires correct eligibility, data integration, survey weighting, and design-based analysis.
+:::
+
+# Laboratory-data checklist
+
+Before analyzing an NHANES laboratory component, confirm:
+
+- [ ] The correct component and source file are identified.
+- [ ] The survey cycle is retained.
+- [ ] The participant identifier is present.
+- [ ] The meaning of one row is understood.
+- [ ] Primary and supplementary records are distinguished.
+- [ ] Variable labels and units are verified.
+- [ ] Laboratory methods have been reviewed.
+- [ ] Instrument or platform changes have been considered.
+- [ ] Detection-limit variables have been identified.
+- [ ] Missing-value meaning has been investigated.
+- [ ] Eligibility criteria are documented.
+- [ ] The correct survey weight is identified.
+- [ ] Strata and PSU variables are available.
+- [ ] Cross-cycle comparability has been assessed.
+- [ ] Analytical limitations are documented.
+- [ ] Provenance is preserved.
+
+# Explore the laboratory section
+
+```{=html}
+<div class="lab-actions">
+
+  <a
+    class="lab-action"
+    href="component-catalog.html"
+  >
+    Explore the laboratory component catalog →
+  </a>
+
+  <a
+    class="lab-action lab-action-secondary"
+    href="../pipelines/cbc-demographics/index.html"
+  >
+    Open the CBC and Demographic pipeline
+  </a>
+
+  <a
+    class="lab-action lab-action-secondary"
+    href="../foundations/index.html"
+  >
+    Review NHANES foundations
+  </a>
+
+</div>
+```
+
+# Page summary
+
+NHANES laboratory analysis connects:
+
+```text
+participant eligibility
+specimen collection
+laboratory methods
+quality assurance
+data structure
+survey design
+reproducibility
+```
+
+A released laboratory value becomes defensible analytical evidence only when its scientific, operational, and survey context remain visible throughout the workflow.

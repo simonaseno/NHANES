@@ -1,0 +1,872 @@
+---
+title: "NHANES Survey Design"
+subtitle: "Understand how the sample is selected and why the design affects analysis"
+description: "Learn the core features of the NHANES complex survey design, including multistage sampling, strata, primary sampling units, oversampling, clustering, and design-based variance estimation."
+sidebar: foundations
+format:
+  html:
+    toc: true
+    toc-depth: 2
+---
+
+```{=html}
+<style>
+.design-hero {
+  margin: 1rem 0 2rem;
+  padding: 2.4rem 1.5rem;
+  border: 1px solid #d8dee8;
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(35, 139, 126, 0.11),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at bottom left,
+      rgba(18, 48, 68, 0.08),
+      transparent 32%
+    ),
+    #ffffff;
+  box-shadow: 0 10px 28px rgba(22, 34, 51, 0.08);
+}
+
+.design-hero h2 {
+  margin-top: 0;
+  color: #111827;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.design-hero p {
+  max-width: 850px;
+  margin-bottom: 0;
+  color: #374151;
+  font-size: 1.12rem;
+  line-height: 1.7;
+}
+
+.design-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(220px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.design-card {
+  padding: 1.3rem;
+  border: 1px solid #d7dde6;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgba(22, 34, 51, 0.06);
+}
+
+.design-card-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  margin-bottom: 0.8rem;
+  border-radius: 50%;
+  background: #123044;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.design-card h3 {
+  margin: 0 0 0.45rem;
+  color: #111827;
+  font-size: 1.16rem;
+}
+
+.design-card p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.55;
+}
+
+.sampling-pathway {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+  gap: 0.8rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.sampling-step {
+  position: relative;
+  padding: 1.1rem;
+  border: 1px solid #dbe2e8;
+  border-radius: 12px;
+  background: #f8fbfb;
+  text-align: center;
+}
+
+.sampling-step strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #123044;
+}
+
+.sampling-step span {
+  color: #4b5563;
+  font-size: 0.93rem;
+  line-height: 1.45;
+}
+
+.sampling-step:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 50%;
+  right: -0.66rem;
+  z-index: 2;
+  transform: translateY(-50%);
+  color: #238b7e;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.design-concept {
+  margin: 1rem 0;
+  padding: 1rem 1.1rem;
+  border-left: 5px solid #238b7e;
+  border-radius: 8px;
+  background: #f8fbfb;
+}
+
+.design-concept strong {
+  color: #123044;
+}
+
+.variance-demo {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(250px, 1fr)
+    );
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.variance-card {
+  padding: 1.3rem;
+  border: 1px solid #d7dde6;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgba(22, 34, 51, 0.05);
+}
+
+.variance-card h3 {
+  margin-top: 0;
+  color: #123044;
+}
+
+.variance-result {
+  margin-top: 0.9rem;
+  padding: 0.9rem;
+  border-radius: 9px;
+  background: #f3f6f8;
+  color: #374151;
+  text-align: center;
+  font-weight: 750;
+}
+
+.design-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 2rem 0;
+}
+
+.design-action {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.8rem 1.15rem;
+  border: 2px solid #123044;
+  border-radius: 8px;
+  background: #123044 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 750;
+  text-decoration: none !important;
+}
+
+.design-action:hover {
+  background: #ffffff !important;
+  color: #123044 !important;
+  -webkit-text-fill-color: #123044 !important;
+}
+
+.design-action-secondary {
+  background: #ffffff !important;
+  color: #123044 !important;
+  -webkit-text-fill-color: #123044 !important;
+}
+
+.design-action-secondary:hover {
+  background: #123044 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+@media (max-width: 820px) {
+  .sampling-pathway {
+    grid-template-columns: 1fr;
+  }
+
+  .sampling-step:not(:last-child)::after {
+    content: "↓";
+    top: auto;
+    right: 50%;
+    bottom: -1.05rem;
+    transform: translateX(50%);
+  }
+
+  .design-actions {
+    flex-direction: column;
+  }
+
+  .design-action {
+    width: 100%;
+  }
+}
+</style>
+```
+
+::: {.design-hero}
+
+## NHANES is not a simple random sample
+
+NHANES uses a complex, multistage probability design to select participants from the United States population.
+
+That design affects:
+
+- who enters the sample;
+- how much each participant represents;
+- how uncertainty is estimated;
+- whether results can be generalized to the target population.
+
+Ignoring the survey design may leave a point estimate looking reasonable while producing incorrect standard errors, confidence intervals, and significance tests.
+
+:::
+
+# The four core design features
+
+```{=html}
+<div class="design-grid">
+
+  <div class="design-card">
+    <div class="design-card-number">1</div>
+    <h3>Multistage sampling</h3>
+    <p>
+      Participants are selected through several linked stages rather than directly from one national list.
+    </p>
+  </div>
+
+  <div class="design-card">
+    <div class="design-card-number">2</div>
+    <h3>Stratification</h3>
+    <p>
+      The population is divided into design strata before sampling to improve efficiency and representation.
+    </p>
+  </div>
+
+  <div class="design-card">
+    <div class="design-card-number">3</div>
+    <h3>Clustering</h3>
+    <p>
+      Participants are sampled within geographic clusters, so observations are not fully independent.
+    </p>
+  </div>
+
+  <div class="design-card">
+    <div class="design-card-number">4</div>
+    <h3>Oversampling</h3>
+    <p>
+      Selected population groups may be sampled at higher rates to support reliable subgroup estimates.
+    </p>
+  </div>
+
+</div>
+```
+
+# A simplified sampling pathway
+
+```{=html}
+<div class="sampling-pathway">
+
+  <div class="sampling-step">
+    <strong>Stage 1</strong>
+    <span>Select geographic areas</span>
+  </div>
+
+  <div class="sampling-step">
+    <strong>Stage 2</strong>
+    <span>Select smaller geographic segments</span>
+  </div>
+
+  <div class="sampling-step">
+    <strong>Stage 3</strong>
+    <span>Select households</span>
+  </div>
+
+  <div class="sampling-step">
+    <strong>Stage 4</strong>
+    <span>Select eligible individuals</span>
+  </div>
+
+</div>
+```
+
+This is a simplified conceptual view.
+
+The exact design details vary by survey period, but the key principle remains:
+
+```text
+participants are selected through nested sampling stages
+```
+
+# Why multistage sampling is used
+
+A complete national list of all individuals is not usually available or practical for direct sampling.
+
+Multistage sampling allows NHANES to:
+
+- recruit participants efficiently;
+- organize mobile examination center operations;
+- cover diverse geographic areas;
+- control fieldwork costs;
+- support national inference through probability-based selection.
+
+::: {.design-concept}
+**Core principle:** The sample is operationally efficient because people are selected within geographic clusters, but clustering changes how statistical uncertainty must be calculated.
+:::
+
+# Stratification
+
+Stratification divides the population into groups before sampling.
+
+The goals may include:
+
+- improving geographic coverage;
+- increasing sampling efficiency;
+- ensuring representation of important population segments;
+- reducing sampling variance.
+
+In public-use NHANES files, the masked variance stratum variable is commonly:
+
+```text
+SDMVSTRA
+```
+
+This variable must be included in survey-design specifications used for variance estimation.
+
+# Primary sampling units
+
+A primary sampling unit, or PSU, is a major geographic sampling unit selected during the survey design.
+
+In public-use NHANES files, the masked variance PSU variable is commonly:
+
+```text
+SDMVPSU
+```
+
+Participants within the same PSU may be more similar to one another than participants selected from different PSUs.
+
+This similarity is called:
+
+```text
+intracluster correlation
+```
+
+# Why clustering matters
+
+Consider two samples of 1,000 participants.
+
+## Sample A
+
+Participants are selected independently across the country.
+
+## Sample B
+
+Participants are concentrated within a small number of geographic clusters.
+
+Even though both samples contain 1,000 records, Sample B may contain less independent information.
+
+The effective information content can therefore be smaller than the raw sample size suggests.
+
+::: {.callout-important icon="true"}
+## Sample size alone does not determine precision
+
+A complex survey may have the same number of observations as a simple random sample but a different variance because of clustering, stratification, unequal selection probabilities, and weighting.
+:::
+
+# Oversampling
+
+Oversampling means that selected groups are sampled at higher rates than their share of the total population.
+
+This may be done to improve the reliability of estimates for:
+
+- age groups;
+- racial or ethnic groups;
+- lower-income populations;
+- other analytically important subgroups.
+
+Oversampling does not mean those groups should count more in national estimates.
+
+Survey weights correct for unequal probabilities of selection.
+
+::: {.design-concept}
+**Core principle:** Oversampling improves subgroup precision, while weights restore appropriate population representation.
+:::
+
+# Design variables and weight variables are different
+
+These roles should not be confused.
+
+::: {.panel-tabset}
+
+## Survey weight
+
+A weight reflects how much of the target population a participant represents.
+
+Examples may include:
+
+```text
+WTINT2YR
+WTMEC2YR
+component-specific subsample weights
+```
+
+## Stratum
+
+The stratum variable identifies the masked design stratum used for variance estimation.
+
+Common public-use variable:
+
+```text
+SDMVSTRA
+```
+
+## PSU
+
+The PSU variable identifies the masked primary sampling unit used for variance estimation.
+
+Common public-use variable:
+
+```text
+SDMVPSU
+```
+
+:::
+
+# How the design affects an estimate
+
+Suppose you calculate mean hemoglobin.
+
+The estimated mean depends primarily on:
+
+- participant values;
+- analytical eligibility;
+- survey weights.
+
+The standard error depends on:
+
+- weights;
+- strata;
+- PSUs;
+- clustering;
+- the survey estimation method.
+
+Using weights without strata and PSUs may still produce an incomplete design specification.
+
+# Simple analysis versus survey analysis
+
+```{=html}
+<div class="variance-demo">
+
+  <div class="variance-card">
+    <h3>Ordinary analysis</h3>
+    <p>
+      Treats all records as independent and often assumes equal selection probabilities.
+    </p>
+    <div class="variance-result">
+      May underestimate or misstate uncertainty
+    </div>
+  </div>
+
+  <div class="variance-card">
+    <h3>Survey-design analysis</h3>
+    <p>
+      Incorporates weights, strata, PSUs, clustering, and design-based variance estimation.
+    </p>
+    <div class="variance-result">
+      Supports valid population inference
+    </div>
+  </div>
+
+</div>
+```
+
+# Descriptive and inferential analyses
+
+Not every NHANES analysis must be survey-weighted.
+
+The correct approach depends on the research goal.
+
+::: {.panel-tabset}
+
+## Unweighted descriptive analysis
+
+Useful for:
+
+- inspecting data structure;
+- validating records;
+- checking distributions;
+- identifying outliers;
+- reviewing missingness;
+- testing code;
+- describing the analytical dataset itself.
+
+An unweighted result describes the observed analytical records.
+
+## Survey-weighted analysis
+
+Required when the goal is to estimate characteristics of the target population.
+
+Examples include:
+
+- national means;
+- national prevalence;
+- subgroup population estimates;
+- population-level regression;
+- design-based confidence intervals.
+
+:::
+
+::: {.callout-warning icon="true"}
+## Do not describe unweighted results as national estimates
+
+An unweighted mean may be useful for data inspection, but it does not automatically estimate the corresponding U.S. population mean.
+:::
+
+# A basic survey-design specification in R
+
+A future analysis may use the `survey` package.
+
+A general structure is:
+
+```r
+library(
+  survey
+)
+
+nhanes_design <- survey::svydesign(
+  ids =
+    ~ SDMVPSU,
+  strata =
+    ~ SDMVSTRA,
+  weights =
+    ~ appropriate_weight,
+  nest =
+    TRUE,
+  data =
+    analysis_data
+)
+```
+
+Each part has a specific role:
+
+```text
+ids      → primary sampling units
+strata   → sampling strata
+weights  → participant survey weights
+nest     → recognizes PSU nesting within strata
+data     → analytical dataset
+```
+
+The placeholder:
+
+```text
+appropriate_weight
+```
+
+must be replaced with the weight that matches the variables and analytical sample.
+
+# Why `nest = TRUE` is often used
+
+Public-use PSU codes may repeat across strata.
+
+Setting:
+
+```r
+nest = TRUE
+```
+
+instructs the survey-design object to treat PSUs as nested within strata.
+
+This helps avoid interpreting repeated PSU codes as the same sampling unit across different strata.
+
+# A survey mean example
+
+After creating a valid survey design, a weighted mean may be estimated with:
+
+```r
+survey::svymean(
+  ~ hemoglobin,
+  design =
+    nhanes_design,
+  na.rm =
+    TRUE
+)
+```
+
+A subgroup estimate may use:
+
+```r
+survey::svyby(
+  ~ hemoglobin,
+  ~ sex,
+  design =
+    nhanes_design,
+  FUN =
+    survey::svymean,
+  na.rm =
+    TRUE
+)
+```
+
+These are structural examples.
+
+The analytical dataset, variables, eligibility rules, and weight must be verified first.
+
+# Design degrees of freedom
+
+Complex survey inference depends partly on the number of PSUs and strata represented in the analysis.
+
+A common design-based quantity is:
+
+```text
+number of PSUs − number of strata
+```
+
+This can affect:
+
+- variance estimation;
+- confidence intervals;
+- hypothesis tests;
+- model stability.
+
+A large number of participant records does not necessarily imply a large number of design degrees of freedom.
+
+# Subpopulation analysis
+
+A common mistake is to physically delete all records outside the subgroup before constructing the survey design.
+
+For survey analysis, it is often preferable to:
+
+1. construct the survey design using the complete eligible dataset;
+2. define the subgroup using a survey-aware subset operation.
+
+Example:
+
+```r
+adult_design <- subset(
+  nhanes_design,
+  age_years >= 18
+)
+```
+
+This preserves the survey design information needed for valid variance estimation.
+
+# Missing values and the survey design
+
+Participants may have:
+
+- a valid survey weight;
+- Demographic data;
+- no laboratory result for the analyte of interest.
+
+The analytical population must therefore distinguish:
+
+```text
+sampled participants
+examined participants
+eligible participants
+participants with valid analyte results
+```
+
+The final survey estimate depends on the population represented by the selected weight and the nonmissing analytical records.
+
+# Design challenge
+
+Suppose an analysis uses:
+
+- Demographic variables;
+- CBC hemoglobin;
+- `WTMEC2YR`;
+- `SDMVSTRA`;
+- `SDMVPSU`.
+
+What should be checked before estimating a national mean?
+
+::: {.callout-note collapse="true"}
+## Reveal the recommended checks
+
+Confirm that:
+
+1. the CBC analyte was measured in the MEC examination sample;
+2. the selected examination weight is appropriate;
+3. the analytical population matches the weight;
+4. cycles were combined correctly;
+5. the multi-cycle weight was constructed appropriately;
+6. `SDMVSTRA` and `SDMVPSU` are present;
+7. missing hemoglobin values are handled explicitly;
+8. laboratory methods and units are comparable;
+9. the survey design object was specified correctly.
+:::
+
+# Common survey-design mistakes
+
+::: {.callout-warning icon="true"}
+## Mistake 1: Treating NHANES as a simple random sample
+
+This ignores clustering, stratification, unequal probabilities of selection, and oversampling.
+:::
+
+::: {.callout-warning icon="true"}
+## Mistake 2: Using weights but omitting strata and PSUs
+
+Weights address representation, while strata and PSUs are also needed for design-based variance estimation.
+:::
+
+::: {.callout-warning icon="true"}
+## Mistake 3: Assuming a large row count guarantees high precision
+
+Clustering and design degrees of freedom affect the information available for inference.
+:::
+
+::: {.callout-warning icon="true"}
+## Mistake 4: Removing subgroup records before defining the design
+
+This can discard design information needed for valid subpopulation variance estimation.
+:::
+
+::: {.callout-warning icon="true"}
+## Mistake 5: Using the same design specification for every analysis
+
+Different components and subsamples may require different weights and analytical eligibility rules.
+:::
+
+# Quick knowledge check
+
+::: {.callout-note collapse="true"}
+## Is NHANES a simple random sample?
+
+No. It uses a complex multistage probability design.
+:::
+
+::: {.callout-note collapse="true"}
+## What does `SDMVSTRA` represent?
+
+It is the masked variance stratum variable used in public-use NHANES files.
+:::
+
+::: {.callout-note collapse="true"}
+## What does `SDMVPSU` represent?
+
+It is the masked variance primary sampling unit variable used for design-based variance estimation.
+:::
+
+::: {.callout-note collapse="true"}
+## Why are selected groups oversampled?
+
+To improve the reliability and precision of subgroup estimates.
+:::
+
+::: {.callout-note collapse="true"}
+## Do weights alone fully specify the survey design?
+
+No. Valid variance estimation generally also requires strata and PSU information.
+:::
+
+::: {.callout-note collapse="true"}
+## What does an unweighted result describe?
+
+It describes the analytical records included in the calculation, not automatically the U.S. population.
+:::
+
+# Survey-design checklist
+
+Before producing population estimates, confirm:
+
+- [ ] The analytical goal requires population inference.
+- [ ] The analytical population is defined.
+- [ ] The appropriate survey weight has been selected.
+- [ ] `SDMVSTRA` is present.
+- [ ] `SDMVPSU` is present.
+- [ ] The survey design object is specified correctly.
+- [ ] The weight matches the variables and subsample.
+- [ ] Combined-cycle weighting has been addressed.
+- [ ] Missingness has been reviewed.
+- [ ] Subpopulations are handled with survey-aware methods.
+- [ ] Laboratory methods and units are comparable.
+- [ ] Results are clearly labelled as weighted or unweighted.
+
+# Continue through the foundations
+
+```{=html}
+<div class="design-actions">
+
+  <a
+    class="design-action design-action-secondary"
+    href="data-structure.html"
+  >
+    Return to data structure
+  </a>
+
+  <a
+    class="design-action"
+    href="survey-weights.html"
+  >
+    Continue to survey weights →
+  </a>
+
+</div>
+```
+
+# Page summary
+
+NHANES uses a complex survey design involving:
+
+```text
+multistage sampling
+stratification
+clustering
+oversampling
+unequal selection probabilities
+```
+
+A defensible population analysis must account for:
+
+```text
+survey weights
+strata
+primary sampling units
+design-based variance estimation
+appropriate analytical eligibility
+```
+
+Understanding the design is what turns a collection of participant records into a valid population-level analysis.

@@ -1,0 +1,487 @@
+---
+title: "Understand NHANES Data"
+subtitle: "Learn how cycles, components, files, identifiers, and survey-design variables fit together"
+description: "An introduction to the NHANES data structure required before downloading and merging CBC and Demographic files."
+sidebar: tutorials
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- describe the main NHANES public-use data components;
+- explain how continuous survey cycles are organized;
+- identify the roles of CBC and Demographic files;
+- explain the purpose of `SEQN`;
+- identify the major public-use survey-design variables;
+- distinguish participant-level files from repeated-record files.
+:::
+
+## NHANES is a system of files
+
+NHANES public-use data are not distributed as one complete analytical table.
+
+Each survey cycle contains multiple files organized by topic and data-collection component.
+
+An analyst must identify:
+
+- the required survey cycles;
+- the required component files;
+- the eligible population;
+- the record level;
+- the merge key;
+- the survey weight;
+- the variables to retain.
+
+## Continuous survey cycles
+
+The current CBC pipeline covers:
+
+| Cycle number | Survey cycle |
+|---:|---|
+| 1 | 1999–2000 |
+| 2 | 2001–2002 |
+| 3 | 2003–2004 |
+| 4 | 2005–2006 |
+| 5 | 2007–2008 |
+| 6 | 2009–2010 |
+| 7 | 2011–2012 |
+| 8 | 2013–2014 |
+| 9 | 2015–2016 |
+| 10 | 2017–2018 |
+
+The cycle identifier must be retained throughout the pipeline.
+
+## Main public-use components
+
+### Demographics
+
+Demographics files commonly contain:
+
+- `SEQN`;
+- age;
+- sex;
+- race and Hispanic origin;
+- education;
+- income;
+- interview weights;
+- MEC examination weights;
+- `SDMVSTRA`;
+- `SDMVPSU`.
+
+### Dietary
+
+Dietary files may include:
+
+- 24-hour recalls;
+- nutrient estimates;
+- dietary supplements;
+- food-level records;
+- dietary-specific weights.
+
+### Examination
+
+Examination files may include:
+
+- body measurements;
+- blood pressure;
+- oral health;
+- physical functioning;
+- examination procedures.
+
+### Laboratory
+
+Laboratory files may include:
+
+- CBC;
+- glycohemoglobin;
+- cholesterol;
+- urine albumin;
+- urine creatinine;
+- infectious-disease markers;
+- environmental biomarkers.
+
+### Questionnaire
+
+Questionnaire files may include:
+
+- medical history;
+- smoking;
+- alcohol use;
+- diabetes history;
+- medication use;
+- health behaviors.
+
+## Why this pipeline begins with CBC and Demographics
+
+The CBC files provide the laboratory measurements.
+
+The Demographic files provide:
+
+- participant characteristics;
+- survey weights;
+- strata;
+- primary sampling units;
+- supporting variables required for analysis.
+
+The two components are connected using:
+
+```text
+SEQN
+```
+
+within each survey cycle.
+
+## Participant identifier: `SEQN`
+
+`SEQN` is the respondent sequence number.
+
+It is commonly used to link person-level NHANES files.
+
+Within one survey cycle, a person-level merge may use:
+
+```r
+dplyr::left_join(
+  cbc_data,
+  demographic_data,
+  by = "SEQN"
+)
+```
+
+After multiple cycles are combined, this project uses:
+
+```text
+survey_cycle + SEQN
+```
+
+as the explicit analytic key.
+
+## Why include the survey cycle in the key?
+
+Using:
+
+```text
+survey_cycle + SEQN
+```
+
+supports:
+
+- provenance;
+- cycle-level validation;
+- safer multi-cycle joins;
+- duplicate detection;
+- trend analysis;
+- troubleshooting.
+
+It avoids relying on an undocumented assumption that `SEQN` alone should be treated as globally unique across every release.
+
+## Survey-design variables
+
+Important public-use design variables include:
+
+```text
+SDMVSTRA
+SDMVPSU
+```
+
+Common weight variables include:
+
+```text
+WTINT2YR
+WTMEC2YR
+```
+
+For some early combined periods, four-year weight variables may be required.
+
+Specialized laboratory components may also contain component-specific subsample weights.
+
+::: {.callout-important icon="true"}
+## There is no universal NHANES weight
+
+The correct weight depends on:
+
+- the variables included;
+- the component with the smallest eligible sample;
+- whether the analysis uses a subsample;
+- the survey cycles combined;
+- the intended population estimate.
+:::
+
+## Record level
+
+Before joining a file, determine what one row represents.
+
+A file may contain:
+
+- one row per participant;
+- one row per examination;
+- repeated examinations;
+- one row per medication;
+- one row per dietary item;
+- one row per day;
+- one row per specimen;
+- replicate laboratory measurements.
+
+A shared `SEQN` variable does not guarantee a one-to-one join.
+
+## One-to-one example
+
+Suppose CBC and Demographics each contain one record per participant and cycle.
+
+The intended relationship is:
+
+```text
+one CBC record ↔ one Demographic record
+```
+
+## One-to-many example
+
+A medication file may contain multiple prescriptions for one participant.
+
+The relationship may be:
+
+```text
+one participant ↔ several medication records
+```
+
+Joining such a file directly can increase the number of rows.
+
+## Repeat-examination example
+
+The 2001–2002 CBC release includes a second-examination file.
+
+A participant may therefore have:
+
+- one primary CBC record;
+- one second-examination CBC record.
+
+These records represent different examinations, not duplicate copies of one observation.
+
+## Source-file names change over time
+
+CBC filenames may include forms such as:
+
+```text
+LAB25
+L25_B
+L25_C
+CBC_D
+CBC_E
+CBC_F
+CBC_G
+CBC_H
+CBC_I
+CBC_J
+```
+
+Demographic filenames commonly follow forms such as:
+
+```text
+DEMO
+DEMO_B
+DEMO_C
+DEMO_D
+DEMO_E
+DEMO_F
+DEMO_G
+DEMO_H
+DEMO_I
+DEMO_J
+```
+
+The filename suffix identifies a release cycle, but the pipeline should store the human-readable cycle label explicitly.
+
+## File format
+
+NHANES public-use files are commonly released as SAS transport files:
+
+```text
+.xpt
+```
+
+R reads them using:
+
+```r
+haven::read_xpt()
+```
+
+## Labels and imported data
+
+XPT files can contain variable labels and labelled values.
+
+When imported through `haven`, some columns may use the class:
+
+```text
+haven_labelled
+```
+
+The pipeline should preserve the source variables while creating readable analytical variables later.
+
+## Documentation review
+
+Before using an NHANES component, review:
+
+1. component description;
+2. eligible sample;
+3. data-collection protocol;
+4. laboratory method;
+5. variable codebook;
+6. analytic notes;
+7. detection-limit information;
+8. applicable survey weight;
+9. release notes;
+10. cycle comparability.
+
+## Create the cycle table in R
+
+Add this section to `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 3: DEFINE SURVEY CYCLES
+# ============================================================
+
+survey_cycles <- tibble::tibble(
+  cycle_number = 1:10,
+  survey_cycle = c(
+    "1999-2000",
+    "2001-2002",
+    "2003-2004",
+    "2005-2006",
+    "2007-2008",
+    "2009-2010",
+    "2011-2012",
+    "2013-2014",
+    "2015-2016",
+    "2017-2018"
+  )
+)
+
+print(
+  survey_cycles
+)
+```
+
+Expected output:
+
+```text
+# A tibble: 10 × 2
+   cycle_number survey_cycle
+          <int> <chr>
+ 1            1 1999-2000
+ 2            2 2001-2002
+ 3            3 2003-2004
+ ...
+10           10 2017-2018
+```
+
+## Create the cycle factor order
+
+Add:
+
+```r
+survey_cycle_levels <- survey_cycles$survey_cycle
+```
+
+Later, this will be used to order tables and graphs:
+
+```r
+data |>
+  dplyr::mutate(
+    survey_cycle = factor(
+      survey_cycle,
+      levels = survey_cycle_levels
+    )
+  )
+```
+
+## Validate the cycle definition
+
+Add:
+
+```r
+if (nrow(survey_cycles) != 10) {
+  stop(
+    "The survey-cycle table should contain 10 cycles."
+  )
+}
+
+if (anyDuplicated(survey_cycles$survey_cycle) > 0) {
+  stop(
+    "Duplicate survey-cycle labels were detected."
+  )
+}
+
+message(
+  "Survey-cycle validation passed."
+)
+```
+
+Expected message:
+
+```text
+Survey-cycle validation passed.
+```
+
+## Questions to answer before every merge
+
+Before combining NHANES files, ask:
+
+- What does one row represent?
+- Is `SEQN` present?
+- Is the key unique?
+- Are there repeat examinations?
+- Are there multiple records per participant?
+- Does the file use a subsample?
+- Which survey weight applies?
+- Are variables comparable across cycles?
+- Will the join preserve the intended number of rows?
+
+## Checkpoint
+
+Confirm:
+
+- [ ] Ten survey cycles are defined.
+- [ ] The cycle labels are in chronological order.
+- [ ] You understand the five principal data components.
+- [ ] You understand the role of the CBC file.
+- [ ] You understand the role of the Demographics file.
+- [ ] `SEQN` is the participant identifier.
+- [ ] The analytic key will include `survey_cycle`.
+- [ ] `SDMVSTRA` and `SDMVPSU` are survey-design variables.
+- [ ] A shared `SEQN` does not automatically imply a one-to-one join.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why is the Demographics file important for laboratory analysis?
+
+It supplies participant characteristics and major survey-design variables, including weights, strata, and primary sampling units.
+:::
+
+::: {.callout-note collapse="true"}
+## Why should the record level be established before joining?
+
+Because a file may contain multiple rows per participant. Joining it without understanding the record level can duplicate rows or change the analytical unit.
+:::
+
+::: {.callout-note collapse="true"}
+## What composite key will this project use after stacking cycles?
+
+The project uses `survey_cycle + SEQN`.
+:::
+
+## Lesson summary
+
+You now understand:
+
+- continuous survey cycles;
+- the major NHANES components;
+- the role of CBC and Demographics;
+- participant identifiers;
+- survey-design variables;
+- record-level risks;
+- why documentation must be reviewed before files are combined.
+
+[Continue to Lesson 6: Define the source-file catalog](06-define-source-catalog.qmd){.button .button-primary}

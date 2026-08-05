@@ -1,0 +1,2083 @@
+---
+title: "Lesson 17: Create Professional Hemoglobin Figures"
+subtitle: "Build, annotate, validate, export, and display four publication-style visualizations"
+description: "Create a professional hemoglobin trend figure and supporting distribution, record-count, and missingness figures."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- create a reusable publication-style `ggplot2` theme;
+- use a pure white background without gridlines;
+- use color and shape together to distinguish groups;
+- apply a transparent, data-informed vertical scale;
+- create a principal mean-trend figure;
+- display descriptive interval bars;
+- add an explicit in-figure caveat;
+- create supporting distribution, record-count, and missingness figures;
+- validate the data used in every graph;
+- save figures as PNG, PDF, and SVG files;
+- display generated figures directly inside a Quarto lesson;
+- distinguish professional presentation from valid survey inference.
+:::
+
+## Figures created in this lesson
+
+This lesson creates four complementary figures.
+
+### Figure 1: Mean hemoglobin trend
+
+The principal figure displays:
+
+- unweighted mean hemoglobin;
+- ten NHANES survey cycles;
+- separate male and female trends;
+- conventional descriptive intervals;
+- a focused but transparent vertical scale;
+- a prominent unweighted-analysis caveat.
+
+### Figure 2: Hemoglobin distributions
+
+The distribution figure displays:
+
+- participant-level values;
+- medians;
+- interquartile ranges;
+- distributional spread;
+- possible extreme observations.
+
+### Figure 3: Analytical record counts
+
+The record-count figure shows how many complete records contribute to each cycle-sex mean.
+
+### Figure 4: Hemoglobin missingness
+
+The missingness figure shows the percentage of records without hemoglobin values by cycle and sex.
+
+## Important statistical scope
+
+Every figure in this lesson is based on:
+
+```text
+unweighted descriptive analysis
+```
+
+The figures do not incorporate:
+
+- NHANES survey weights;
+- masked variance strata;
+- masked primary sampling units;
+- multi-cycle weight construction;
+- complex-survey variance estimation.
+
+::: {.callout-warning icon="true"}
+## Professional appearance does not make a result nationally representative
+
+A figure can be visually suitable for a manuscript draft while still requiring additional statistical work.
+
+These figures describe the analytical records and must not be presented as national population estimates.
+:::
+
+## Where you are in the workflow
+
+Lesson 16 created four validated datasets:
+
+```r
+hemoglobin_trend_figure_data
+```
+
+```r
+hemoglobin_distribution_figure_data
+```
+
+```r
+hemoglobin_record_count_figure_data
+```
+
+```r
+hemoglobin_missingness_figure_data
+```
+
+Lesson 16 also calculated:
+
+```r
+trend_y_axis_lower
+```
+
+```r
+trend_y_axis_upper
+```
+
+```r
+trend_y_axis_break
+```
+
+These values will be used to construct a transparent, data-informed scale.
+
+## Add the visualization section
+
+Add this below the Lesson 16 analysis section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 15: CREATE PROFESSIONAL HEMOGLOBIN FIGURES
+# ============================================================
+```
+
+## Confirm the required plotting objects
+
+Define:
+
+```r
+required_figure_objects <- c(
+  "hemoglobin_trend_figure_data",
+  "hemoglobin_distribution_figure_data",
+  "hemoglobin_record_count_figure_data",
+  "hemoglobin_missingness_figure_data",
+  "trend_y_axis_lower",
+  "trend_y_axis_upper",
+  "trend_y_axis_break"
+)
+```
+
+Identify missing objects:
+
+```r
+missing_figure_objects <- required_figure_objects[
+  !purrr::map_lgl(
+    required_figure_objects,
+    exists
+  )
+]
+```
+
+Stop if any are absent:
+
+```r
+if (
+  length(
+    missing_figure_objects
+  ) > 0
+) {
+  stop(
+    "Required plotting objects are missing: ",
+    paste(
+      missing_figure_objects,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Define the publication palette
+
+Use distinct colors that remain clearly separated in print and on screen:
+
+```r
+hemoglobin_palette <- c(
+  "Male" = "#0072B2",
+  "Female" = "#D55E00"
+)
+```
+
+Define distinct point shapes:
+
+```r
+hemoglobin_shapes <- c(
+  "Male" = 16,
+  "Female" = 17
+)
+```
+
+Using both color and shape improves accessibility.
+
+Readers should not need to rely on color alone.
+
+## Create a publication-style theme
+
+Create a reusable theme:
+
+```r
+theme_hemoglobin_publication <- function(
+    base_size = 11,
+    base_family = "") {
+
+  ggplot2::theme_classic(
+    base_size = base_size,
+    base_family = base_family
+  ) +
+    ggplot2::theme(
+      plot.background =
+        ggplot2::element_rect(
+          fill = "white",
+          color = NA
+        ),
+      panel.background =
+        ggplot2::element_rect(
+          fill = "white",
+          color = NA
+        ),
+      legend.background =
+        ggplot2::element_rect(
+          fill = "white",
+          color = NA
+        ),
+      legend.key =
+        ggplot2::element_rect(
+          fill = "white",
+          color = NA
+        ),
+      panel.grid.major =
+        ggplot2::element_blank(),
+      panel.grid.minor =
+        ggplot2::element_blank(),
+      plot.title.position =
+        "plot",
+      plot.caption.position =
+        "plot",
+      plot.title =
+        ggplot2::element_text(
+          face = "bold",
+          size = base_size + 5,
+          margin = ggplot2::margin(
+            b = 6
+          )
+        ),
+      plot.subtitle =
+        ggplot2::element_text(
+          size = base_size + 1,
+          lineheight = 1.1,
+          margin = ggplot2::margin(
+            b = 12
+          )
+        ),
+      axis.title =
+        ggplot2::element_text(
+          face = "bold",
+          size = base_size + 1
+        ),
+      axis.title.x =
+        ggplot2::element_text(
+          margin = ggplot2::margin(
+            t = 10
+          )
+        ),
+      axis.title.y =
+        ggplot2::element_text(
+          margin = ggplot2::margin(
+            r = 10
+          )
+        ),
+      axis.text =
+        ggplot2::element_text(
+          color = "black",
+          size = base_size
+        ),
+      axis.text.x =
+        ggplot2::element_text(
+          angle = 35,
+          hjust = 1,
+          vjust = 1
+        ),
+      axis.line =
+        ggplot2::element_line(
+          color = "black",
+          linewidth = 0.55
+        ),
+      axis.ticks =
+        ggplot2::element_line(
+          color = "black",
+          linewidth = 0.5
+        ),
+      axis.ticks.length =
+        grid::unit(
+          2.5,
+          "mm"
+        ),
+      legend.position =
+        "top",
+      legend.justification =
+        "left",
+      legend.title =
+        ggplot2::element_text(
+          face = "bold"
+        ),
+      legend.text =
+        ggplot2::element_text(
+          size = base_size
+        ),
+      legend.spacing.x =
+        grid::unit(
+          4,
+          "mm"
+        ),
+      plot.caption =
+        ggplot2::element_text(
+          hjust = 0,
+          size = base_size - 1,
+          lineheight = 1.15,
+          margin = ggplot2::margin(
+            t = 12
+          )
+        ),
+      plot.margin =
+        ggplot2::margin(
+          t = 16,
+          r = 18,
+          b = 16,
+          l = 18
+        )
+    )
+}
+```
+
+## Why use a custom theme?
+
+The custom theme provides:
+
+- a pure white figure background;
+- no horizontal or vertical gridlines;
+- black axis lines and ticks;
+- clear title hierarchy;
+- readable axis labels;
+- consistent legend placement;
+- adequate margins for publication and export.
+
+It also ensures that all four figures share the same visual identity.
+
+## Confirm the hemoglobin unit
+
+Inspect the source label:
+
+```r
+hemoglobin_source_label
+```
+
+For this pipeline, `LBXHGB` should be verified as hemoglobin concentration in:
+
+```text
+g/dL
+```
+
+Define the axis label only after verification:
+
+```r
+hemoglobin_y_axis_label <-
+  "Mean hemoglobin concentration (g/dL)"
+```
+
+For the distribution figure:
+
+```r
+hemoglobin_distribution_axis_label <-
+  "Hemoglobin concentration (g/dL)"
+```
+
+::: {.callout-important icon="true"}
+## Verify units rather than relying on memory
+
+Before publication, compare the variable label and unit with the documentation for every included survey cycle.
+
+A common variable name does not by itself prove that methods and units remained unchanged.
+:::
+
+# Figure 1: Mean hemoglobin trend
+
+## Validate the principal plotting data
+
+Check required columns:
+
+```r
+required_trend_columns <- c(
+  "survey_cycle",
+  "survey_cycle_factor",
+  "sex",
+  "records",
+  "mean_hemoglobin",
+  "lower_descriptive_95",
+  "upper_descriptive_95"
+)
+```
+
+Identify missing columns:
+
+```r
+missing_trend_columns <- setdiff(
+  required_trend_columns,
+  names(
+    hemoglobin_trend_figure_data
+  )
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  length(
+    missing_trend_columns
+  ) > 0
+) {
+  stop(
+    "Trend figure data are missing required columns: ",
+    paste(
+      missing_trend_columns,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Confirm one row per cycle and sex
+
+Run:
+
+```r
+duplicate_trend_figure_groups <-
+  hemoglobin_trend_figure_data |>
+  dplyr::count(
+    survey_cycle,
+    sex,
+    name = "rows"
+  ) |>
+  dplyr::filter(
+    rows > 1
+  )
+```
+
+Stop if duplicated:
+
+```r
+if (
+  nrow(
+    duplicate_trend_figure_groups
+  ) > 0
+) {
+  stop(
+    "The trend figure contains duplicate cycle-sex groups."
+  )
+}
+```
+
+## Confirm that all values fit the scale
+
+Run:
+
+```r
+trend_values_outside_scale <-
+  hemoglobin_trend_figure_data |>
+  dplyr::filter(
+    lower_descriptive_95 <
+      trend_y_axis_lower |
+      upper_descriptive_95 >
+        trend_y_axis_upper
+  )
+```
+
+Expected:
+
+```r
+nrow(
+  trend_values_outside_scale
+)
+```
+
+```text
+[1] 0
+```
+
+Stop if needed:
+
+```r
+if (
+  nrow(
+    trend_values_outside_scale
+  ) > 0
+) {
+  stop(
+    "The selected y-axis scale excludes one or more trend intervals."
+  )
+}
+```
+
+## Create an in-figure caveat
+
+Define:
+
+```r
+trend_caveat_text <- paste(
+  "UNWEIGHTED DESCRIPTIVE RESULTS",
+  "Intervals do not account for NHANES weights, strata, or PSUs.",
+  sep = "\n"
+)
+```
+
+Choose an annotation position from the displayed range:
+
+```r
+trend_annotation_x <- 1
+```
+
+```r
+trend_annotation_y <-
+  trend_y_axis_upper -
+    0.04 *
+      (
+        trend_y_axis_upper -
+          trend_y_axis_lower
+      )
+```
+
+## Create the principal figure
+
+Run:
+
+```r
+hemoglobin_trend_plot <-
+  ggplot2::ggplot(
+    hemoglobin_trend_figure_data,
+    ggplot2::aes(
+      x = survey_cycle_factor,
+      y = mean_hemoglobin,
+      group = sex,
+      color = sex,
+      shape = sex
+    )
+  ) +
+  ggplot2::geom_errorbar(
+    ggplot2::aes(
+      ymin = lower_descriptive_95,
+      ymax = upper_descriptive_95
+    ),
+    width = 0.12,
+    linewidth = 0.55,
+    position = ggplot2::position_dodge(
+      width = 0.16
+    )
+  ) +
+  ggplot2::geom_line(
+    linewidth = 1.05,
+    position = ggplot2::position_dodge(
+      width = 0.16
+    )
+  ) +
+  ggplot2::geom_point(
+    size = 3.1,
+    stroke = 0.8,
+    position = ggplot2::position_dodge(
+      width = 0.16
+    )
+  ) +
+  ggplot2::annotate(
+    geom = "label",
+    x = trend_annotation_x,
+    y = trend_annotation_y,
+    label = trend_caveat_text,
+    hjust = 0,
+    vjust = 1,
+    size = 3.25,
+    fontface = "bold",
+    lineheight = 1.05,
+    fill = "white",
+    color = "black",
+    label.size = 0.4,
+    label.padding = grid::unit(
+      0.18,
+      "lines"
+    )
+  ) +
+  ggplot2::scale_color_manual(
+    values = hemoglobin_palette,
+    breaks = c(
+      "Male",
+      "Female"
+    )
+  ) +
+  ggplot2::scale_shape_manual(
+    values = hemoglobin_shapes,
+    breaks = c(
+      "Male",
+      "Female"
+    )
+  ) +
+  ggplot2::scale_y_continuous(
+    breaks = seq(
+      trend_y_axis_lower,
+      trend_y_axis_upper,
+      by = trend_y_axis_break
+    ),
+    labels = scales::label_number(
+      accuracy = 0.1
+    ),
+    expand = ggplot2::expansion(
+      mult = c(
+        0,
+        0
+      )
+    )
+  ) +
+  ggplot2::coord_cartesian(
+    ylim = c(
+      trend_y_axis_lower,
+      trend_y_axis_upper
+    ),
+    clip = "off"
+  ) +
+  ggplot2::labs(
+    title =
+      "Mean Hemoglobin Concentration Across NHANES Survey Cycles",
+    subtitle =
+      "Unweighted descriptive means by sex, 1999–2018",
+    x =
+      "NHANES two-year survey cycle",
+    y =
+      hemoglobin_y_axis_label,
+    color =
+      "Sex",
+    shape =
+      "Sex",
+    caption =
+      paste(
+        "Figure 1.",
+        "Points represent unweighted group means and error bars represent conventional",
+        "mean ± 1.96 standard-error intervals.",
+        "The analysis does not incorporate NHANES sampling weights, SDMVSTRA,",
+        "SDMVPSU, or complex-survey variance estimation.",
+        "Results describe the analytical records and are not nationally representative."
+      )
+  ) +
+  theme_hemoglobin_publication(
+    base_size = 11
+  )
+```
+
+Display:
+
+```r
+hemoglobin_trend_plot
+```
+
+## Why this figure is more publication-ready
+
+The figure uses:
+
+- a white background;
+- no gridlines;
+- distinct color and shape encoding;
+- clearly labelled units;
+- readable chronological cycles;
+- restrained line and point sizes;
+- a data-informed vertical scale;
+- an explicit in-figure warning;
+- a detailed scientific caption.
+
+## Understand the focused y-axis
+
+The y-axis is intentionally based on the observed means and intervals.
+
+It does not begin at zero because zero is not the analytical reference point for comparing hemoglobin means.
+
+However, the focused scale must be interpreted carefully because it makes small differences easier to see.
+
+The complete axis values and all intervals remain visible.
+
+## Save Figure 1
+
+Define paths:
+
+```r
+hemoglobin_trend_png <- file.path(
+  "outputs",
+  "figures",
+  "figure_1_hemoglobin_mean_trend.png"
+)
+```
+
+```r
+hemoglobin_trend_pdf <- file.path(
+  "outputs",
+  "figures",
+  "figure_1_hemoglobin_mean_trend.pdf"
+)
+```
+
+```r
+hemoglobin_trend_svg <- file.path(
+  "outputs",
+  "figures",
+  "figure_1_hemoglobin_mean_trend.svg"
+)
+```
+
+Save PNG:
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_trend_png,
+  plot =
+    hemoglobin_trend_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  dpi =
+    400,
+  bg =
+    "white"
+)
+```
+
+Save PDF:
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_trend_pdf,
+  plot =
+    hemoglobin_trend_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  device =
+    grDevices::cairo_pdf,
+  bg =
+    "white"
+)
+```
+
+Save SVG:
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_trend_svg,
+  plot =
+    hemoglobin_trend_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  device =
+    "svg",
+  bg =
+    "white"
+)
+```
+
+## Expected final output
+
+After the pipeline has generated the figure, it will appear below.
+
+![Figure 1. Unweighted mean hemoglobin concentration by NHANES survey cycle and sex. Error bars are conventional descriptive intervals and are not survey-adjusted confidence intervals.](../outputs/figures/figure_1_hemoglobin_mean_trend.png){fig-alt="Professional line graph showing unweighted mean hemoglobin concentration by NHANES survey cycle and sex, with descriptive interval bars and an unweighted-analysis caveat." width="100%"}
+
+::: {.callout-note icon="true"}
+## Why display the figure inside the lesson?
+
+Displaying the exported PNG allows learners to compare their result with the expected output.
+
+It also confirms that:
+
+- the figure was saved successfully;
+- the relative output path is correct;
+- the exported image matches the graph displayed in R.
+:::
+
+# Figure 2: Hemoglobin distributions
+
+## Why examine distributions?
+
+Two groups can have similar means but very different:
+
+- medians;
+- spreads;
+- skewness;
+- extreme values;
+- interquartile ranges.
+
+The distribution figure helps prevent overreliance on the mean trend.
+
+## Validate distribution data
+
+Run:
+
+```r
+distribution_figure_validation <-
+  hemoglobin_distribution_figure_data |>
+  dplyr::summarise(
+    records =
+      dplyr::n(),
+    missing_cycle =
+      sum(
+        is.na(
+          survey_cycle_factor
+        )
+      ),
+    missing_sex =
+      sum(
+        is.na(
+          sex
+        )
+      ),
+    missing_hemoglobin =
+      sum(
+        is.na(
+          hemoglobin
+        )
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  distribution_figure_validation
+)
+```
+
+Stop if required values are missing:
+
+```r
+if (
+  distribution_figure_validation$missing_cycle > 0 ||
+  distribution_figure_validation$missing_sex > 0 ||
+  distribution_figure_validation$missing_hemoglobin > 0
+) {
+  stop(
+    "The distribution figure data contain missing required values."
+  )
+}
+```
+
+## Create the distribution figure
+
+Use side-by-side boxplots.
+
+```r
+hemoglobin_distribution_plot <-
+  ggplot2::ggplot(
+    hemoglobin_distribution_figure_data,
+    ggplot2::aes(
+      x = survey_cycle_factor,
+      y = hemoglobin,
+      fill = sex,
+      color = sex
+    )
+  ) +
+  ggplot2::geom_boxplot(
+    width = 0.66,
+    linewidth = 0.55,
+    outlier.shape = 21,
+    outlier.size = 1.5,
+    outlier.stroke = 0.35,
+    alpha = 0.32,
+    position = ggplot2::position_dodge(
+      width = 0.74
+    )
+  ) +
+  ggplot2::scale_fill_manual(
+    values = hemoglobin_palette,
+    breaks = c(
+      "Male",
+      "Female"
+    )
+  ) +
+  ggplot2::scale_color_manual(
+    values = hemoglobin_palette,
+    breaks = c(
+      "Male",
+      "Female"
+    )
+  ) +
+  ggplot2::scale_y_continuous(
+    labels = scales::label_number(
+      accuracy = 1
+    ),
+    expand = ggplot2::expansion(
+      mult = c(
+        0.02,
+        0.06
+      )
+    )
+  ) +
+  ggplot2::labs(
+    title =
+      "Distribution of Hemoglobin Concentration by Survey Cycle and Sex",
+    subtitle =
+      "Boxplots show medians, interquartile ranges, and participant-level outliers",
+    x =
+      "NHANES two-year survey cycle",
+    y =
+      hemoglobin_distribution_axis_label,
+    fill =
+      "Sex",
+    color =
+      "Sex",
+    caption =
+      paste(
+        "Figure 2.",
+        "Distributions are unweighted and describe complete analytical records.",
+        "Boxplots should not be interpreted as nationally representative population distributions."
+      )
+  ) +
+  theme_hemoglobin_publication(
+    base_size = 11
+  )
+```
+
+Display:
+
+```r
+hemoglobin_distribution_plot
+```
+
+## Save Figure 2
+
+Define paths:
+
+```r
+hemoglobin_distribution_png <- file.path(
+  "outputs",
+  "figures",
+  "figure_2_hemoglobin_distribution.png"
+)
+```
+
+```r
+hemoglobin_distribution_pdf <- file.path(
+  "outputs",
+  "figures",
+  "figure_2_hemoglobin_distribution.pdf"
+)
+```
+
+```r
+hemoglobin_distribution_svg <- file.path(
+  "outputs",
+  "figures",
+  "figure_2_hemoglobin_distribution.svg"
+)
+```
+
+Save:
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_distribution_png,
+  plot =
+    hemoglobin_distribution_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  dpi =
+    400,
+  bg =
+    "white"
+)
+```
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_distribution_pdf,
+  plot =
+    hemoglobin_distribution_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  device =
+    grDevices::cairo_pdf,
+  bg =
+    "white"
+)
+```
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_distribution_svg,
+  plot =
+    hemoglobin_distribution_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  device =
+    "svg",
+  bg =
+    "white"
+)
+```
+
+## Expected distribution output
+
+![Figure 2. Distribution of hemoglobin concentration by NHANES survey cycle and sex.](../outputs/figures/figure_2_hemoglobin_distribution.png){fig-alt="Professional grouped boxplot showing the distribution of hemoglobin concentration by survey cycle and sex." width="100%"}
+
+# Figure 3: Analytical record counts
+
+## Why show analytical record counts?
+
+The number of records contributing to a mean can vary by:
+
+- cycle;
+- sex;
+- eligibility;
+- missingness;
+- examination completion.
+
+Displaying record counts helps readers interpret changes in precision and group coverage.
+
+## Validate record-count data
+
+Run:
+
+```r
+invalid_record_counts <-
+  hemoglobin_record_count_figure_data |>
+  dplyr::filter(
+    is.na(
+      analytical_records
+    ) |
+      analytical_records <= 0
+  )
+```
+
+Expected:
+
+```r
+nrow(
+  invalid_record_counts
+)
+```
+
+```text
+[1] 0
+```
+
+Stop if invalid:
+
+```r
+if (
+  nrow(
+    invalid_record_counts
+  ) > 0
+) {
+  stop(
+    "The record-count figure contains missing or nonpositive counts."
+  )
+}
+```
+
+## Create the record-count figure
+
+Run:
+
+```r
+hemoglobin_record_count_plot <-
+  ggplot2::ggplot(
+    hemoglobin_record_count_figure_data,
+    ggplot2::aes(
+      x = survey_cycle_factor,
+      y = analytical_records,
+      fill = sex
+    )
+  ) +
+  ggplot2::geom_col(
+    width = 0.68,
+    position = ggplot2::position_dodge(
+      width = 0.74
+    ),
+    color = "black",
+    linewidth = 0.3
+  ) +
+  ggplot2::geom_text(
+    ggplot2::aes(
+      label = scales::comma(
+        analytical_records
+      ),
+      group = sex
+    ),
+    position = ggplot2::position_dodge(
+      width = 0.74
+    ),
+    vjust = -0.35,
+    size = 3.0
+  ) +
+  ggplot2::scale_fill_manual(
+    values = hemoglobin_palette,
+    breaks = c(
+      "Male",
+      "Female"
+    )
+  ) +
+  ggplot2::scale_y_continuous(
+    labels = scales::label_comma(),
+    expand = ggplot2::expansion(
+      mult = c(
+        0,
+        0.12
+      )
+    )
+  ) +
+  ggplot2::labs(
+    title =
+      "Analytical Records Contributing to Each Hemoglobin Mean",
+    subtitle =
+      "Complete hemoglobin-sex-cycle records by survey cycle",
+    x =
+      "NHANES two-year survey cycle",
+    y =
+      "Number of analytical records",
+    fill =
+      "Sex",
+    caption =
+      paste(
+        "Figure 3.",
+        "Counts represent unweighted analytical records included in the descriptive mean summaries."
+      )
+  ) +
+  theme_hemoglobin_publication(
+    base_size = 11
+  )
+```
+
+Display:
+
+```r
+hemoglobin_record_count_plot
+```
+
+## Save Figure 3
+
+Define paths:
+
+```r
+hemoglobin_record_count_png <- file.path(
+  "outputs",
+  "figures",
+  "figure_3_hemoglobin_record_counts.png"
+)
+```
+
+```r
+hemoglobin_record_count_pdf <- file.path(
+  "outputs",
+  "figures",
+  "figure_3_hemoglobin_record_counts.pdf"
+)
+```
+
+```r
+hemoglobin_record_count_svg <- file.path(
+  "outputs",
+  "figures",
+  "figure_3_hemoglobin_record_counts.svg"
+)
+```
+
+Save:
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_record_count_png,
+  plot =
+    hemoglobin_record_count_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  dpi =
+    400,
+  bg =
+    "white"
+)
+```
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_record_count_pdf,
+  plot =
+    hemoglobin_record_count_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  device =
+    grDevices::cairo_pdf,
+  bg =
+    "white"
+)
+```
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_record_count_svg,
+  plot =
+    hemoglobin_record_count_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  device =
+    "svg",
+  bg =
+    "white"
+)
+```
+
+## Expected record-count output
+
+![Figure 3. Analytical record counts contributing to each cycle-sex hemoglobin mean.](../outputs/figures/figure_3_hemoglobin_record_counts.png){fig-alt="Professional grouped bar chart showing analytical record counts by NHANES survey cycle and sex." width="100%"}
+
+# Figure 4: Hemoglobin missingness
+
+## Why visualize missingness?
+
+A trend can be influenced by which records are available.
+
+Missingness may change because of:
+
+- eligibility;
+- specimen collection;
+- examination completion;
+- laboratory availability;
+- release structure;
+- data quality.
+
+The missingness figure helps readers evaluate whether availability differs across cycles or sex groups.
+
+## Validate missingness data
+
+Run:
+
+```r
+invalid_missingness_figure_values <-
+  hemoglobin_missingness_figure_data |>
+  dplyr::filter(
+    is.na(
+      hemoglobin_missing_percent
+    ) |
+      hemoglobin_missing_percent < 0 |
+      hemoglobin_missing_percent > 100
+  )
+```
+
+Expected:
+
+```r
+nrow(
+  invalid_missingness_figure_values
+)
+```
+
+```text
+[1] 0
+```
+
+Stop if invalid:
+
+```r
+if (
+  nrow(
+    invalid_missingness_figure_values
+  ) > 0
+) {
+  stop(
+    "The missingness figure contains invalid percentages."
+  )
+}
+```
+
+## Create the missingness figure
+
+Run:
+
+```r
+hemoglobin_missingness_plot <-
+  ggplot2::ggplot(
+    hemoglobin_missingness_figure_data,
+    ggplot2::aes(
+      x = survey_cycle_factor,
+      y = hemoglobin_missing_percent,
+      group = sex,
+      color = sex,
+      shape = sex
+    )
+  ) +
+  ggplot2::geom_line(
+    linewidth = 1
+  ) +
+  ggplot2::geom_point(
+    size = 3,
+    stroke = 0.8
+  ) +
+  ggplot2::scale_color_manual(
+    values = hemoglobin_palette,
+    breaks = c(
+      "Male",
+      "Female"
+    )
+  ) +
+  ggplot2::scale_shape_manual(
+    values = hemoglobin_shapes,
+    breaks = c(
+      "Male",
+      "Female"
+    )
+  ) +
+  ggplot2::scale_y_continuous(
+    labels = scales::label_percent(
+      scale = 1,
+      accuracy = 0.1
+    ),
+    expand = ggplot2::expansion(
+      mult = c(
+        0,
+        0.10
+      )
+    )
+  ) +
+  ggplot2::labs(
+    title =
+      "Hemoglobin Missingness Across NHANES Survey Cycles",
+    subtitle =
+      "Percentage of records without an available hemoglobin result, by sex",
+    x =
+      "NHANES two-year survey cycle",
+    y =
+      "Hemoglobin missingness",
+    color =
+      "Sex",
+    shape =
+      "Sex",
+    caption =
+      paste(
+        "Figure 4.",
+        "Percentages are unweighted and describe data availability among records",
+        "with known survey cycle and sex."
+      )
+  ) +
+  theme_hemoglobin_publication(
+    base_size = 11
+  )
+```
+
+Display:
+
+```r
+hemoglobin_missingness_plot
+```
+
+## Save Figure 4
+
+Define paths:
+
+```r
+hemoglobin_missingness_png <- file.path(
+  "outputs",
+  "figures",
+  "figure_4_hemoglobin_missingness.png"
+)
+```
+
+```r
+hemoglobin_missingness_pdf <- file.path(
+  "outputs",
+  "figures",
+  "figure_4_hemoglobin_missingness.pdf"
+)
+```
+
+```r
+hemoglobin_missingness_svg <- file.path(
+  "outputs",
+  "figures",
+  "figure_4_hemoglobin_missingness.svg"
+)
+```
+
+Save:
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_missingness_png,
+  plot =
+    hemoglobin_missingness_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  dpi =
+    400,
+  bg =
+    "white"
+)
+```
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_missingness_pdf,
+  plot =
+    hemoglobin_missingness_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  device =
+    grDevices::cairo_pdf,
+  bg =
+    "white"
+)
+```
+
+```r
+ggplot2::ggsave(
+  filename =
+    hemoglobin_missingness_svg,
+  plot =
+    hemoglobin_missingness_plot,
+  width =
+    11,
+  height =
+    7.2,
+  units =
+    "in",
+  device =
+    "svg",
+  bg =
+    "white"
+)
+```
+
+## Expected missingness output
+
+![Figure 4. Percentage of records with missing hemoglobin values by survey cycle and sex.](../outputs/figures/figure_4_hemoglobin_missingness.png){fig-alt="Professional line graph showing unweighted hemoglobin missingness percentages by NHANES survey cycle and sex." width="100%"}
+
+# Validate all four figures
+
+## Create a figure specification table
+
+Run:
+
+```r
+hemoglobin_figure_specifications <-
+  tibble::tibble(
+    figure = c(
+      "Figure 1",
+      "Figure 2",
+      "Figure 3",
+      "Figure 4"
+    ),
+    title = c(
+      "Mean hemoglobin trend",
+      "Hemoglobin distributions",
+      "Analytical record counts",
+      "Hemoglobin missingness"
+    ),
+    analytical_role = c(
+      "Principal descriptive result",
+      "Distributional diagnostic",
+      "Analytical sample-size diagnostic",
+      "Data-availability diagnostic"
+    ),
+    weighted = FALSE,
+    nationally_representative = FALSE
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_figure_specifications
+)
+```
+
+## Define all expected figure files
+
+Run:
+
+```r
+hemoglobin_figure_files <- c(
+  hemoglobin_trend_png,
+  hemoglobin_trend_pdf,
+  hemoglobin_trend_svg,
+  hemoglobin_distribution_png,
+  hemoglobin_distribution_pdf,
+  hemoglobin_distribution_svg,
+  hemoglobin_record_count_png,
+  hemoglobin_record_count_pdf,
+  hemoglobin_record_count_svg,
+  hemoglobin_missingness_png,
+  hemoglobin_missingness_pdf,
+  hemoglobin_missingness_svg
+)
+```
+
+## Check that all files exist
+
+Run:
+
+```r
+hemoglobin_figure_output_check <-
+  tibble::tibble(
+    file =
+      hemoglobin_figure_files,
+    exists =
+      file.exists(
+        hemoglobin_figure_files
+      ),
+    size_bytes =
+      file.info(
+        hemoglobin_figure_files
+      )$size,
+    extension =
+      tools::file_ext(
+        hemoglobin_figure_files
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_figure_output_check,
+  n = Inf
+)
+```
+
+## Stop if files are missing
+
+Run:
+
+```r
+missing_hemoglobin_figures <-
+  hemoglobin_figure_output_check |>
+  dplyr::filter(
+    !exists
+  )
+```
+
+```r
+if (
+  nrow(
+    missing_hemoglobin_figures
+  ) > 0
+) {
+  stop(
+    "Expected figure files are missing: ",
+    paste(
+      missing_hemoglobin_figures$file,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Stop if files are empty
+
+Run:
+
+```r
+empty_hemoglobin_figures <-
+  hemoglobin_figure_output_check |>
+  dplyr::filter(
+    exists,
+    is.na(
+      size_bytes
+    ) |
+      size_bytes <= 0
+  )
+```
+
+```r
+if (
+  nrow(
+    empty_hemoglobin_figures
+  ) > 0
+) {
+  stop(
+    "Expected figure files are empty: ",
+    paste(
+      empty_hemoglobin_figures$file,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Save figure specifications
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_figure_specifications,
+  file.path(
+    "outputs",
+    "tables",
+    "hemoglobin_figure_specifications.csv"
+  )
+)
+```
+
+## Save the output check
+
+Run:
+
+```r
+readr::write_csv(
+  hemoglobin_figure_output_check,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_figure_output_check.csv"
+  )
+)
+```
+
+## Create figure file hashes
+
+Run:
+
+```r
+hemoglobin_figure_hashes <-
+  tibble::tibble(
+    file =
+      hemoglobin_figure_files,
+    sha256 =
+      purrr::map_chr(
+        hemoglobin_figure_files,
+        function(file_path) {
+          digest::digest(
+            file_path,
+            algorithm = "sha256",
+            file = TRUE
+          )
+        }
+      )
+  )
+```
+
+Validate:
+
+```r
+if (
+  any(
+    nchar(
+      hemoglobin_figure_hashes$sha256
+    ) != 64
+  )
+) {
+  stop(
+    "One or more figure hashes are invalid."
+  )
+}
+```
+
+Save:
+
+```r
+readr::write_csv(
+  hemoglobin_figure_hashes,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_figure_hashes.csv"
+  )
+)
+```
+
+## Create a consolidated figure-validation table
+
+Run:
+
+```r
+hemoglobin_figure_validation <-
+  tibble::tibble(
+    check = c(
+      "Trend groups are unique",
+      "Trend values fit selected scale",
+      "Distribution data contain no required missing values",
+      "Record counts are positive",
+      "Missingness percentages are valid",
+      "All expected figure files exist",
+      "All expected figure files are nonempty",
+      "All figure hashes are valid"
+    ),
+    passed = c(
+      nrow(
+        duplicate_trend_figure_groups
+      ) == 0,
+      nrow(
+        trend_values_outside_scale
+      ) == 0,
+      distribution_figure_validation$missing_cycle == 0 &&
+        distribution_figure_validation$missing_sex == 0 &&
+        distribution_figure_validation$missing_hemoglobin == 0,
+      nrow(
+        invalid_record_counts
+      ) == 0,
+      nrow(
+        invalid_missingness_figure_values
+      ) == 0,
+      all(
+        hemoglobin_figure_output_check$exists
+      ),
+      all(
+        hemoglobin_figure_output_check$size_bytes > 0
+      ),
+      all(
+        nchar(
+          hemoglobin_figure_hashes$sha256
+        ) == 64
+      )
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  hemoglobin_figure_validation,
+  n = Inf
+)
+```
+
+## Stop when a figure check fails
+
+Run:
+
+```r
+failed_hemoglobin_figure_checks <-
+  hemoglobin_figure_validation |>
+  dplyr::filter(
+    !passed
+  )
+```
+
+```r
+if (
+  nrow(
+    failed_hemoglobin_figure_checks
+  ) > 0
+) {
+  stop(
+    "Hemoglobin figure validation failed: ",
+    paste(
+      failed_hemoglobin_figure_checks$check,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Save:
+
+```r
+readr::write_csv(
+  hemoglobin_figure_validation,
+  file.path(
+    "outputs",
+    "validation",
+    "hemoglobin_figure_validation.csv"
+  )
+)
+```
+
+Expected message:
+
+```r
+message(
+  "All professional hemoglobin figures were created, exported, and validated successfully."
+)
+```
+
+# Open the figures on macOS
+
+Open Figure 1:
+
+```r
+system2(
+  "open",
+  hemoglobin_trend_png
+)
+```
+
+Open the output folder:
+
+```r
+system2(
+  "open",
+  file.path(
+    "outputs",
+    "figures"
+  )
+)
+```
+
+# How to evaluate the principal figure
+
+Check whether:
+
+- all ten survey cycles appear;
+- cycles are in chronological order;
+- male and female groups are clearly distinguishable;
+- color and shape mappings agree;
+- all interval bars are visible;
+- the white background is clean;
+- no gridlines appear;
+- the y-axis values are transparent;
+- the unit is clearly stated;
+- the unweighted caveat is visible inside the figure;
+- the caption explains the interval calculation;
+- the caption states that the results are not nationally representative.
+
+# How the four figures work together
+
+## Figure 1 answers:
+
+```text
+How do the unweighted group means change across cycles?
+```
+
+## Figure 2 answers:
+
+```text
+What do the underlying distributions look like?
+```
+
+## Figure 3 answers:
+
+```text
+How many records contribute to each mean?
+```
+
+## Figure 4 answers:
+
+```text
+Does hemoglobin missingness vary across cycles or sex groups?
+```
+
+No single figure provides the complete analytical picture.
+
+# Appropriate reporting language
+
+A suitable principal-figure description is:
+
+```text
+Figure 1 presents unweighted mean hemoglobin concentration among complete
+analytical records by two-year NHANES survey cycle and sex. Error bars
+represent conventional mean ± 1.96 standard-error intervals and do not
+incorporate NHANES survey weights, strata, primary sampling units, or
+complex-survey variance estimation.
+```
+
+A suitable overall figure-set description is:
+
+```text
+The four figures jointly summarize unweighted mean patterns, participant-level
+distributions, analytical record counts, and hemoglobin missingness. They are
+descriptive outputs of the pipeline and should not be interpreted as nationally
+representative estimates.
+```
+
+# What would be needed for journal submission?
+
+Before presenting Figure 1 as an inferential NHANES result, the analysis should be extended to include:
+
+- the correct examination or component-specific survey weight;
+- multi-cycle weight adjustment;
+- `SDMVSTRA`;
+- `SDMVPSU`;
+- a survey-design object;
+- survey-adjusted means;
+- design-based standard errors;
+- survey-adjusted confidence intervals;
+- analysis of relevant age or eligibility restrictions;
+- review of laboratory-method comparability;
+- a documented statistical analysis plan.
+
+The visual design can then be retained while replacing the unweighted means and intervals with survey-adjusted estimates.
+
+# Common mistakes
+
+## Using `theme_minimal()`
+
+A publication figure does not require `theme_minimal()`.
+
+This lesson uses a custom theme with:
+
+- white backgrounds;
+- no gridlines;
+- visible axis lines;
+- carefully controlled text and margins.
+
+## Using color alone
+
+Color can be difficult to distinguish for some readers or in grayscale printing.
+
+Use both:
+
+```text
+color + shape
+```
+
+## Omitting the unit
+
+The y-axis should state the verified hemoglobin unit.
+
+## Hiding intervals with an unsuitable scale
+
+Every mean and interval must fit within the displayed range.
+
+## Beginning the y-axis at zero automatically
+
+A zero baseline is essential for many bar charts, but it is not always analytically necessary for a mean-trend line graph.
+
+A focused scale is acceptable when it is transparent and does not hide data.
+
+## Calling descriptive intervals confidence intervals without qualification
+
+These intervals do not account for the NHANES complex survey design.
+
+## Showing only the mean figure
+
+Means can hide distributional spread, extreme values, group size, and missingness.
+
+## Saving only PNG
+
+PNG is useful for digital display, while PDF and SVG provide scalable vector outputs.
+
+## Embedding a figure that has not been generated
+
+The image links in this lesson will work only after the pipeline creates the corresponding PNG files.
+
+## Assuming publication styling proves publication validity
+
+Visual quality and statistical validity are separate requirements.
+
+# Checkpoint
+
+Confirm:
+
+- [ ] The four Lesson 16 plotting datasets exist.
+- [ ] A distinct, accessible color palette was defined.
+- [ ] Distinct point shapes were defined.
+- [ ] A reusable publication-style theme was created.
+- [ ] Figure backgrounds are pure white.
+- [ ] Gridlines are absent.
+- [ ] Axis lines and ticks are visible.
+- [ ] The hemoglobin unit was verified.
+- [ ] The principal trend data were validated.
+- [ ] A data-informed y-axis scale was applied.
+- [ ] Every mean and interval fits within the scale.
+- [ ] The principal figure includes an in-figure caveat.
+- [ ] The principal figure includes a detailed caption.
+- [ ] The distribution figure was created.
+- [ ] The record-count figure was created.
+- [ ] The missingness figure was created.
+- [ ] Color and shape are used together where appropriate.
+- [ ] All figures were saved as PNG.
+- [ ] All figures were saved as PDF.
+- [ ] All figures were saved as SVG.
+- [ ] Exported figures are displayed in the lesson.
+- [ ] Figure specifications were saved.
+- [ ] Figure output checks were saved.
+- [ ] Figure hashes were saved.
+- [ ] All figure validations passed.
+- [ ] The unweighted scope is stated throughout.
+
+# Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why use both color and shape for the trend lines?
+
+Using both improves accessibility and allows groups to remain distinguishable when printed in grayscale or viewed by readers with color-vision differences.
+:::
+
+::: {.callout-note collapse="true"}
+## Why remove gridlines?
+
+Removing gridlines creates a cleaner publication-style figure and reduces visual competition with the data. Axis ticks and labels still provide scale information.
+:::
+
+::: {.callout-note collapse="true"}
+## Why include the unweighted caveat inside the principal figure?
+
+Figures are often copied outside their original report. An in-figure caveat helps preserve the analytical limitation even when the figure is viewed separately.
+:::
+
+::: {.callout-note collapse="true"}
+## Why create a distribution figure in addition to the mean trend?
+
+Means can conceal skewness, variation, extreme observations, and differences in the shape of the underlying data.
+:::
+
+::: {.callout-note collapse="true"}
+## Is a focused y-axis misleading?
+
+Not automatically. It is acceptable when all data are shown, tick values are clear, the scale is selected transparently, and the figure does not imply that zero is the relevant reference point.
+:::
+
+::: {.callout-note collapse="true"}
+## Are the figures ready for final journal submission?
+
+The visual presentation is close to manuscript quality, but inferential NHANES publication requires the correct survey weights, design variables, variance estimation, and analysis-specific methodological review.
+:::
+
+# Lesson summary
+
+You have:
+
+- created a reusable publication-style theme;
+- removed gridlines and applied a pure white background;
+- used distinct colors and shapes;
+- created a professional mean-trend figure;
+- added descriptive intervals and an explicit in-figure caveat;
+- used a transparent, data-informed vertical scale;
+- created distribution, record-count, and missingness figures;
+- exported all figures as high-resolution PNG, PDF, and SVG files;
+- embedded the expected outputs directly in the lesson;
+- created figure specifications, hashes, and validation reports;
+- documented the distinction between visual quality and survey-valid inference.
+
+[Continue to Lesson 18: Assemble the complete pipeline script](18-full-script.qmd){.button .button-primary}

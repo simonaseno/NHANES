@@ -1,0 +1,463 @@
+---
+title: "Create the R Project"
+subtitle: "Set up the script, folders, and working directory"
+description: "Create an organized project structure for the NHANES CBC and Demographic pipeline."
+sidebar: tutorials
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- create and open a project folder;
+- create a plain R script;
+- start an R terminal in VS Code;
+- confirm the working directory;
+- create the required project folders programmatically;
+- explain the distinction between raw data, processed data, and outputs.
+:::
+
+## Create the project folder
+
+Create a new folder named:
+
+```text
+nhanes-cbc-demo
+```
+
+You may create it through Finder, File Explorer, or the terminal.
+
+Terminal example:
+
+```bash
+mkdir -p nhanes-cbc-demo
+cd nhanes-cbc-demo
+```
+
+Open the folder in VS Code.
+
+If the `code` terminal command is available:
+
+```bash
+code .
+```
+
+Otherwise, use:
+
+```text
+File → Open Folder
+```
+
+## Create the R script
+
+In VS Code:
+
+1. select **File → New Text File**;
+2. save it as:
+
+```text
+nhanes_pipeline.R
+```
+
+Confirm that the filename does not end in:
+
+```text
+.txt
+```
+
+## Confirm the language mode
+
+Look at the lower-right corner of VS Code.
+
+It should display:
+
+```text
+R
+```
+
+If it displays **Plain Text**:
+
+1. click the language indicator;
+2. search for `R`;
+3. select **R**.
+
+## Start an R terminal
+
+Open the Command Palette:
+
+```text
+Shift + Command + P
+```
+
+on macOS, or:
+
+```text
+Ctrl + Shift + P
+```
+
+on Windows.
+
+Search for:
+
+```text
+R: Create R terminal
+```
+
+The terminal should display:
+
+```text
+>
+```
+
+That prompt means R is ready.
+
+## Test the R connection
+
+Add this line to `nhanes_pipeline.R`:
+
+```r
+1 + 1
+```
+
+Place the cursor on the line and run it with:
+
+- macOS: `Control + Enter`;
+- Windows: `Ctrl + Enter`.
+
+Expected result:
+
+```text
+[1] 2
+```
+
+::: {.callout-warning icon="true"}
+## macOS uses Control, not Command
+
+The standard shortcut for sending R code from VS Code is:
+
+```text
+Control + Enter
+```
+:::
+
+## Confirm the working directory
+
+Run:
+
+```r
+getwd()
+```
+
+The result should point to the project folder.
+
+Example:
+
+```text
+[1] "/Users/name/Documents/nhanes-cbc-demo"
+```
+
+Your path will differ.
+
+## Why the working directory matters
+
+Relative paths such as:
+
+```r
+file.path(
+  "outputs",
+  "results.csv"
+)
+```
+
+are interpreted from the current working directory.
+
+If the wrong folder is active, files may be created somewhere unexpected.
+
+## Intended project structure
+
+The project will use:
+
+```text
+nhanes-cbc-demo/
+├── nhanes_pipeline.R
+├── scripts/
+├── data/
+│   ├── raw/
+│   │   ├── cbc/
+│   │   └── demographic/
+│   └── processed/
+├── outputs/
+│   ├── duplicate-reports/
+│   ├── figures/
+│   ├── tables/
+│   └── validation/
+└── README.md
+```
+
+## Raw data
+
+Raw data are the original CDC XPT files.
+
+They will be stored in:
+
+```text
+data/raw/cbc/
+data/raw/demographic/
+```
+
+The raw files should not be edited manually.
+
+## Processed data
+
+Processed data are created after:
+
+- importing the source files;
+- adding metadata;
+- separating repeat examinations;
+- combining cycles;
+- merging components;
+- validating results.
+
+They will be stored in:
+
+```text
+data/processed/
+```
+
+## Outputs
+
+Reports, figures, and audit files will be stored in:
+
+```text
+outputs/
+```
+
+## Create the folders in R
+
+Add this section to `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 1: CREATE PROJECT DIRECTORIES
+# ============================================================
+
+project_directories <- c(
+  "scripts",
+  "data",
+  file.path(
+    "data",
+    "raw"
+  ),
+  file.path(
+    "data",
+    "raw",
+    "cbc"
+  ),
+  file.path(
+    "data",
+    "raw",
+    "demographic"
+  ),
+  file.path(
+    "data",
+    "processed"
+  ),
+  "outputs",
+  file.path(
+    "outputs",
+    "duplicate-reports"
+  ),
+  file.path(
+    "outputs",
+    "figures"
+  ),
+  file.path(
+    "outputs",
+    "tables"
+  ),
+  file.path(
+    "outputs",
+    "validation"
+  )
+)
+
+invisible(
+  lapply(
+    project_directories,
+    dir.create,
+    recursive = TRUE,
+    showWarnings = FALSE
+  )
+)
+
+message(
+  "Project directories are ready."
+)
+```
+
+Run the entire section.
+
+Expected message:
+
+```text
+Project directories are ready.
+```
+
+## Why use `file.path()`?
+
+This:
+
+```r
+file.path(
+  "data",
+  "raw",
+  "cbc"
+)
+```
+
+constructs a path that works across operating systems.
+
+It is preferable to hard-coding a path separator.
+
+## Why use `recursive = TRUE`?
+
+It allows R to create missing parent directories.
+
+For example, this single operation can create:
+
+```text
+data/
+data/raw/
+data/raw/cbc/
+```
+
+## Why use `showWarnings = FALSE`?
+
+The code may be rerun after the folders already exist.
+
+Suppressing those routine warnings makes the setup section safely repeatable.
+
+## Validate the directory structure
+
+Add:
+
+```r
+directory_check <- data.frame(
+  directory = project_directories,
+  exists = dir.exists(
+    project_directories
+  )
+)
+
+print(
+  directory_check
+)
+```
+
+Every value in `exists` should be:
+
+```text
+TRUE
+```
+
+Stop the script if a folder is missing:
+
+```r
+if (!all(directory_check$exists)) {
+  stop(
+    "One or more required project directories are missing."
+  )
+}
+
+message(
+  "Directory validation passed."
+)
+```
+
+Expected message:
+
+```text
+Directory validation passed.
+```
+
+## Create the README
+
+Create a new file named:
+
+```text
+README.md
+```
+
+Add:
+
+```markdown
+# NHANES CBC and Demographic Pipeline
+
+A reproducible R learning project for downloading, validating,
+combining, and analyzing NHANES Complete Blood Count and
+Demographic data from 1999–2000 through 2017–2018.
+```
+
+## Keep preview and command terminals separate
+
+If you are also editing the Quarto website, one terminal may be running:
+
+```bash
+quarto preview
+```
+
+Leave that terminal running.
+
+Use another terminal for:
+
+```bash
+quarto render
+git status
+Rscript nhanes_pipeline.R
+```
+
+## Checkpoint
+
+Confirm:
+
+- [ ] The project folder is open in VS Code.
+- [ ] `nhanes_pipeline.R` exists.
+- [ ] VS Code identifies the file as R.
+- [ ] An R terminal is active.
+- [ ] `getwd()` points to the project folder.
+- [ ] All project directories exist.
+- [ ] `directory_check$exists` contains only `TRUE`.
+- [ ] `README.md` exists.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why should raw files be kept separate from processed files?
+
+Raw files preserve the original downloaded source. Processed files contain transformations created by the pipeline.
+:::
+
+::: {.callout-note collapse="true"}
+## Why use relative paths?
+
+Relative paths make the project portable because they are based on the project directory rather than one computer's absolute path.
+:::
+
+::: {.callout-note collapse="true"}
+## What does `recursive = TRUE` do?
+
+It allows R to create missing parent folders while creating a nested directory.
+:::
+
+## Lesson summary
+
+You have:
+
+- created the project;
+- created the main R script;
+- connected VS Code to R;
+- confirmed the working directory;
+- created and validated the folder structure.
+
+[Continue to Lesson 4: Install the required packages](04-install-packages.qmd){.button .button-primary}

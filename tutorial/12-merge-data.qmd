@@ -1,0 +1,1743 @@
+---
+title: "Lesson 12: Merge CBC and Demographic Data Safely"
+subtitle: "Join the two components using validated participant-cycle keys"
+description: "Merge the combined CBC and Demographic datasets, validate the join relationship, and troubleshoot duplicated keys, row multiplication, unmatched records, and column conflicts."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- explain why `SEQN` alone is not the complete cross-cycle merge key;
+- validate key completeness before joining;
+- confirm key uniqueness in both component datasets;
+- identify overlapping non-key column names;
+- perform a one-to-one left join;
+- confirm that the CBC row count is preserved;
+- identify unmatched Demographic records;
+- diagnose row multiplication;
+- investigate duplicated participant-cycle keys;
+- resolve column-name conflicts safely;
+- save a merge-validation report.
+:::
+
+# Why merge the components?
+
+The CBC files contain laboratory measurements such as:
+
+```text
+LBXHGB
+```
+
+The Demographic files contain variables such as:
+
+```text
+RIAGENDR
+SDMVSTRA
+SDMVPSU
+survey weights
+```
+
+To analyze hemoglobin by participant characteristics, the two components must be joined.
+
+The intended relationship is:
+
+```text
+one CBC participant-cycle record
+matched to
+one Demographic participant-cycle record
+```
+
+# The correct merge key
+
+The merge key is:
+
+```r
+c(
+  "survey_cycle",
+  "SEQN"
+)
+```
+
+`SEQN` identifies participants within NHANES releases.
+
+Because this pipeline combines multiple two-year cycles, `survey_cycle` is retained as part of the analytical key.
+
+This protects against accidental cross-cycle matches.
+
+::: {.callout-warning icon="true"}
+## Do not join only by `SEQN`
+
+Even when `SEQN` appears unique in the combined data, the pipeline should explicitly retain the cycle context.
+
+The intended composite key is:
+
+```text
+survey_cycle + SEQN
+```
+:::
+
+# Where this lesson fits
+
+You should already have:
+
+```r
+cbc_primary_1999_2018
+```
+
+and:
+
+```r
+demographics_1999_2018
+```
+
+The CBC dataset should contain one primary record per participant and survey cycle.
+
+The Demographic dataset should contain one participant-level record per participant and survey cycle.
+
+# Add the merge section
+
+Open:
+
+```text
+nhanes_pipeline.R
+```
+
+Add this section below the component-combination code:
+
+```r
+# ============================================================
+# SECTION 10: MERGE CBC AND DEMOGRAPHIC DATA
+# ============================================================
+```
+
+# Confirm that the component objects exist
+
+Run:
+
+```r
+required_merge_objects <- c(
+  "cbc_primary_1999_2018",
+  "demographics_1999_2018"
+)
+```
+
+Identify missing objects:
+
+```r
+missing_merge_objects <- required_merge_objects[
+  !purrr::map_lgl(
+    required_merge_objects,
+    exists
+  )
+]
+```
+
+Stop if any are missing:
+
+```r
+if (
+  length(
+    missing_merge_objects
+  ) > 0
+) {
+  stop(
+    "Required merge objects are missing: ",
+    paste(
+      missing_merge_objects,
+      collapse = ", "
+    )
+  )
+}
+```
+
+# Define the merge key
+
+Create:
+
+```r
+merge_key <- c(
+  "survey_cycle",
+  "SEQN"
+)
+```
+
+Inspect:
+
+```r
+merge_key
+```
+
+# Confirm that both datasets contain the merge key
+
+Check CBC:
+
+```r
+missing_cbc_merge_key <- setdiff(
+  merge_key,
+  names(
+    cbc_primary_1999_2018
+  )
+)
+```
+
+Check Demographic:
+
+```r
+missing_demographic_merge_key <- setdiff(
+  merge_key,
+  names(
+    demographics_1999_2018
+  )
+)
+```
+
+Stop if CBC keys are missing:
+
+```r
+if (
+  length(
+    missing_cbc_merge_key
+  ) > 0
+) {
+  stop(
+    "The CBC dataset is missing merge-key variables: ",
+    paste(
+      missing_cbc_merge_key,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Stop if Demographic keys are missing:
+
+```r
+if (
+  length(
+    missing_demographic_merge_key
+  ) > 0
+) {
+  stop(
+    "The Demographic dataset is missing merge-key variables: ",
+    paste(
+      missing_demographic_merge_key,
+      collapse = ", "
+    )
+  )
+}
+```
+
+# Check missing key values
+
+Create the CBC check:
+
+```r
+cbc_missing_merge_keys <-
+  cbc_primary_1999_2018 |>
+  dplyr::filter(
+    is.na(
+      survey_cycle
+    ) |
+      is.na(
+        SEQN
+      )
+  )
+```
+
+Create the Demographic check:
+
+```r
+demographic_missing_merge_keys <-
+  demographics_1999_2018 |>
+  dplyr::filter(
+    is.na(
+      survey_cycle
+    ) |
+      is.na(
+        SEQN
+      )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_missing_merge_keys,
+  n = Inf
+)
+```
+
+```r
+print(
+  demographic_missing_merge_keys,
+  n = Inf
+)
+```
+
+Stop if CBC keys are missing:
+
+```r
+if (
+  nrow(
+    cbc_missing_merge_keys
+  ) > 0
+) {
+  stop(
+    "The CBC dataset contains missing merge-key values."
+  )
+}
+```
+
+Stop if Demographic keys are missing:
+
+```r
+if (
+  nrow(
+    demographic_missing_merge_keys
+  ) > 0
+) {
+  stop(
+    "The Demographic dataset contains missing merge-key values."
+  )
+}
+```
+
+# Check key uniqueness before joining
+
+Create the CBC duplicate-key report:
+
+```r
+cbc_premerge_duplicate_keys <-
+  cbc_primary_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Create the Demographic duplicate-key report:
+
+```r
+demographic_premerge_duplicate_keys <-
+  demographics_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_premerge_duplicate_keys,
+  n = Inf
+)
+```
+
+```r
+print(
+  demographic_premerge_duplicate_keys,
+  n = Inf
+)
+```
+
+Expected:
+
+```r
+nrow(
+  cbc_premerge_duplicate_keys
+)
+```
+
+```text
+[1] 0
+```
+
+Expected:
+
+```r
+nrow(
+  demographic_premerge_duplicate_keys
+)
+```
+
+```text
+[1] 0
+```
+
+Stop if CBC duplicate keys exist:
+
+```r
+if (
+  nrow(
+    cbc_premerge_duplicate_keys
+  ) > 0
+) {
+  stop(
+    "The CBC dataset contains duplicated survey_cycle + SEQN keys."
+  )
+}
+```
+
+Stop if Demographic duplicate keys exist:
+
+```r
+if (
+  nrow(
+    demographic_premerge_duplicate_keys
+  ) > 0
+) {
+  stop(
+    "The Demographic dataset contains duplicated survey_cycle + SEQN keys."
+  )
+}
+```
+
+# Preserve pre-merge row counts
+
+Record:
+
+```r
+cbc_rows_before_merge <- nrow(
+  cbc_primary_1999_2018
+)
+```
+
+```r
+demographic_rows_before_merge <- nrow(
+  demographics_1999_2018
+)
+```
+
+Inspect:
+
+```r
+cbc_rows_before_merge
+```
+
+```r
+demographic_rows_before_merge
+```
+
+# Identify overlapping non-key columns
+
+Find columns that appear in both datasets outside the merge key:
+
+```r
+overlapping_nonkey_columns <- intersect(
+  setdiff(
+    names(
+      cbc_primary_1999_2018
+    ),
+    merge_key
+  ),
+  setdiff(
+    names(
+      demographics_1999_2018
+    ),
+    merge_key
+  )
+)
+```
+
+Inspect:
+
+```r
+overlapping_nonkey_columns
+```
+
+Potential overlaps may include provenance variables such as:
+
+```text
+source_dataset_id
+source_component
+source_file_id
+source_exam
+analysis_role
+```
+
+These columns may have different values in CBC and Demographic sources.
+
+They should not be allowed to receive automatic `.x` and `.y` suffixes without review.
+
+# Prepare component-specific provenance names
+
+Create the CBC merge object:
+
+```r
+cbc_for_merge <-
+  cbc_primary_1999_2018 |>
+  dplyr::rename(
+    cbc_source_dataset_id =
+      source_dataset_id,
+    cbc_source_component =
+      source_component,
+    cbc_source_file_id =
+      source_file_id,
+    cbc_source_exam =
+      source_exam,
+    cbc_analysis_role =
+      analysis_role
+  )
+```
+
+Create the Demographic merge object:
+
+```r
+demographics_for_merge <-
+  demographics_1999_2018 |>
+  dplyr::rename(
+    demographic_source_dataset_id =
+      source_dataset_id,
+    demographic_source_component =
+      source_component,
+    demographic_source_file_id =
+      source_file_id,
+    demographic_source_exam =
+      source_exam,
+    demographic_analysis_role =
+      analysis_role
+  )
+```
+
+# Recheck overlapping non-key columns
+
+Run:
+
+```r
+remaining_overlapping_nonkey_columns <- intersect(
+  setdiff(
+    names(
+      cbc_for_merge
+    ),
+    merge_key
+  ),
+  setdiff(
+    names(
+      demographics_for_merge
+    ),
+    merge_key
+  )
+)
+```
+
+Inspect:
+
+```r
+remaining_overlapping_nonkey_columns
+```
+
+Expected:
+
+```text
+character(0)
+```
+
+Stop if unresolved overlaps remain:
+
+```r
+if (
+  length(
+    remaining_overlapping_nonkey_columns
+  ) > 0
+) {
+  stop(
+    "Unresolved non-key column-name overlaps remain before the merge: ",
+    paste(
+      remaining_overlapping_nonkey_columns,
+      collapse = ", "
+    )
+  )
+}
+```
+
+# Identify CBC records without a Demographic match
+
+Run:
+
+```r
+cbc_without_demographic_match <-
+  cbc_for_merge |>
+  dplyr::anti_join(
+    demographics_for_merge,
+    by =
+      merge_key
+  )
+```
+
+Inspect the count:
+
+```r
+nrow(
+  cbc_without_demographic_match
+)
+```
+
+Inspect affected records:
+
+```r
+cbc_without_demographic_match |>
+  dplyr::select(
+    survey_cycle,
+    SEQN,
+    cbc_source_file_id
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+# Identify Demographic records without a CBC match
+
+Run:
+
+```r
+demographics_without_cbc_match <-
+  demographics_for_merge |>
+  dplyr::anti_join(
+    cbc_for_merge,
+    by =
+      merge_key
+  )
+```
+
+Inspect:
+
+```r
+nrow(
+  demographics_without_cbc_match
+)
+```
+
+These records are not necessarily errors.
+
+The Demographic component may contain participants who did not have an eligible or available CBC result.
+
+# Perform the merge
+
+Use the CBC dataset as the left-hand dataset:
+
+```r
+cbc_demographics_1999_2018 <-
+  cbc_for_merge |>
+  dplyr::left_join(
+    demographics_for_merge,
+    by =
+      merge_key,
+    relationship =
+      "one-to-one"
+  )
+```
+
+The left join preserves all primary CBC records.
+
+The `relationship = "one-to-one"` declaration requires:
+
+- each CBC key to occur at most once;
+- each matching Demographic key to occur at most once.
+
+If either assumption is violated, the join stops.
+
+# Inspect the merged dataset
+
+Run:
+
+```r
+dplyr::glimpse(
+  cbc_demographics_1999_2018
+)
+```
+
+Inspect dimensions:
+
+```r
+dim(
+  cbc_demographics_1999_2018
+)
+```
+
+# Confirm that the CBC row count was preserved
+
+Record:
+
+```r
+merged_rows <- nrow(
+  cbc_demographics_1999_2018
+)
+```
+
+Compare:
+
+```r
+tibble::tibble(
+  dataset = c(
+    "Primary CBC before merge",
+    "Merged CBC and Demographic data"
+  ),
+  rows = c(
+    cbc_rows_before_merge,
+    merged_rows
+  )
+)
+```
+
+Stop if the row count changed:
+
+```r
+if (
+  merged_rows !=
+    cbc_rows_before_merge
+) {
+  stop(
+    "The merge changed the number of primary CBC records."
+  )
+}
+```
+
+# Create a Demographic match indicator
+
+Use a Demographic variable expected to exist in successfully matched records.
+
+Create:
+
+```r
+cbc_demographics_1999_2018 <-
+  cbc_demographics_1999_2018 |>
+  dplyr::mutate(
+    demographic_match =
+      !is.na(
+        RIAGENDR
+      )
+  )
+```
+
+Count:
+
+```r
+cbc_demographics_1999_2018 |>
+  dplyr::count(
+    demographic_match,
+    name = "records"
+  )
+```
+
+# Create a readable match label
+
+Run:
+
+```r
+cbc_demographics_1999_2018 <-
+  cbc_demographics_1999_2018 |>
+  dplyr::mutate(
+    demographic_match_label =
+      dplyr::if_else(
+        demographic_match,
+        "Matched to Demographic record",
+        "No Demographic match"
+      )
+  )
+```
+
+Inspect:
+
+```r
+cbc_demographics_1999_2018 |>
+  dplyr::count(
+    demographic_match_label,
+    name = "records"
+  )
+```
+
+# Validate the merged composite key
+
+Create:
+
+```r
+merged_duplicate_keys <-
+  cbc_demographics_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  merged_duplicate_keys,
+  n = Inf
+)
+```
+
+Stop if duplicates exist:
+
+```r
+if (
+  nrow(
+    merged_duplicate_keys
+  ) > 0
+) {
+  stop(
+    "The merged dataset contains duplicate survey_cycle + SEQN keys."
+  )
+}
+```
+
+# Validate the principal analytical variables
+
+Define:
+
+```r
+required_merged_variables <- c(
+  "survey_cycle",
+  "SEQN",
+  "LBXHGB",
+  "RIAGENDR",
+  "SDMVSTRA",
+  "SDMVPSU",
+  "demographic_match",
+  "demographic_match_label"
+)
+```
+
+Identify missing variables:
+
+```r
+missing_required_merged_variables <- setdiff(
+  required_merged_variables,
+  names(
+    cbc_demographics_1999_2018
+  )
+)
+```
+
+Stop if any are missing:
+
+```r
+if (
+  length(
+    missing_required_merged_variables
+  ) > 0
+) {
+  stop(
+    "The merged dataset is missing required variables: ",
+    paste(
+      missing_required_merged_variables,
+      collapse = ", "
+    )
+  )
+}
+```
+
+# Summarize match status by survey cycle
+
+Run:
+
+```r
+merge_match_summary_by_cycle <-
+  cbc_demographics_1999_2018 |>
+  dplyr::group_by(
+    survey_cycle
+  ) |>
+  dplyr::summarise(
+    cbc_records =
+      dplyr::n(),
+    demographic_matches =
+      sum(
+        demographic_match
+      ),
+    unmatched_cbc_records =
+      sum(
+        !demographic_match
+      ),
+    match_percent =
+      100 *
+      demographic_matches /
+      cbc_records,
+    .groups =
+      "drop"
+  ) |>
+  dplyr::arrange(
+    survey_cycle
+  )
+```
+
+Inspect:
+
+```r
+print(
+  merge_match_summary_by_cycle,
+  n = Inf
+)
+```
+
+# If the merge does not work
+
+Use this section immediately when:
+
+- the join reports an unexpected relationship;
+- the merged row count increases;
+- duplicate keys appear;
+- required variables receive `.x` and `.y` suffixes;
+- many CBC records remain unmatched.
+
+::: {.callout-warning icon="true"}
+## Do not remove the relationship check
+
+When `relationship = "one-to-one"` stops the join, it has identified a key-structure problem.
+
+Do not remove the argument merely to force the merge to complete.
+:::
+
+## Confirm that you are using the correct key
+
+Inspect:
+
+```r
+merge_key
+```
+
+Expected:
+
+```text
+survey_cycle
+SEQN
+```
+
+Do not join only by `SEQN`.
+
+## Check CBC duplicates
+
+Run:
+
+```r
+cbc_primary_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+## Check Demographic duplicates
+
+Run:
+
+```r
+demographics_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+## Extract the duplicated CBC records
+
+Create:
+
+```r
+cbc_duplicate_records <-
+  cbc_primary_1999_2018 |>
+  dplyr::semi_join(
+    cbc_premerge_duplicate_keys,
+    by = c(
+      "survey_cycle",
+      "SEQN"
+    )
+  ) |>
+  dplyr::arrange(
+    survey_cycle,
+    SEQN
+  )
+```
+
+Inspect provenance:
+
+```r
+cbc_duplicate_records |>
+  dplyr::select(
+    survey_cycle,
+    SEQN,
+    source_dataset_id,
+    source_file_id,
+    source_exam,
+    analysis_role
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+## Check whether the supplementary examination entered the primary CBC stack
+
+Run:
+
+```r
+"L25_2_B" %in%
+  unique(
+    cbc_primary_1999_2018$source_file_id
+  )
+```
+
+Expected:
+
+```text
+[1] FALSE
+```
+
+If the result is `TRUE`, return to Lessons 10 and 11.
+
+The second 2001–2002 CBC examination must remain separate from the primary CBC stack.
+
+## Understand row multiplication
+
+Suppose one CBC key occurs twice and the matching Demographic key also occurs twice.
+
+The join may produce:
+
+```text
+2 CBC rows × 2 Demographic rows = 4 merged rows
+```
+
+This is a many-to-many relationship.
+
+The increased row count is not a harmless formatting issue.
+
+It changes the analytical dataset.
+
+## Compare key counts directly
+
+Run:
+
+```r
+cbc_key_counts <-
+  cbc_primary_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "cbc_rows"
+  )
+```
+
+```r
+demographic_key_counts <-
+  demographics_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "demographic_rows"
+  )
+```
+
+Join the key counts:
+
+```r
+merge_key_relationship_report <-
+  dplyr::full_join(
+    cbc_key_counts,
+    demographic_key_counts,
+    by = c(
+      "survey_cycle",
+      "SEQN"
+    )
+  ) |>
+  dplyr::mutate(
+    cbc_rows =
+      dplyr::coalesce(
+        cbc_rows,
+        0L
+      ),
+    demographic_rows =
+      dplyr::coalesce(
+        demographic_rows,
+        0L
+      ),
+    expected_join_rows =
+      cbc_rows *
+        pmax(
+          demographic_rows,
+          1L
+        )
+  ) |>
+  dplyr::arrange(
+    dplyr::desc(
+      expected_join_rows
+    )
+  )
+```
+
+Inspect problematic keys:
+
+```r
+merge_key_relationship_report |>
+  dplyr::filter(
+    cbc_rows > 1 |
+      demographic_rows > 1
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+## Do not use `distinct()` automatically
+
+Avoid:
+
+```r
+data |>
+  dplyr::distinct(
+    survey_cycle,
+    SEQN,
+    .keep_all = TRUE
+  )
+```
+
+This silently keeps one record and discards the others.
+
+Before removing any record, determine whether the duplicates are:
+
+- exact duplicates;
+- repeat examinations;
+- supplementary records;
+- conflicting observations;
+- records from an incorrectly included source.
+
+## Diagnose automatic `.x` and `.y` suffixes
+
+After a join, names such as:
+
+```text
+source_file_id.x
+source_file_id.y
+```
+
+mean that both datasets contained a non-key column with the same name.
+
+Find overlaps:
+
+```r
+intersect(
+  setdiff(
+    names(
+      cbc_primary_1999_2018
+    ),
+    merge_key
+  ),
+  setdiff(
+    names(
+      demographics_1999_2018
+    ),
+    merge_key
+  )
+)
+```
+
+Rename component-specific columns before joining.
+
+Do not leave ambiguous suffixes in the final analytical dataset.
+
+## Diagnose unmatched CBC records
+
+Inspect:
+
+```r
+cbc_without_demographic_match |>
+  dplyr::count(
+    survey_cycle,
+    name = "unmatched_records"
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+Compare key classes:
+
+```r
+class(
+  cbc_for_merge$SEQN
+)
+```
+
+```r
+class(
+  demographics_for_merge$SEQN
+)
+```
+
+Compare cycle classes:
+
+```r
+class(
+  cbc_for_merge$survey_cycle
+)
+```
+
+```r
+class(
+  demographics_for_merge$survey_cycle
+)
+```
+
+Possible causes include:
+
+- different key classes;
+- whitespace in a character key;
+- an incomplete Demographic source;
+- a cycle label mismatch;
+- participant ineligibility;
+- missing Demographic records;
+- an earlier component-combination problem.
+
+## Compare unmatched cycles
+
+Run:
+
+```r
+cbc_without_demographic_match |>
+  dplyr::count(
+    survey_cycle,
+    name = "unmatched_cbc_records"
+  ) |>
+  dplyr::arrange(
+    survey_cycle
+  ) |>
+  print(
+    n = Inf
+  )
+```
+
+A concentration of unmatched records in one cycle may indicate a source or labelling problem.
+
+## Confirm that the merge is being performed from CBC
+
+The intended structure is:
+
+```r
+cbc_for_merge |>
+  dplyr::left_join(
+    demographics_for_merge,
+    by = merge_key,
+    relationship = "one-to-one"
+  )
+```
+
+Reversing the datasets changes which population is preserved.
+
+# Create a merge-validation table
+
+Run:
+
+```r
+merge_validation_summary <-
+  tibble::tibble(
+    check = c(
+      "CBC contains complete merge keys",
+      "Demographic data contain complete merge keys",
+      "CBC composite keys are unique",
+      "Demographic composite keys are unique",
+      "No unresolved non-key overlaps remain",
+      "Merged row count equals CBC row count",
+      "Merged composite keys are unique",
+      "Required merged variables are present"
+    ),
+    passed = c(
+      nrow(
+        cbc_missing_merge_keys
+      ) == 0,
+      nrow(
+        demographic_missing_merge_keys
+      ) == 0,
+      nrow(
+        cbc_premerge_duplicate_keys
+      ) == 0,
+      nrow(
+        demographic_premerge_duplicate_keys
+      ) == 0,
+      length(
+        remaining_overlapping_nonkey_columns
+      ) == 0,
+      merged_rows ==
+        cbc_rows_before_merge,
+      nrow(
+        merged_duplicate_keys
+      ) == 0,
+      length(
+        missing_required_merged_variables
+      ) == 0
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  merge_validation_summary,
+  n = Inf
+)
+```
+
+Identify failed checks:
+
+```r
+failed_merge_checks <-
+  merge_validation_summary |>
+  dplyr::filter(
+    !passed
+  )
+```
+
+Stop if any fail:
+
+```r
+if (
+  nrow(
+    failed_merge_checks
+  ) > 0
+) {
+  stop(
+    "Merge validation failed: ",
+    paste(
+      failed_merge_checks$check,
+      collapse = ", "
+    )
+  )
+}
+```
+
+# Create a merge audit summary
+
+Run:
+
+```r
+merge_audit_summary <- tibble::tibble(
+  metric = c(
+    "CBC rows before merge",
+    "Demographic rows before merge",
+    "Merged rows",
+    "Matched CBC records",
+    "Unmatched CBC records",
+    "Unused Demographic records",
+    "Duplicated merged keys"
+  ),
+  value = c(
+    cbc_rows_before_merge,
+    demographic_rows_before_merge,
+    merged_rows,
+    sum(
+      cbc_demographics_1999_2018$demographic_match
+    ),
+    sum(
+      !cbc_demographics_1999_2018$demographic_match
+    ),
+    nrow(
+      demographics_without_cbc_match
+    ),
+    nrow(
+      merged_duplicate_keys
+    )
+  )
+)
+```
+
+Inspect:
+
+```r
+print(
+  merge_audit_summary,
+  n = Inf
+)
+```
+
+# Save merge validation outputs
+
+Confirm the validation directory exists:
+
+```r
+validation_directory <- file.path(
+  "outputs",
+  "validation"
+)
+```
+
+```r
+dir.create(
+  validation_directory,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+```
+
+Save the merge validation summary:
+
+```r
+readr::write_csv(
+  merge_validation_summary,
+  file.path(
+    validation_directory,
+    "merge_validation_summary.csv"
+  )
+)
+```
+
+Save the audit summary:
+
+```r
+readr::write_csv(
+  merge_audit_summary,
+  file.path(
+    validation_directory,
+    "merge_audit_summary.csv"
+  )
+)
+```
+
+Save the cycle-level match summary:
+
+```r
+readr::write_csv(
+  merge_match_summary_by_cycle,
+  file.path(
+    validation_directory,
+    "merge_match_summary_by_cycle.csv"
+  )
+)
+```
+
+Save unmatched CBC records:
+
+```r
+readr::write_csv(
+  cbc_without_demographic_match,
+  file.path(
+    validation_directory,
+    "cbc_without_demographic_match.csv"
+  )
+)
+```
+
+Save unused Demographic records:
+
+```r
+readr::write_csv(
+  demographics_without_cbc_match,
+  file.path(
+    validation_directory,
+    "demographics_without_cbc_match.csv"
+  )
+)
+```
+
+# Save the merged dataset for the next lesson
+
+Confirm the processed-data directory exists:
+
+```r
+processed_data_directory <- file.path(
+  "data",
+  "processed"
+)
+```
+
+```r
+dir.create(
+  processed_data_directory,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+```
+
+Save as RDS:
+
+```r
+readr::write_rds(
+  cbc_demographics_1999_2018,
+  file.path(
+    processed_data_directory,
+    "cbc_demographics_1999_2018.rds"
+  )
+)
+```
+
+Save as CSV:
+
+```r
+readr::write_csv(
+  cbc_demographics_1999_2018,
+  file.path(
+    processed_data_directory,
+    "cbc_demographics_1999_2018.csv"
+  )
+)
+```
+
+# Confirm output files
+
+Define:
+
+```r
+merge_output_files <- c(
+  file.path(
+    processed_data_directory,
+    "cbc_demographics_1999_2018.rds"
+  ),
+  file.path(
+    processed_data_directory,
+    "cbc_demographics_1999_2018.csv"
+  ),
+  file.path(
+    validation_directory,
+    "merge_validation_summary.csv"
+  ),
+  file.path(
+    validation_directory,
+    "merge_audit_summary.csv"
+  ),
+  file.path(
+    validation_directory,
+    "merge_match_summary_by_cycle.csv"
+  ),
+  file.path(
+    validation_directory,
+    "cbc_without_demographic_match.csv"
+  ),
+  file.path(
+    validation_directory,
+    "demographics_without_cbc_match.csv"
+  )
+)
+```
+
+Create:
+
+```r
+merge_output_check <-
+  tibble::tibble(
+    file =
+      merge_output_files,
+    exists =
+      file.exists(
+        merge_output_files
+      ),
+    size_bytes =
+      file.info(
+        merge_output_files
+      )$size
+  )
+```
+
+Inspect:
+
+```r
+print(
+  merge_output_check,
+  n = Inf
+)
+```
+
+Stop if any file is missing:
+
+```r
+if (
+  any(
+    !merge_output_check$exists
+  )
+) {
+  stop(
+    "One or more merge output files are missing."
+  )
+}
+```
+
+Stop if any file is empty:
+
+```r
+if (
+  any(
+    is.na(
+      merge_output_check$size_bytes
+    ) |
+      merge_output_check$size_bytes <= 0
+  )
+) {
+  stop(
+    "One or more merge output files are empty."
+  )
+}
+```
+
+Expected message:
+
+```r
+message(
+  "CBC and Demographic data were merged and validated successfully."
+)
+```
+
+# What success looks like
+
+After this lesson, you should have:
+
+```r
+cbc_demographics_1999_2018
+```
+
+The merged dataset should:
+
+- preserve every primary CBC record;
+- contain at most one Demographic match per CBC record;
+- retain a unique `survey_cycle + SEQN` key;
+- contain CBC and Demographic variables;
+- include a match indicator;
+- retain component-specific provenance;
+- contain no ambiguous `.x` and `.y` suffixes.
+
+# Common mistakes
+
+## Joining only by `SEQN`
+
+Retain the survey-cycle context.
+
+## Ignoring duplicate keys before joining
+
+Duplicate keys can multiply rows.
+
+## Removing `relationship = "one-to-one"`
+
+This hides rather than resolves key-structure problems.
+
+## Accepting `.x` and `.y` suffixes without review
+
+Rename overlapping provenance columns before the join.
+
+## Using an inner join automatically
+
+An inner join removes unmatched CBC records.
+
+The pipeline uses a left join to preserve the primary CBC analytical population.
+
+## Treating every unmatched Demographic record as an error
+
+Some Demographic participants may not have a corresponding CBC result.
+
+## Using `distinct()` as a universal duplicate fix
+
+Repeated keys must be investigated before records are removed.
+
+## Reversing the left join
+
+The left-hand dataset determines which records are preserved.
+
+## Assuming the join is valid because it completes
+
+A join can run successfully and still produce incorrect row counts or relationships.
+
+# Checkpoint
+
+Confirm:
+
+- [ ] Both component datasets exist.
+- [ ] The merge key is `survey_cycle + SEQN`.
+- [ ] Both datasets contain the complete merge key.
+- [ ] Missing key values were checked.
+- [ ] CBC keys are unique.
+- [ ] Demographic keys are unique.
+- [ ] Pre-merge row counts were recorded.
+- [ ] Overlapping non-key columns were identified.
+- [ ] Component provenance columns were renamed.
+- [ ] No unresolved non-key overlaps remain.
+- [ ] CBC records without Demographic matches were identified.
+- [ ] Demographic records without CBC matches were identified.
+- [ ] A one-to-one left join was used.
+- [ ] The merged row count equals the CBC row count.
+- [ ] A Demographic match indicator was created.
+- [ ] The merged composite key remains unique.
+- [ ] Required analytical variables are present.
+- [ ] Match status was summarized by cycle.
+- [ ] Merge validation and audit files were saved.
+- [ ] The merged RDS and CSV files were saved.
+- [ ] All merge output files exist and are nonempty.
+- [ ] You know how to diagnose row multiplication.
+- [ ] You know not to remove the relationship check.
+- [ ] You have not run `quarto render`.
+
+# Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why use `survey_cycle + SEQN` as the key?
+
+The pipeline combines multiple NHANES cycles. Retaining the cycle with the participant identifier makes the cross-cycle analytical key explicit and prevents accidental cross-cycle matching.
+:::
+
+::: {.callout-note collapse="true"}
+## Why specify `relationship = "one-to-one"`?
+
+It verifies that each CBC key and each matching Demographic key occur no more than once. The join stops when the intended relationship is violated.
+:::
+
+::: {.callout-note collapse="true"}
+## Why use CBC as the left-hand dataset?
+
+The primary analytical population is defined by the validated primary CBC records. A left join preserves those records while adding Demographic information where available.
+:::
+
+::: {.callout-note collapse="true"}
+## What causes row multiplication?
+
+Row multiplication occurs when one or both datasets contain repeated merge keys. Multiple rows on one side can match multiple rows on the other side.
+:::
+
+::: {.callout-note collapse="true"}
+## Should `.x` and `.y` suffixes be accepted automatically?
+
+No. They indicate overlapping non-key column names. The meaning of those columns should be reviewed and component-specific variables should be renamed before joining.
+:::
+
+# Lesson summary
+
+You have:
+
+- defined the composite participant-cycle merge key;
+- validated missing and duplicated keys;
+- preserved component-specific provenance;
+- identified unmatched records before joining;
+- performed a one-to-one left join;
+- confirmed that the CBC row count was preserved;
+- created match indicators and audit summaries;
+- learned how to diagnose row multiplication and column conflicts;
+- saved the merged dataset and merge-validation outputs.
+
+[Continue to Lesson 13: Validate the merged results](13-validate-results.qmd){.button .button-primary}

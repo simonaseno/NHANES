@@ -1,0 +1,1879 @@
+---
+title: "Lesson 11: Combine Files Within Each Component"
+subtitle: "Stack the ten primary CBC cycles and the ten Demographic cycles into validated longitudinal datasets"
+description: "Combine primary NHANES CBC files and Demographic files across ten survey cycles while preserving provenance and validating participant keys."
+sidebar: tutorials
+format: html
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- identify the primary source files for each component;
+- verify that each survey cycle is represented once;
+- compare source schemas before row binding;
+- combine CBC files across ten cycles;
+- combine Demographic files across ten cycles;
+- preserve survey-cycle and source metadata;
+- validate the composite key `survey_cycle + SEQN`;
+- distinguish structural missingness from data errors;
+- create component-level validation reports.
+:::
+
+## Why combine within components first?
+
+The CBC and Demographic files should not be merged immediately after download.
+
+A safer workflow is:
+
+1. inspect every source independently;
+2. separate supplementary records;
+3. combine all primary CBC sources;
+4. combine all primary Demographic sources;
+5. validate both combined components;
+6. merge the validated component datasets.
+
+This keeps component-specific problems visible before the final join.
+
+## Where you are in the workflow
+
+You currently have:
+
+```r
+primary_cbc_sources
+```
+
+This named list contains the ten primary CBC files.
+
+You also have:
+
+```r
+imported_sources
+```
+
+This contains all imported source files, including the ten Demographic files and the supplementary second CBC examination.
+
+The supplementary dataset:
+
+```r
+cbc_second_exam_2001_2002
+```
+
+has already been preserved separately and will not be included in the primary CBC stack.
+
+## Add the component-combination section
+
+Add this below the duplicate-handling section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 9: COMBINE FILES WITHIN EACH COMPONENT
+# ============================================================
+```
+
+## Confirm the primary CBC source list
+
+Inspect the source names:
+
+```r
+names(
+  primary_cbc_sources
+)
+```
+
+Count them:
+
+```r
+length(
+  primary_cbc_sources
+)
+```
+
+Expected result:
+
+```text
+[1] 10
+```
+
+Confirm that the supplementary second examination is absent:
+
+```r
+"cbc_2001_2002_second_exam" %in%
+  names(
+    primary_cbc_sources
+  )
+```
+
+Expected result:
+
+```text
+[1] FALSE
+```
+
+## Build the Demographic source list
+
+Identify the primary Demographic dataset IDs:
+
+```r
+primary_demographic_dataset_ids <-
+  nhanes_catalog |>
+  dplyr::filter(
+    component == "demographic",
+    analysis_role == "primary"
+  ) |>
+  dplyr::pull(
+    dataset_id
+  )
+```
+
+Inspect:
+
+```r
+print(
+  primary_demographic_dataset_ids
+)
+```
+
+Count:
+
+```r
+length(
+  primary_demographic_dataset_ids
+)
+```
+
+Expected result:
+
+```text
+[1] 10
+```
+
+Create the Demographic source list:
+
+```r
+primary_demographic_sources <- imported_sources[
+  primary_demographic_dataset_ids
+]
+```
+
+Confirm:
+
+```r
+length(
+  primary_demographic_sources
+)
+```
+
+Expected result:
+
+```text
+[1] 10
+```
+
+## Validate that no requested source is missing
+
+Check CBC sources:
+
+```r
+missing_primary_cbc_objects <- setdiff(
+  primary_cbc_dataset_ids,
+  names(
+    primary_cbc_sources
+  )
+)
+```
+
+Check Demographic sources:
+
+```r
+missing_primary_demographic_objects <- setdiff(
+  primary_demographic_dataset_ids,
+  names(
+    primary_demographic_sources
+  )
+)
+```
+
+Stop if any CBC object is missing:
+
+```r
+if (
+  length(
+    missing_primary_cbc_objects
+  ) > 0
+) {
+  stop(
+    "Missing primary CBC source objects: ",
+    paste(
+      missing_primary_cbc_objects,
+      collapse = ", "
+    )
+  )
+}
+```
+
+Stop if any Demographic object is missing:
+
+```r
+if (
+  length(
+    missing_primary_demographic_objects
+  ) > 0
+) {
+  stop(
+    "Missing primary Demographic source objects: ",
+    paste(
+      missing_primary_demographic_objects,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Create a source-list summary function
+
+Add:
+
+```r
+summarize_source_list <- function(
+    source_list) {
+
+  purrr::imap_dfr(
+    source_list,
+    function(
+        data,
+        dataset_id) {
+
+      tibble::tibble(
+        dataset_id = dataset_id,
+        survey_cycle = paste(
+          unique(
+            data$survey_cycle
+          ),
+          collapse = "; "
+        ),
+        source_file_id = paste(
+          unique(
+            data$source_file_id
+          ),
+          collapse = "; "
+        ),
+        source_component = paste(
+          unique(
+            data$source_component
+          ),
+          collapse = "; "
+        ),
+        analysis_role = paste(
+          unique(
+            data$analysis_role
+          ),
+          collapse = "; "
+        ),
+        rows = nrow(
+          data
+        ),
+        columns = ncol(
+          data
+        )
+      )
+    }
+  )
+}
+```
+
+Summarize CBC sources:
+
+```r
+primary_cbc_source_summary <-
+  summarize_source_list(
+    primary_cbc_sources
+  )
+```
+
+Inspect:
+
+```r
+print(
+  primary_cbc_source_summary,
+  n = Inf
+)
+```
+
+Summarize Demographic sources:
+
+```r
+primary_demographic_source_summary <-
+  summarize_source_list(
+    primary_demographic_sources
+  )
+```
+
+Inspect:
+
+```r
+print(
+  primary_demographic_source_summary,
+  n = Inf
+)
+```
+
+## Validate source component roles
+
+Check CBC:
+
+```r
+if (
+  any(
+    primary_cbc_source_summary$source_component !=
+      "cbc"
+  )
+) {
+  stop(
+    "The primary CBC source list contains a non-CBC source."
+  )
+}
+```
+
+Check Demographics:
+
+```r
+if (
+  any(
+    primary_demographic_source_summary$source_component !=
+      "demographic"
+  )
+) {
+  stop(
+    "The primary Demographic source list contains a non-Demographic source."
+  )
+}
+```
+
+Validate analytical role:
+
+```r
+if (
+  any(
+    primary_cbc_source_summary$analysis_role !=
+      "primary"
+  )
+) {
+  stop(
+    "The CBC source list contains a nonprimary source."
+  )
+}
+```
+
+```r
+if (
+  any(
+    primary_demographic_source_summary$analysis_role !=
+      "primary"
+  )
+) {
+  stop(
+    "The Demographic source list contains a nonprimary source."
+  )
+}
+```
+
+## Confirm one primary source per cycle
+
+Count CBC sources by cycle:
+
+```r
+cbc_sources_per_cycle <-
+  primary_cbc_source_summary |>
+  dplyr::count(
+    survey_cycle,
+    name = "source_files"
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_sources_per_cycle,
+  n = Inf
+)
+```
+
+Count Demographic sources by cycle:
+
+```r
+demographic_sources_per_cycle <-
+  primary_demographic_source_summary |>
+  dplyr::count(
+    survey_cycle,
+    name = "source_files"
+  )
+```
+
+Inspect:
+
+```r
+print(
+  demographic_sources_per_cycle,
+  n = Inf
+)
+```
+
+Every cycle should have:
+
+```text
+source_files = 1
+```
+
+Validate CBC:
+
+```r
+if (
+  nrow(cbc_sources_per_cycle) != 10 ||
+  any(
+    cbc_sources_per_cycle$source_files != 1
+  )
+) {
+  stop(
+    "CBC sources do not represent exactly one primary file per cycle."
+  )
+}
+```
+
+Validate Demographics:
+
+```r
+if (
+  nrow(demographic_sources_per_cycle) != 10 ||
+  any(
+    demographic_sources_per_cycle$source_files != 1
+  )
+) {
+  stop(
+    "Demographic sources do not represent exactly one primary file per cycle."
+  )
+}
+```
+
+## Compare schemas before combining
+
+Files from different survey cycles may not contain identical columns.
+
+Create a schema inventory function:
+
+```r
+create_schema_inventory <- function(
+    source_list) {
+
+  purrr::imap_dfr(
+    source_list,
+    function(
+        data,
+        dataset_id) {
+
+      tibble::tibble(
+        dataset_id = dataset_id,
+        variable = names(
+          data
+        ),
+        variable_class = purrr::map_chr(
+          data,
+          function(variable) {
+            paste(
+              class(
+                variable
+              ),
+              collapse = "; "
+            )
+          }
+        )
+      )
+    }
+  )
+}
+```
+
+Create the CBC schema inventory:
+
+```r
+cbc_schema_inventory <- create_schema_inventory(
+  primary_cbc_sources
+)
+```
+
+Create the Demographic schema inventory:
+
+```r
+demographic_schema_inventory <-
+  create_schema_inventory(
+    primary_demographic_sources
+  )
+```
+
+## Count variable availability across CBC cycles
+
+Run:
+
+```r
+cbc_schema_frequency <-
+  cbc_schema_inventory |>
+  dplyr::distinct(
+    dataset_id,
+    variable
+  ) |>
+  dplyr::count(
+    variable,
+    name = "source_files"
+  ) |>
+  dplyr::arrange(
+    dplyr::desc(
+      source_files
+    ),
+    variable
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_schema_frequency,
+  n = Inf
+)
+```
+
+Variables with:
+
+```text
+source_files = 10
+```
+
+are present in all ten primary CBC cycles.
+
+## Count variable availability across Demographic cycles
+
+Run:
+
+```r
+demographic_schema_frequency <-
+  demographic_schema_inventory |>
+  dplyr::distinct(
+    dataset_id,
+    variable
+  ) |>
+  dplyr::count(
+    variable,
+    name = "source_files"
+  ) |>
+  dplyr::arrange(
+    dplyr::desc(
+      source_files
+    ),
+    variable
+  )
+```
+
+Inspect:
+
+```r
+print(
+  demographic_schema_frequency,
+  n = Inf
+)
+```
+
+## Identify variables common to every source
+
+CBC:
+
+```r
+common_cbc_variables <-
+  cbc_schema_frequency |>
+  dplyr::filter(
+    source_files == 10
+  ) |>
+  dplyr::pull(
+    variable
+  )
+```
+
+Demographics:
+
+```r
+common_demographic_variables <-
+  demographic_schema_frequency |>
+  dplyr::filter(
+    source_files == 10
+  ) |>
+  dplyr::pull(
+    variable
+  )
+```
+
+Confirm that `SEQN` is present in every source:
+
+```r
+"SEQN" %in%
+  common_cbc_variables
+```
+
+```r
+"SEQN" %in%
+  common_demographic_variables
+```
+
+Both should return:
+
+```text
+[1] TRUE
+```
+
+## Identify cycle-specific variables
+
+CBC:
+
+```r
+cycle_specific_cbc_variables <-
+  cbc_schema_frequency |>
+  dplyr::filter(
+    source_files < 10
+  )
+```
+
+Demographics:
+
+```r
+cycle_specific_demographic_variables <-
+  demographic_schema_frequency |>
+  dplyr::filter(
+    source_files < 10
+  )
+```
+
+Inspect CBC:
+
+```r
+print(
+  cycle_specific_cbc_variables,
+  n = Inf
+)
+```
+
+Inspect Demographics:
+
+```r
+print(
+  cycle_specific_demographic_variables,
+  n = Inf
+)
+```
+
+::: {.callout-important icon="true"}
+## Missing columns after row binding may be structural
+
+When a variable exists in some cycles but not others, `dplyr::bind_rows()` creates that column in the combined dataset and fills unavailable cycles with `NA`.
+
+Those missing values can mean:
+
+```text
+The variable did not exist in that source cycle.
+```
+
+They do not necessarily mean:
+
+```text
+The participant had a missing result.
+```
+
+This distinction should be preserved during interpretation.
+:::
+
+## Check variable-class consistency
+
+A variable may appear in multiple files with incompatible R classes.
+
+Create a class-consistency report for CBC:
+
+```r
+cbc_class_consistency <-
+  cbc_schema_inventory |>
+  dplyr::distinct(
+    variable,
+    variable_class
+  ) |>
+  dplyr::count(
+    variable,
+    name = "class_count"
+  ) |>
+  dplyr::filter(
+    class_count > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_class_consistency,
+  n = Inf
+)
+```
+
+Create the same report for Demographics:
+
+```r
+demographic_class_consistency <-
+  demographic_schema_inventory |>
+  dplyr::distinct(
+    variable,
+    variable_class
+  ) |>
+  dplyr::count(
+    variable,
+    name = "class_count"
+  ) |>
+  dplyr::filter(
+    class_count > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  demographic_class_consistency,
+  n = Inf
+)
+```
+
+Variables with more than one class require review before combination.
+
+## Build a class-detail report
+
+CBC:
+
+```r
+cbc_class_detail <-
+  cbc_schema_inventory |>
+  dplyr::semi_join(
+    cbc_class_consistency,
+    by = "variable"
+  ) |>
+  dplyr::arrange(
+    variable,
+    dataset_id
+  )
+```
+
+Demographics:
+
+```r
+demographic_class_detail <-
+  demographic_schema_inventory |>
+  dplyr::semi_join(
+    demographic_class_consistency,
+    by = "variable"
+  ) |>
+  dplyr::arrange(
+    variable,
+    dataset_id
+  )
+```
+
+Inspect when inconsistencies are detected:
+
+```r
+print(
+  cbc_class_detail,
+  n = Inf
+)
+```
+
+```r
+print(
+  demographic_class_detail,
+  n = Inf
+)
+```
+
+## Standardize the composite key columns
+
+Before combining sources, ensure that:
+
+- `SEQN` is numeric;
+- `survey_cycle` is character.
+
+Create a standardization function:
+
+```r
+standardize_component_keys <- function(
+    data) {
+
+  if (
+    !"SEQN" %in%
+      names(data)
+  ) {
+    stop(
+      "SEQN is missing from a source dataset."
+    )
+  }
+
+  if (
+    !"survey_cycle" %in%
+      names(data)
+  ) {
+    stop(
+      "survey_cycle is missing from a source dataset."
+    )
+  }
+
+  data |>
+    dplyr::mutate(
+      SEQN = as.numeric(
+        SEQN
+      ),
+      survey_cycle = as.character(
+        survey_cycle
+      )
+    )
+}
+```
+
+Apply it to the CBC list:
+
+```r
+primary_cbc_sources <-
+  purrr::map(
+    primary_cbc_sources,
+    standardize_component_keys
+  )
+```
+
+Apply it to the Demographic list:
+
+```r
+primary_demographic_sources <-
+  purrr::map(
+    primary_demographic_sources,
+    standardize_component_keys
+  )
+```
+
+## Combine the primary CBC files
+
+Use:
+
+```r
+cbc_primary_1999_2018 <-
+  dplyr::bind_rows(
+    primary_cbc_sources
+  )
+```
+
+Inspect:
+
+```r
+dplyr::glimpse(
+  cbc_primary_1999_2018
+)
+```
+
+Check dimensions:
+
+```r
+dim(
+  cbc_primary_1999_2018
+)
+```
+
+## Validate the combined CBC row count
+
+Calculate the sum of source rows:
+
+```r
+expected_combined_cbc_rows <- sum(
+  purrr::map_int(
+    primary_cbc_sources,
+    nrow
+  )
+)
+```
+
+Compare:
+
+```r
+cbc_row_count_validation <- tibble::tibble(
+  expected_rows =
+    expected_combined_cbc_rows,
+  observed_rows =
+    nrow(
+      cbc_primary_1999_2018
+    ),
+  rows_match =
+    expected_rows ==
+      observed_rows
+)
+```
+
+Inspect:
+
+```r
+print(
+  cbc_row_count_validation
+)
+```
+
+Stop if the counts differ:
+
+```r
+if (
+  !cbc_row_count_validation$rows_match
+) {
+  stop(
+    "Combined CBC row count does not equal the sum of its sources."
+  )
+}
+```
+
+## Combine the Demographic files
+
+Run:
+
+```r
+demographics_1999_2018 <-
+  dplyr::bind_rows(
+    primary_demographic_sources
+  )
+```
+
+Inspect:
+
+```r
+dplyr::glimpse(
+  demographics_1999_2018
+)
+```
+
+Check dimensions:
+
+```r
+dim(
+  demographics_1999_2018
+)
+```
+
+## Validate the combined Demographic row count
+
+Calculate:
+
+```r
+expected_combined_demographic_rows <- sum(
+  purrr::map_int(
+    primary_demographic_sources,
+    nrow
+  )
+)
+```
+
+Compare:
+
+```r
+demographic_row_count_validation <-
+  tibble::tibble(
+    expected_rows =
+      expected_combined_demographic_rows,
+    observed_rows =
+      nrow(
+        demographics_1999_2018
+      ),
+    rows_match =
+      expected_rows ==
+        observed_rows
+  )
+```
+
+Inspect:
+
+```r
+print(
+  demographic_row_count_validation
+)
+```
+
+Stop if the counts differ:
+
+```r
+if (
+  !demographic_row_count_validation$rows_match
+) {
+  stop(
+    "Combined Demographic row count does not equal the sum of its sources."
+  )
+}
+```
+
+## Validate survey-cycle coverage
+
+CBC:
+
+```r
+cbc_cycle_coverage <-
+  cbc_primary_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    name = "records"
+  ) |>
+  dplyr::arrange(
+    survey_cycle
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_cycle_coverage,
+  n = Inf
+)
+```
+
+Demographics:
+
+```r
+demographic_cycle_coverage <-
+  demographics_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    name = "records"
+  ) |>
+  dplyr::arrange(
+    survey_cycle
+  )
+```
+
+Inspect:
+
+```r
+print(
+  demographic_cycle_coverage,
+  n = Inf
+)
+```
+
+Each report should contain ten survey cycles.
+
+Validate:
+
+```r
+if (
+  nrow(
+    cbc_cycle_coverage
+  ) != 10
+) {
+  stop(
+    "Combined CBC data do not contain ten survey cycles."
+  )
+}
+```
+
+```r
+if (
+  nrow(
+    demographic_cycle_coverage
+  ) != 10
+) {
+  stop(
+    "Combined Demographic data do not contain ten survey cycles."
+  )
+}
+```
+
+## Validate missing key values
+
+CBC:
+
+```r
+cbc_missing_keys <-
+  cbc_primary_1999_2018 |>
+  dplyr::filter(
+    is.na(
+      survey_cycle
+    ) |
+      is.na(
+        SEQN
+      )
+  )
+```
+
+Demographics:
+
+```r
+demographic_missing_keys <-
+  demographics_1999_2018 |>
+  dplyr::filter(
+    is.na(
+      survey_cycle
+    ) |
+      is.na(
+        SEQN
+      )
+  )
+```
+
+Stop if CBC keys are missing:
+
+```r
+if (
+  nrow(
+    cbc_missing_keys
+  ) > 0
+) {
+  stop(
+    "Combined CBC data contain missing composite-key values."
+  )
+}
+```
+
+Stop if Demographic keys are missing:
+
+```r
+if (
+  nrow(
+    demographic_missing_keys
+  ) > 0
+) {
+  stop(
+    "Combined Demographic data contain missing composite-key values."
+  )
+}
+```
+
+## Validate the composite CBC key
+
+Find repeated keys:
+
+```r
+cbc_duplicate_composite_keys <-
+  cbc_primary_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_duplicate_composite_keys,
+  n = Inf
+)
+```
+
+Expected count:
+
+```r
+nrow(
+  cbc_duplicate_composite_keys
+)
+```
+
+Expected result:
+
+```text
+[1] 0
+```
+
+Stop if duplicates remain:
+
+```r
+if (
+  nrow(
+    cbc_duplicate_composite_keys
+  ) > 0
+) {
+  stop(
+    "The combined primary CBC dataset contains duplicate survey_cycle + SEQN keys."
+  )
+}
+```
+
+## Validate the composite Demographic key
+
+Run:
+
+```r
+demographic_duplicate_composite_keys <-
+  demographics_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    SEQN,
+    name = "occurrences"
+  ) |>
+  dplyr::filter(
+    occurrences > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  demographic_duplicate_composite_keys,
+  n = Inf
+)
+```
+
+Expected count:
+
+```r
+nrow(
+  demographic_duplicate_composite_keys
+)
+```
+
+Expected result:
+
+```text
+[1] 0
+```
+
+Stop if duplicates remain:
+
+```r
+if (
+  nrow(
+    demographic_duplicate_composite_keys
+  ) > 0
+) {
+  stop(
+    "The combined Demographic dataset contains duplicate survey_cycle + SEQN keys."
+  )
+}
+```
+
+## Why use `survey_cycle + SEQN`?
+
+The source-level identifier is:
+
+```text
+SEQN
+```
+
+After combining multiple cycles, this tutorial uses:
+
+```text
+survey_cycle + SEQN
+```
+
+as the explicit analytical key.
+
+This makes the cycle-participant relationship visible and avoids relying on an undocumented assumption that `SEQN` alone is globally unique across every release.
+
+## Check whether `SEQN` is globally repeated
+
+CBC:
+
+```r
+cbc_seqn_across_cycles <-
+  cbc_primary_1999_2018 |>
+  dplyr::distinct(
+    survey_cycle,
+    SEQN
+  ) |>
+  dplyr::count(
+    SEQN,
+    name = "cycles"
+  ) |>
+  dplyr::filter(
+    cycles > 1
+  )
+```
+
+Demographics:
+
+```r
+demographic_seqn_across_cycles <-
+  demographics_1999_2018 |>
+  dplyr::distinct(
+    survey_cycle,
+    SEQN
+  ) |>
+  dplyr::count(
+    SEQN,
+    name = "cycles"
+  ) |>
+  dplyr::filter(
+    cycles > 1
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_seqn_across_cycles,
+  n = Inf
+)
+```
+
+```r
+print(
+  demographic_seqn_across_cycles,
+  n = Inf
+)
+```
+
+Even when no global repetition is observed, the composite key remains more explicit and auditable.
+
+## Validate source provenance after binding
+
+CBC:
+
+```r
+cbc_provenance_summary <-
+  cbc_primary_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    source_dataset_id,
+    source_file_id,
+    analysis_role,
+    name = "records"
+  ) |>
+  dplyr::arrange(
+    survey_cycle
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_provenance_summary,
+  n = Inf
+)
+```
+
+Demographics:
+
+```r
+demographic_provenance_summary <-
+  demographics_1999_2018 |>
+  dplyr::count(
+    survey_cycle,
+    source_dataset_id,
+    source_file_id,
+    analysis_role,
+    name = "records"
+  ) |>
+  dplyr::arrange(
+    survey_cycle
+  )
+```
+
+Inspect:
+
+```r
+print(
+  demographic_provenance_summary,
+  n = Inf
+)
+```
+
+Every combined row should retain its original source metadata.
+
+## Confirm no supplementary CBC rows entered the primary stack
+
+Run:
+
+```r
+cbc_primary_1999_2018 |>
+  dplyr::count(
+    analysis_role
+  )
+```
+
+Expected:
+
+```text
+analysis_role  n
+primary        ...
+```
+
+Validate:
+
+```r
+if (
+  any(
+    cbc_primary_1999_2018$analysis_role !=
+      "primary"
+  )
+) {
+  stop(
+    "The primary CBC stack contains supplementary records."
+  )
+}
+```
+
+Confirm that `L25_2_B` is absent:
+
+```r
+"L25_2_B" %in%
+  unique(
+    cbc_primary_1999_2018$source_file_id
+  )
+```
+
+Expected:
+
+```text
+[1] FALSE
+```
+
+## Create a component validation summary
+
+Run:
+
+```r
+component_combination_summary <-
+  tibble::tibble(
+    component = c(
+      "cbc_primary",
+      "demographic"
+    ),
+    source_files = c(
+      length(
+        primary_cbc_sources
+      ),
+      length(
+        primary_demographic_sources
+      )
+    ),
+    survey_cycles = c(
+      dplyr::n_distinct(
+        cbc_primary_1999_2018$survey_cycle
+      ),
+      dplyr::n_distinct(
+        demographics_1999_2018$survey_cycle
+      )
+    ),
+    rows = c(
+      nrow(
+        cbc_primary_1999_2018
+      ),
+      nrow(
+        demographics_1999_2018
+      )
+    ),
+    columns = c(
+      ncol(
+        cbc_primary_1999_2018
+      ),
+      ncol(
+        demographics_1999_2018
+      )
+    ),
+    missing_key_rows = c(
+      nrow(
+        cbc_missing_keys
+      ),
+      nrow(
+        demographic_missing_keys
+      )
+    ),
+    duplicate_composite_keys = c(
+      nrow(
+        cbc_duplicate_composite_keys
+      ),
+      nrow(
+        demographic_duplicate_composite_keys
+      )
+    )
+  )
+```
+
+Inspect:
+
+```r
+print(
+  component_combination_summary
+)
+```
+
+## Create a cycle-level validation table
+
+CBC:
+
+```r
+cbc_cycle_validation <-
+  cbc_primary_1999_2018 |>
+  dplyr::group_by(
+    survey_cycle,
+    source_dataset_id,
+    source_file_id
+  ) |>
+  dplyr::summarise(
+    records =
+      dplyr::n(),
+    unique_seqn =
+      dplyr::n_distinct(
+        SEQN
+      ),
+    missing_seqn =
+      sum(
+        is.na(
+          SEQN
+        )
+      ),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    duplicate_keys =
+      records -
+      unique_seqn
+  )
+```
+
+Demographics:
+
+```r
+demographic_cycle_validation <-
+  demographics_1999_2018 |>
+  dplyr::group_by(
+    survey_cycle,
+    source_dataset_id,
+    source_file_id
+  ) |>
+  dplyr::summarise(
+    records =
+      dplyr::n(),
+    unique_seqn =
+      dplyr::n_distinct(
+        SEQN
+      ),
+    missing_seqn =
+      sum(
+        is.na(
+          SEQN
+        )
+      ),
+    .groups = "drop"
+  ) |>
+  dplyr::mutate(
+    duplicate_keys =
+      records -
+      unique_seqn
+  )
+```
+
+Inspect:
+
+```r
+print(
+  cbc_cycle_validation,
+  n = Inf
+)
+```
+
+```r
+print(
+  demographic_cycle_validation,
+  n = Inf
+)
+```
+
+## Save the combined component datasets temporarily
+
+The final reusable outputs will be created later, but saving interim RDS files protects the current state.
+
+Save CBC:
+
+```r
+saveRDS(
+  cbc_primary_1999_2018,
+  file.path(
+    "data",
+    "processed",
+    "cbc_primary_1999_2018.rds"
+  )
+)
+```
+
+Save Demographics:
+
+```r
+saveRDS(
+  demographics_1999_2018,
+  file.path(
+    "data",
+    "processed",
+    "demographics_1999_2018.rds"
+  )
+)
+```
+
+Confirm:
+
+```r
+file.exists(
+  file.path(
+    "data",
+    "processed",
+    "cbc_primary_1999_2018.rds"
+  )
+)
+```
+
+```r
+file.exists(
+  file.path(
+    "data",
+    "processed",
+    "demographics_1999_2018.rds"
+  )
+)
+```
+
+Both should return:
+
+```text
+[1] TRUE
+```
+
+## Save component validation reports
+
+Save the summary:
+
+```r
+readr::write_csv(
+  component_combination_summary,
+  file.path(
+    "outputs",
+    "validation",
+    "component_combination_summary.csv"
+  )
+)
+```
+
+Save CBC cycle validation:
+
+```r
+readr::write_csv(
+  cbc_cycle_validation,
+  file.path(
+    "outputs",
+    "validation",
+    "cbc_cycle_validation.csv"
+  )
+)
+```
+
+Save Demographic cycle validation:
+
+```r
+readr::write_csv(
+  demographic_cycle_validation,
+  file.path(
+    "outputs",
+    "validation",
+    "demographic_cycle_validation.csv"
+  )
+)
+```
+
+Save CBC schema frequency:
+
+```r
+readr::write_csv(
+  cbc_schema_frequency,
+  file.path(
+    "outputs",
+    "validation",
+    "cbc_schema_frequency.csv"
+  )
+)
+```
+
+Save Demographic schema frequency:
+
+```r
+readr::write_csv(
+  demographic_schema_frequency,
+  file.path(
+    "outputs",
+    "validation",
+    "demographic_schema_frequency.csv"
+  )
+)
+```
+
+Save class inconsistencies:
+
+```r
+readr::write_csv(
+  cbc_class_detail,
+  file.path(
+    "outputs",
+    "validation",
+    "cbc_class_inconsistencies.csv"
+  )
+)
+```
+
+```r
+readr::write_csv(
+  demographic_class_detail,
+  file.path(
+    "outputs",
+    "validation",
+    "demographic_class_inconsistencies.csv"
+  )
+)
+```
+
+## Confirm validation outputs
+
+Run:
+
+```r
+component_validation_files <- c(
+  "component_combination_summary.csv",
+  "cbc_cycle_validation.csv",
+  "demographic_cycle_validation.csv",
+  "cbc_schema_frequency.csv",
+  "demographic_schema_frequency.csv",
+  "cbc_class_inconsistencies.csv",
+  "demographic_class_inconsistencies.csv"
+)
+
+component_validation_paths <- file.path(
+  "outputs",
+  "validation",
+  component_validation_files
+)
+
+tibble::tibble(
+  file = component_validation_paths,
+  exists = file.exists(
+    component_validation_paths
+  )
+)
+```
+
+Every file should return:
+
+```text
+TRUE
+```
+
+## Important interpretation principle
+
+After row binding, `NA` values can have different meanings.
+
+### Participant-level missingness
+
+The variable existed in that cycle, but the participant has no recorded value.
+
+### Structural missingness
+
+The variable was not included in that source cycle, so every participant from that cycle receives `NA` after binding.
+
+Before analyzing a variable across cycles, determine which form of missingness is present.
+
+## Common mistakes
+
+### Including the second CBC examination
+
+Only the ten primary CBC sources belong in:
+
+```r
+cbc_primary_1999_2018
+```
+
+### Combining before reviewing schemas
+
+Column names and classes should be inspected before row binding.
+
+### Assuming every `NA` means missing participant data
+
+Some `NA` values are created because a variable was unavailable in a survey cycle.
+
+### Using `SEQN` without cycle context
+
+The explicit combined-data key is:
+
+```text
+survey_cycle + SEQN
+```
+
+### Losing source provenance
+
+Metadata should be added before binding so each row remains traceable.
+
+### Ignoring class mismatches
+
+A variable stored as different classes across cycles can cause binding errors or unintended coercion.
+
+## Checkpoint
+
+Confirm:
+
+- [ ] The primary CBC source list contains 10 files.
+- [ ] The primary Demographic source list contains 10 files.
+- [ ] Each component contains one primary source per cycle.
+- [ ] The supplementary second CBC examination is excluded.
+- [ ] CBC schemas were compared.
+- [ ] Demographic schemas were compared.
+- [ ] Variable-class inconsistencies were reviewed.
+- [ ] Key columns were standardized.
+- [ ] Primary CBC files were combined.
+- [ ] Demographic files were combined.
+- [ ] Combined row counts equal the sum of source rows.
+- [ ] Both components contain ten survey cycles.
+- [ ] No composite-key values are missing.
+- [ ] `survey_cycle + SEQN` is unique in both datasets.
+- [ ] Source provenance remains available.
+- [ ] Combined component datasets were saved.
+- [ ] Component validation reports were saved.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why combine CBC and Demographic files separately before merging them?
+
+It allows each component’s source coverage, schema, row counts, keys, and provenance to be validated independently before the final join.
+:::
+
+::: {.callout-note collapse="true"}
+## What happens when `bind_rows()` encounters a variable absent from one cycle?
+
+It creates the combined column and inserts `NA` for records from the cycle where that variable was unavailable.
+:::
+
+::: {.callout-note collapse="true"}
+## Why is `survey_cycle + SEQN` used as the combined-data key?
+
+It explicitly identifies a participant within a survey cycle and avoids relying on an undocumented assumption that `SEQN` alone is globally unique across all releases.
+:::
+
+## Lesson summary
+
+You have:
+
+- created separate primary source lists for CBC and Demographics;
+- verified one primary source per cycle;
+- reviewed schemas and variable classes;
+- combined ten CBC cycles;
+- combined ten Demographic cycles;
+- validated row counts and composite keys;
+- preserved source provenance;
+- saved the combined component datasets and validation reports.
+
+[Continue to Lesson 12: Merge CBC and Demographic data](12-merge-data.qmd){.button .button-primary}

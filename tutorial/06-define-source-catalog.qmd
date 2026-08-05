@@ -1,0 +1,964 @@
+---
+title: "Define the NHANES Source-File Catalog"
+subtitle: "Create a structured manifest describing every CBC and Demographic file used by the pipeline"
+description: "Build and validate a reproducible source-file catalog for the NHANES CBC and Demographic pipeline."
+sidebar: tutorials
+---
+
+::: {.callout-note icon="true"}
+## Learning objectives
+
+By the end of this lesson, you should be able to:
+
+- explain why a source-file catalog is preferable to scattered filenames;
+- identify the metadata required for every source file;
+- distinguish primary files from supplementary files;
+- assign survey cycles and analytical roles;
+- validate the catalog before downloading data;
+- save the catalog as a reusable CSV file.
+:::
+
+## What is a source-file catalog?
+
+A source-file catalog is a structured table describing every file used by the pipeline.
+
+Instead of placing filenames and URLs throughout the script, the catalog stores them in one auditable object.
+
+Each row represents one NHANES source dataset.
+
+The production repository uses required catalog fields including:
+
+- `dataset_id`;
+- `cycle`;
+- `cycle_start`;
+- `cycle_end`;
+- `component`;
+- `file_id`;
+- `exam`;
+- `analysis_role`;
+- `record_level`;
+- `merge_key`;
+- `expected_rows`;
+- `url`.
+
+This structure makes the acquisition process explicit and testable.
+
+## Why the catalog matters
+
+A source catalog provides:
+
+- one authoritative list of source files;
+- explicit survey-cycle labels;
+- official CDC URLs;
+- component classification;
+- primary versus supplementary roles;
+- expected record levels;
+- merge-key documentation;
+- expected row counts;
+- a basis for automated validation.
+
+Without a catalog, source information can become scattered across:
+
+- download functions;
+- comments;
+- filenames;
+- manual notes;
+- analytical scripts.
+
+## Primary and supplementary roles
+
+### Primary records
+
+Primary records belong in the main person-level analytical pipeline.
+
+Examples:
+
+- the standard CBC examination for each cycle;
+- the Demographics file for each cycle.
+
+### Supplementary records
+
+Supplementary records are preserved but excluded from the primary person-level stack unless a separate analysis requires them.
+
+The principal example is:
+
+```text
+L25_2_B
+```
+
+This is the 2001–2002 second CBC examination.
+
+It is valuable data, but it should not be treated as another independent group of primary participants.
+
+## Catalog field definitions
+
+| Field | Meaning |
+|---|---|
+| `dataset_id` | Unique internal identifier for the source row |
+| `cycle` | Human-readable survey-cycle label |
+| `cycle_start` | First calendar year of the cycle |
+| `cycle_end` | Final calendar year of the cycle |
+| `component` | CBC or Demographic component |
+| `file_id` | NHANES source filename without `.xpt` |
+| `exam` | Primary, second examination, or not applicable |
+| `analysis_role` | Primary or supplementary |
+| `record_level` | What one row represents |
+| `merge_key` | Expected identifier used for integration |
+| `expected_rows` | Expected source row count |
+| `url` | Official CDC download address |
+
+## Create a configuration directory
+
+Add this directory to the project:
+
+```r
+dir.create(
+  "config",
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+```
+
+Confirm:
+
+```r
+dir.exists(
+  "config"
+)
+```
+
+Expected result:
+
+```text
+[1] TRUE
+```
+
+## Add the catalog section to the script
+
+Add the following below the survey-cycle section in `nhanes_pipeline.R`:
+
+```r
+# ============================================================
+# SECTION 4: DEFINE THE NHANES SOURCE-FILE CATALOG
+# ============================================================
+
+nhanes_catalog <- tibble::tribble(
+  ~dataset_id,
+  ~cycle,
+  ~cycle_start,
+  ~cycle_end,
+  ~component,
+  ~file_id,
+  ~exam,
+  ~analysis_role,
+  ~record_level,
+  ~merge_key,
+
+  "cbc_1999_2000_primary",
+  "1999-2000",
+  1999L,
+  2000L,
+  "cbc",
+  "LAB25",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "demo_1999_2000",
+  "1999-2000",
+  1999L,
+  2000L,
+  "demographic",
+  "DEMO",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2001_2002_primary",
+  "2001-2002",
+  2001L,
+  2002L,
+  "cbc",
+  "L25_B",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2001_2002_second_exam",
+  "2001-2002",
+  2001L,
+  2002L,
+  "cbc",
+  "L25_2_B",
+  "second",
+  "supplementary",
+  "person",
+  "SEQN",
+
+  "demo_2001_2002",
+  "2001-2002",
+  2001L,
+  2002L,
+  "demographic",
+  "DEMO_B",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2003_2004_primary",
+  "2003-2004",
+  2003L,
+  2004L,
+  "cbc",
+  "L25_C",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "demo_2003_2004",
+  "2003-2004",
+  2003L,
+  2004L,
+  "demographic",
+  "DEMO_C",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2005_2006_primary",
+  "2005-2006",
+  2005L,
+  2006L,
+  "cbc",
+  "CBC_D",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "demo_2005_2006",
+  "2005-2006",
+  2005L,
+  2006L,
+  "demographic",
+  "DEMO_D",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2007_2008_primary",
+  "2007-2008",
+  2007L,
+  2008L,
+  "cbc",
+  "CBC_E",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "demo_2007_2008",
+  "2007-2008",
+  2007L,
+  2008L,
+  "demographic",
+  "DEMO_E",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2009_2010_primary",
+  "2009-2010",
+  2009L,
+  2010L,
+  "cbc",
+  "CBC_F",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "demo_2009_2010",
+  "2009-2010",
+  2009L,
+  2010L,
+  "demographic",
+  "DEMO_F",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2011_2012_primary",
+  "2011-2012",
+  2011L,
+  2012L,
+  "cbc",
+  "CBC_G",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "demo_2011_2012",
+  "2011-2012",
+  2011L,
+  2012L,
+  "demographic",
+  "DEMO_G",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2013_2014_primary",
+  "2013-2014",
+  2013L,
+  2014L,
+  "cbc",
+  "CBC_H",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "demo_2013_2014",
+  "2013-2014",
+  2013L,
+  2014L,
+  "demographic",
+  "DEMO_H",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2015_2016_primary",
+  "2015-2016",
+  2015L,
+  2016L,
+  "cbc",
+  "CBC_I",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "demo_2015_2016",
+  "2015-2016",
+  2015L,
+  2016L,
+  "demographic",
+  "DEMO_I",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN",
+
+  "cbc_2017_2018_primary",
+  "2017-2018",
+  2017L,
+  2018L,
+  "cbc",
+  "CBC_J",
+  "primary",
+  "primary",
+  "person",
+  "SEQN",
+
+  "demo_2017_2018",
+  "2017-2018",
+  2017L,
+  2018L,
+  "demographic",
+  "DEMO_J",
+  "not_applicable",
+  "primary",
+  "person",
+  "SEQN"
+)
+```
+
+## Add expected rows and URLs
+
+Expected row counts and official URLs should be maintained as catalog metadata rather than hidden in download functions.
+
+For this guided lesson, create those fields as explicit placeholders that must be populated from the validated project catalog:
+
+```r
+nhanes_catalog <- nhanes_catalog |>
+  dplyr::mutate(
+    expected_rows = NA_integer_,
+    url = NA_character_
+  )
+```
+
+::: {.callout-important icon="true"}
+## Do not invent expected row counts
+
+Expected row counts are validation contracts.
+
+They should come from:
+
+- the validated repository catalog;
+- a confirmed prior pipeline release;
+- direct inspection of the official source file.
+
+Do not enter guessed row counts merely to make validation pass.
+:::
+
+## Inspect the catalog
+
+Run:
+
+```r
+print(
+  nhanes_catalog,
+  n = Inf
+)
+```
+
+Expected structure:
+
+```text
+21 rows
+12 columns
+```
+
+The catalog contains:
+
+- 11 CBC source rows;
+- 10 Demographic source rows;
+- 20 primary rows;
+- 1 supplementary second-examination row.
+
+## Count files by component
+
+Run:
+
+```r
+catalog_component_summary <- nhanes_catalog |>
+  dplyr::count(
+    component,
+    name = "source_files"
+  )
+
+print(
+  catalog_component_summary
+)
+```
+
+Expected result:
+
+```text
+# A tibble: 2 × 2
+  component    source_files
+  <chr>               <int>
+1 cbc                    11
+2 demographic            10
+```
+
+## Count files by analytical role
+
+Run:
+
+```r
+catalog_role_summary <- nhanes_catalog |>
+  dplyr::count(
+    analysis_role,
+    name = "source_files"
+  )
+
+print(
+  catalog_role_summary
+)
+```
+
+Expected result:
+
+```text
+# A tibble: 2 × 2
+  analysis_role source_files
+  <chr>                <int>
+1 primary                 20
+2 supplementary            1
+```
+
+## Identify the supplementary file
+
+Run:
+
+```r
+supplementary_sources <- nhanes_catalog |>
+  dplyr::filter(
+    analysis_role == "supplementary"
+  )
+
+print(
+  supplementary_sources
+)
+```
+
+The result should contain only:
+
+```text
+cbc_2001_2002_second_exam
+```
+
+with file ID:
+
+```text
+L25_2_B
+```
+
+## Define required catalog columns
+
+Add:
+
+```r
+required_catalog_columns <- c(
+  "dataset_id",
+  "cycle",
+  "cycle_start",
+  "cycle_end",
+  "component",
+  "file_id",
+  "exam",
+  "analysis_role",
+  "record_level",
+  "merge_key",
+  "expected_rows",
+  "url"
+)
+```
+
+This matches the required structure used by the repository’s catalog validation module. 
+
+## Validate column names
+
+Add:
+
+```r
+missing_catalog_columns <- setdiff(
+  required_catalog_columns,
+  names(
+    nhanes_catalog
+  )
+)
+
+if (length(missing_catalog_columns) > 0) {
+  stop(
+    "Catalog is missing required columns: ",
+    paste(
+      missing_catalog_columns,
+      collapse = ", "
+    )
+  )
+}
+```
+
+## Validate unique dataset identifiers
+
+Add:
+
+```r
+if (anyDuplicated(
+  nhanes_catalog$dataset_id
+) > 0) {
+  stop(
+    "Every dataset_id must be unique."
+  )
+}
+```
+
+## Validate cycle years
+
+Add:
+
+```r
+if (any(
+  nhanes_catalog$cycle_start >
+    nhanes_catalog$cycle_end
+)) {
+  stop(
+    "cycle_start cannot be later than cycle_end."
+  )
+}
+```
+
+## Validate analytical roles
+
+Add:
+
+```r
+supported_analysis_roles <- c(
+  "primary",
+  "supplementary"
+)
+
+unsupported_roles <- setdiff(
+  unique(
+    nhanes_catalog$analysis_role
+  ),
+  supported_analysis_roles
+)
+
+if (length(unsupported_roles) > 0) {
+  stop(
+    "Unsupported analysis roles: ",
+    paste(
+      unsupported_roles,
+      collapse = ", "
+    )
+  )
+}
+```
+
+The production catalog validator supports `primary` and `supplementary` analytical roles. 
+
+## Validate record level
+
+The current CBC pipeline expects person-level source files:
+
+```r
+supported_record_levels <- "person"
+
+unsupported_record_levels <- setdiff(
+  unique(
+    nhanes_catalog$record_level
+  ),
+  supported_record_levels
+)
+
+if (length(unsupported_record_levels) > 0) {
+  stop(
+    "Unsupported record levels: ",
+    paste(
+      unsupported_record_levels,
+      collapse = ", "
+    )
+  )
+}
+```
+
+The repository deliberately stops when an unsupported record level is introduced without additional validation logic. 
+
+## Validate the merge key
+
+Add:
+
+```r
+if (any(
+  nhanes_catalog$merge_key != "SEQN"
+)) {
+  stop(
+    "Every current source file should use SEQN as its source merge key."
+  )
+}
+```
+
+## Validate the number of source rows
+
+Add:
+
+```r
+if (nrow(
+  nhanes_catalog
+) != 21) {
+  stop(
+    "The CBC and Demographic catalog should contain 21 source rows."
+  )
+}
+```
+
+## Validate the primary and supplementary counts
+
+Add:
+
+```r
+primary_source_count <- sum(
+  nhanes_catalog$analysis_role == "primary"
+)
+
+supplementary_source_count <- sum(
+  nhanes_catalog$analysis_role == "supplementary"
+)
+
+if (primary_source_count != 20) {
+  stop(
+    "The catalog should contain 20 primary source files."
+  )
+}
+
+if (supplementary_source_count != 1) {
+  stop(
+    "The catalog should contain one supplementary source file."
+  )
+}
+```
+
+## Confirm the second examination is supplementary
+
+Add:
+
+```r
+second_exam_check <- nhanes_catalog |>
+  dplyr::filter(
+    file_id == "L25_2_B"
+  )
+
+if (nrow(second_exam_check) != 1) {
+  stop(
+    "L25_2_B should appear exactly once in the catalog."
+  )
+}
+
+if (
+  second_exam_check$analysis_role !=
+    "supplementary"
+) {
+  stop(
+    "L25_2_B must be classified as supplementary."
+  )
+}
+```
+
+## Run the catalog validation
+
+Add:
+
+```r
+message(
+  "Source-file catalog structure passed validation."
+)
+```
+
+Expected message:
+
+```text
+Source-file catalog structure passed validation.
+```
+
+## Save the catalog
+
+Save it as:
+
+```r
+readr::write_csv(
+  nhanes_catalog,
+  file.path(
+    "config",
+    "nhanes_files.csv"
+  ),
+  na = ""
+)
+```
+
+Confirm:
+
+```r
+file.exists(
+  file.path(
+    "config",
+    "nhanes_files.csv"
+  )
+)
+```
+
+Expected result:
+
+```text
+[1] TRUE
+```
+
+## Inspect the saved catalog
+
+Run:
+
+```r
+saved_catalog <- readr::read_csv(
+  file.path(
+    "config",
+    "nhanes_files.csv"
+  ),
+  show_col_types = FALSE
+)
+
+print(
+  saved_catalog,
+  n = Inf
+)
+```
+
+## Selecting catalog subsets
+
+Select primary CBC files:
+
+```r
+primary_cbc_catalog <- nhanes_catalog |>
+  dplyr::filter(
+    component == "cbc",
+    analysis_role == "primary"
+  )
+```
+
+Expected number of rows:
+
+```r
+nrow(
+  primary_cbc_catalog
+)
+```
+
+Expected result:
+
+```text
+[1] 10
+```
+
+Select all primary Demographic files:
+
+```r
+demographic_catalog <- nhanes_catalog |>
+  dplyr::filter(
+    component == "demographic",
+    analysis_role == "primary"
+  )
+```
+
+Expected result:
+
+```r
+nrow(
+  demographic_catalog
+)
+```
+
+```text
+[1] 10
+```
+
+Select supplementary CBC files:
+
+```r
+supplementary_cbc_catalog <- nhanes_catalog |>
+  dplyr::filter(
+    component == "cbc",
+    analysis_role == "supplementary"
+  )
+```
+
+Expected result:
+
+```r
+nrow(
+  supplementary_cbc_catalog
+)
+```
+
+```text
+[1] 1
+```
+
+## Why URLs are completed separately
+
+The catalog must eventually include validated official CDC HTTPS URLs.
+
+The production validator requires catalog URLs to use the official CDC host rather than an arbitrary or insecure source. 
+
+In the next lesson, you will:
+
+1. generate or populate the official URL for one source;
+2. download one XPT file;
+3. verify the HTTP response;
+4. confirm the local file exists;
+5. read it with `haven`.
+
+## Common mistakes
+
+### Duplicate `dataset_id`
+
+Each catalog row needs a unique internal identifier.
+
+### Classifying `L25_2_B` as primary
+
+The second examination must remain supplementary for the primary person-level workflow.
+
+### Omitting the cycle
+
+The cycle is required for:
+
+- provenance;
+- composite-key construction;
+- cycle-level auditing;
+- output organization.
+
+### Guessing expected rows
+
+An inaccurate expected count can cause a valid source to fail or an invalid source to pass.
+
+### Using unofficial URLs
+
+The pipeline should retrieve source data from official CDC locations.
+
+### Mixing record levels
+
+A source with multiple rows per participant requires additional record-level and join validation.
+
+## Checkpoint
+
+Confirm:
+
+- [ ] `config/` exists.
+- [ ] The catalog has 21 rows.
+- [ ] The catalog has 12 required columns.
+- [ ] There are 11 CBC sources.
+- [ ] There are 10 Demographic sources.
+- [ ] There are 20 primary sources.
+- [ ] There is one supplementary source.
+- [ ] `L25_2_B` is supplementary.
+- [ ] Every `dataset_id` is unique.
+- [ ] Every current source uses `SEQN`.
+- [ ] `config/nhanes_files.csv` exists.
+- [ ] Expected rows and URLs remain clearly marked until validated.
+
+## Knowledge check
+
+::: {.callout-note collapse="true"}
+## Why use a source-file catalog?
+
+It centralizes source metadata, makes acquisition reproducible, supports validation, and prevents filenames and URLs from being scattered throughout the code.
+:::
+
+::: {.callout-note collapse="true"}
+## Why is `L25_2_B` classified as supplementary?
+
+It contains a second examination for participants who may already appear in the primary CBC file. It should be preserved separately rather than treated as another independent primary sample.
+:::
+
+::: {.callout-note collapse="true"}
+## What does `record_level = "person"` mean?
+
+It means each source row is expected to represent one participant-level record for the specified examination and cycle.
+:::
+
+## Lesson summary
+
+You have:
+
+- created the source-file catalog;
+- classified primary and supplementary sources;
+- represented all ten survey cycles;
+- validated the catalog structure;
+- preserved the second CBC examination explicitly;
+- saved the catalog as a CSV file.
+
+[Continue to Lesson 7: Download one NHANES file](07-download-one-file.qmd){.button .button-primary}
