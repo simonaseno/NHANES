@@ -45,3 +45,14 @@ Do not add new generated data to Git history.
 - Include citations to official component documentation for scientific choices.
 - Treat changes to sample weights, eligibility, harmonization, and merge keys as
   review-critical.
+
+## Documentation and releases
+
+Keep the [user guide](docs/USER_GUIDE.md) and [architecture reference](docs/ARCHITECTURE.md)
+consistent with actual CLI options, outputs and checks. Distinguish runnable
+production modules from learner-assembled course examples. Do not advertise
+planned components as implemented.
+
+Before publishing a tag, follow the [release checklist](docs/RELEASING.md).
+Do not add a placeholder DOI or regenerate data into the Git tree. See
+[maintenance guidance](docs/MAINTENANCE.md) for schedule and storage retention.

@@ -1,0 +1,4 @@
+# Retain development backups in Git, but omit them from source archives.
+/_quarto-original-restored.yml export-ignore
+/quarto-broken-backup.yml export-ignore
+/styles-broken-backup.css export-ignore

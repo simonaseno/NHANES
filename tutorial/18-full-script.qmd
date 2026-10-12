@@ -6,6 +6,18 @@ sidebar: tutorials
 format: html
 ---
 
+::: {.callout-note}
+## Production software and this lesson
+
+This lesson describes the expanded script you assemble during the course.
+`nhanes_pipeline.R` is a learner-created file, not a committed executable.
+For the implemented repository pipeline, run `Rscript scripts/run_pipeline.R`.
+Its four RDS outputs and two manifests are documented in the
+[repository user guide](https://github.com/simonaseno/NHANES/blob/main/docs/USER_GUIDE.md).
+Lesson-specific analyses, figures and audit reports are additional teaching outputs.
+:::
+
+
 ::: {.callout-note icon="true"}
 ## Learning objectives
 

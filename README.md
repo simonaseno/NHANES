@@ -3,144 +3,150 @@
 [![R pipeline checks](https://github.com/simonaseno/NHANES/actions/workflows/ci.yml/badge.svg)](https://github.com/simonaseno/NHANES/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A reproducible, manifest-driven pipeline for downloading and preparing public-use
-National Health and Nutrition Examination Survey (NHANES) data. The current
-validated scope is Complete Blood Count (CBC) and Demographics for the ten
-continuous cycles from 1999–2000 through 2017–2018.
+Reproducible acquisition and preparation of public-use National Health and
+Nutrition Examination Survey (NHANES) data, with source manifests, validation,
+and provenance. The implemented pipeline covers **Complete Blood Count (CBC)
+and Demographics for 1999–2000 through 2017–2018**.
 
-The project is designed to grow to additional NHANES components without mixing
-data acquisition, component-specific scientific decisions, and analysis code.
+This repository contains executable R software and a Quarto educational website.
+It is a source-based project, not an installable R package or the hosted Praxis
+Data Lab platform. Broader component coverage is planned in [ROADMAP.md](ROADMAP.md).
 
-## Important scientific scope
+## Start here
 
-- Continuous NHANES cycles are repeated cross-sectional samples, not a
+| Your task | Reference |
+| --- | --- |
+| Run the pipeline and interpret its outputs | [User guide](docs/USER_GUIDE.md) |
+| Understand the modules and validation boundaries | [Architecture](docs/ARCHITECTURE.md) |
+| Read the lessons and scientific background | [Documentation website](https://simonaseno.github.io/NHANES/) |
+| Contribute a change | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Prepare a software release and Zenodo DOI | [Release guide](docs/RELEASING.md) |
+| Understand refresh schedules and inactivity notices | [Maintenance guide](docs/MAINTENANCE.md) |
+
+## Scientific scope
+
+- NHANES continuous cycles are **repeated cross-sectional samples**, not a
   longitudinal cohort.
-- The 2001–2002 second-exam CBC file (`L25_2_B`) is an unweighted convenience
-  sample. It is saved separately and is never appended to the primary analytic
-  CBC table.
-- The pipeline carries survey design and weight variables from DEMO, but the
-  appropriate analytic weight depends on the variables and cycles used. It does
-  not silently invent a universal weight.
-- Researchers must verify variable and laboratory-method comparability across
-  cycles before fitting trends.
+- The catalog contains 21 files: ten primary CBC files, ten Demographics files,
+  and one supplementary 2001–2002 second-exam CBC file.
+- The second-exam file (`L25_2_B`) is an unweighted convenience sample. It is
+  retained separately and never appended to the primary CBC table.
+- Primary CBC and Demographics are joined on **`SEQN` and `cycle`**.
+- Survey design and weight variables are retained from Demographics. Selecting
+  appropriate weights, eligibility criteria, and comparable variables remains
+  the analyst's responsibility.
+- A passing pipeline check does not establish cross-cycle laboratory-method
+  equivalence or validate a particular statistical analysis.
 
-See the [CDC NHANES tutorials](https://wwwn.cdc.gov/nchs/nhanes/tutorials/)
-and the component documentation before analysis.
+Consult the [CDC NHANES tutorials](https://wwwn.cdc.gov/nchs/nhanes/tutorials/)
+and each component's official documentation before analysis.
 
 ## Quick start
 
-Requirements: R 4.1 or newer and the packages recorded in `renv.lock`.
+Install Git and R. `DESCRIPTION` declares R ≥ 4.1; `renv.lock` records **R 4.5.1**
+and the dependency versions used for the reproducible environment. Start with
+that R version where practical. Quarto is needed only to build the website.
 
 ```bash
+git clone https://github.com/simonaseno/NHANES.git
+cd NHANES
 Rscript -e 'renv::restore()'
+Rscript tests/run_tests.R
 Rscript scripts/run_pipeline.R
 ```
 
-By default, raw XPT files are cached under `data/raw/` and validated RDS outputs
-are written under `data/derived/`. Add `--write-csv=true` only when CSV copies
-are needed.
+The default run downloads or refreshes the cataloged CDC files, caches them in
+`data/raw/`, and writes RDS datasets and CSV manifests to `data/derived/`.
+Internet access is needed for initial dependency restoration and downloads.
+
+To reuse a populated cache and also write CSV copies:
 
 ```bash
-Rscript scripts/run_pipeline.R \
-  --cache-dir=data/raw \
-  --output-dir=data/derived \
-  --refresh=true \
-  --write-csv=false
+Rscript scripts/run_pipeline.R --refresh=false --write-csv=true
 ```
 
-Run local checks with:
+Read the result in R:
 
-```bash
-Rscript tests/run_tests.R
+```r
+data <- readRDS("data/derived/cbc_demographics_1999_2018.rds")
+validation <- read.csv("data/derived/validation.csv")
+provenance <- read.csv("data/derived/provenance.csv")
 ```
 
-## Validated outputs
+See the [user guide](docs/USER_GUIDE.md) for all options, troubleshooting, and
+the distinction between installed software outputs and lesson examples.
 
-| Output | Unit of observation | Notes |
-|---|---|---|
-| `cbc_primary_1999_2018.rds` | One row per participant | Primary MEC CBC only |
-| `cbc_second_exam_2001_2002.rds` | One row per repeat participant | Convenience sample; no survey weights |
-| `demographics_1999_2018.rds` | One row per participant | Includes design and weight variables |
-| `cbc_demographics_1999_2018.rds` | One row per primary-CBC participant | Joined on `SEQN` and cycle |
-| `provenance.csv` | One row per source file | URL, size, SHA-256, retrieval time, dimensions |
-| `validation.csv` | One row per output | Rows, columns, unique participants |
+## Outputs
 
-The former root-level `*_combined_1999_2018.*` files are legacy v1 artifacts and
-are not distributed from the current source tree. They remain recoverable from
-the v1 history, but should not be used for new analyses: the old CBC and merged
-files include 557 second-exam records as extra rows.
+| File | Contents |
+| --- | --- |
+| `cbc_primary_1999_2018.rds` | Primary CBC records; unique `SEQN + cycle` |
+| `cbc_second_exam_2001_2002.rds` | Supplementary repeat examinations; kept separate |
+| `demographics_1999_2018.rds` | Demographics, including supplied design and weight variables |
+| `cbc_demographics_1999_2018.rds` | Primary CBC left-joined to Demographics; primary row count preserved |
+| `provenance.csv` | Source URLs, SHA-256 hashes, sizes, dimensions, and manifest timestamp |
+| `validation.csv` | Output row/column counts and participant summaries |
 
-## How the project scales
+`--write-csv=true` additionally writes CSV copies of the four datasets. RDS is
+the preferred R format; CSV does not retain R classes and variable attributes.
 
-Source files are declared in [`config/nhanes_files.csv`](config/nhanes_files.csv).
-Each row records the official cycle, component, source URL, record level, merge
-key, expected row count, and analytic role. To add another NHANES component:
+## Repository organization
 
-1. Add and review its catalog rows.
-2. Define its record granularity and valid key; never assume one row per person.
-3. Add component-specific validation and harmonization.
-4. Add tests before permitting any cross-component merge.
-5. Document the applicable survey weight and comparability limitations.
+- `R/`: catalog validation, acquisition, record validation, and assembly.
+- `scripts/run_pipeline.R`: supported command-line entry point.
+- `config/nhanes_files.csv`: reviewed official source catalog.
+- `tests/run_tests.R`: catalog and synthetic pipeline checks.
+- `renv.lock` and `renv/`: reproducible dependency environment.
+- `foundations/`, `laboratory/`, `pipelines/`, and `tutorial/`: Quarto guidance.
+- `docs/`: user, architecture, release, and maintenance references.
+- `data/`: policy documentation; generated data directories are ignored.
 
-Acquisition is generic; scientific harmonization is intentionally explicit.
+## Data and reproducibility policy
 
-## Automated pull/push flow
+Raw CDC data, regenerated datasets, session files, and local dependency libraries
+are not committed. Stable research outputs should be distributed as versioned
+release artifacts, with their provenance and validation manifests.
 
-- `ci.yml` tests every branch and pull request.
-- `data-refresh.yml` periodically pulls source files from CDC, validates them,
-  and uploads derived data as a workflow artifact without committing data.
-- `pages.yml` builds and deploys the Quarto documentation.
-- `release.yml` rebuilds validated data for version tags and publishes it as a
-  release artifact.
-- `scripts/sync_branch.sh` safely updates a clean local branch from `origin/main`.
-- `scripts/publish_branch.sh` tests and pushes a clean feature branch, then opens
-  or reports its draft pull request.
+Legacy v1 CBC and merged files included **557 second-exam records as extra rows**.
+Those files remain recoverable from Git history but are not suitable for new
+analyses. Use the current modules and reviewed catalog to regenerate outputs.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch workflow.
-The staged expansion plan is maintained in [ROADMAP.md](ROADMAP.md).
+The source archive and a generated data archive are different research objects.
+Do not assume Zenodo's GitHub integration archives every attached release asset;
+verify the deposited files. See [release guidance](docs/RELEASING.md).
 
-## Data and artifact policy
+## Automated workflows
 
-Raw CDC files and regenerated datasets are intentionally ignored by Git. Stable
-research outputs should be attached to a versioned GitHub release and archived
-with a DOI provider such as Zenodo. The source catalog and provenance manifest
-make every release auditable.
+| Workflow | Trigger | Result |
+| --- | --- | --- |
+| `ci.yml` | Pull requests and pushes to `main` | Synthetic R pipeline tests |
+| `data-refresh.yml` | Monthly schedule or manual run | Fresh CDC acquisition and validation; temporary artifacts |
+| `pages.yml` | Relevant documentation changes or manual run | Quarto build; deployment after a main-branch build |
+| `release.yml` | A pushed `v*` tag | Regenerated data archive attached to a GitHub release |
 
-NHANES data originate from the
-[CDC/NCHS public-use portal](https://wwwn.cdc.gov/nchs/nhanes/). This project is
-not affiliated with or endorsed by CDC/NCHS.
+Refresh artifacts currently expire after 30 days. They are not permanent DOI
+archives. The [maintenance guide](docs/MAINTENANCE.md) explains the separate
+60-day scheduled-workflow inactivity rule.
 
-## Documentation, citation, and support
+## Citation and licence
 
-- Documentation: <https://simonaseno.github.io/NHANES/>
-- Citation metadata: [`CITATION.cff`](CITATION.cff)
-- Bugs and component requests: [GitHub Issues](https://github.com/simonaseno/NHANES/issues)
+Software citation metadata is in [CITATION.cff](CITATION.cff). The declared
+software version is **0.2.0**; the first DOI-backed release is still pending.
+Do not cite a placeholder DOI. Cite the published software version once it is
+archived, and separately acknowledge the original CDC/NCHS data sources.
 
-## Usage and site analytics
+Project code and documentation use the [MIT License](LICENSE). CDC data and
+third-party dependencies retain their respective source terms and licences.
 
-Maintainers with push access can review the repository's rolling traffic under
-[Insights → Traffic](https://github.com/simonaseno/NHANES/graphs/traffic). GitHub
-reports repository visitors and views, clones, referring sites, and popular
-content for the previous 14 days. This is useful for repository discovery, but
-it is not a long-term analytics record for the GitHub Pages website.
+## Maintainer and support
 
-For page-level website analytics, the recommended next step is a lightweight,
-privacy-focused Plausible Analytics account for
-`simonaseno.github.io/NHANES/`. Quarto supports the complete Plausible tracking
-snippet through the `website: plausible-analytics` setting in `_quarto.yml`.
-The site-specific snippet must come from the maintainer's Plausible dashboard;
-no placeholder tracker is committed because it would not collect valid data.
-Google Analytics is also supported by Quarto, but requires a measurement ID and
-may require cookie-consent handling depending on the applicable privacy rules.
+**Dr Simon Aseno, MPH**  
+[GitHub](https://github.com/simonaseno) · [Praxis Global Institute](https://praxisglobal.ac/)
 
-## License
+For reproducible bug reports and documentation corrections, use
+[GitHub Issues](https://github.com/simonaseno/NHANES/issues). Include the software
+version, R version, command, and error message.
 
-The project code and documentation are licensed under the [MIT License](LICENSE).
-CDC source data remain subject to their official public-use documentation and
-data-use terms.
-
-## Maintainer
-
-Simon Aseno, MPH — Public Health & Data Science Consultant
-
-[GitHub](https://github.com/simonaseno) · [Medium](https://medium.com/@sbaseno)
+This independent project is not affiliated with or endorsed by CDC/NCHS.
+Its materials do not represent the official views of any employer or government
+agency.

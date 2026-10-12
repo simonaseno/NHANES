@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Reorganized the repository overview and added user, architecture, release and maintenance guides.
+- Documented validation boundaries, cached-run provenance timing, CLI defaults and teaching-versus-production outputs.
+- Clarified MIT licensing, DOI preparation, and the separate workflow, Codespace and artifact retention rules.
+- Added descriptive citation metadata and source-archive exclusions for retained backup files.
+- Included nested Quarto pages in documentation workflow change detection.
+
 ## 0.2.0 - 2026-08-02
 
 - Replaced the monolithic executable Quarto document with reusable R modules and
