@@ -8,6 +8,7 @@ date-released: "2026-10-11"
 authors:
   - family-names: Aseno
     given-names: Simon
+    orcid: https://orcid.org/0009-0008-4660-4850
 url: "https://github.com/simonaseno/NHANES"
 repository-code: "https://github.com/simonaseno/NHANES"
 abstract: >-
@@ -32,6 +33,7 @@ preferred-citation:
   authors:
     - family-names: Aseno
       given-names: Simon
+      orcid: https://orcid.org/0009-0008-4660-4850
   version: 0.2.0
   date-released: "2026-10-11"
   doi: 10.5281/zenodo.23309272
@@ -47,6 +49,7 @@ references:
     authors:
       - family-names: Aseno
         given-names: Simon
+        orcid: https://orcid.org/0009-0008-4660-4850
     version: "1.0"
     date-released: "2025-07-16"
     publisher:
