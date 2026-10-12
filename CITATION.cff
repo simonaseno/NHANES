@@ -4,7 +4,7 @@ type: software
 title: "NHANES CBC and Demographics Pipeline in R"
 version: 0.2.0
 doi: 10.5281/zenodo.23309272
-date-released: 2026-10-11
+date-released: "2026-10-11"
 authors:
   - family-names: Aseno
     given-names: Simon
@@ -25,3 +25,31 @@ keywords:
   - public health
   - survey data
   - reproducible research
+
+preferred-citation:
+  type: software
+  title: "NHANES CBC and Demographics Pipeline in R"
+  authors:
+    - family-names: Aseno
+      given-names: Simon
+  version: 0.2.0
+  date-released: "2026-10-11"
+  doi: 10.5281/zenodo.23309272
+  publisher:
+    name: Praxis Global Institute
+    website: https://praxisglobal.ac
+  notes: >-
+    Originally published by Praxis Global Institute on July 16, 2025.
+    Version 0.2.0 was released in October 2026 and archived by Zenodo.
+references:
+  - type: software
+    title: "NHANES CBC and Demographic Data Downloader: A Structured Ingestion Pipeline for Pre-Pandemic Trend Analysis (1999–2018)"
+    authors:
+      - family-names: Aseno
+        given-names: Simon
+    version: "1.0"
+    date-released: "2025-07-16"
+    publisher:
+      name: Praxis Global Institute
+      website: https://praxisglobal.ac
+    url: https://github.com/simonaseno/NHANES/blob/d503049d688c819698ece7c52744fce534360aee/docs/NhanesDownloadScripts.html

@@ -128,7 +128,7 @@ Refresh artifacts currently expire after 30 days. They are not permanent DOI
 archives. The [maintenance guide](docs/MAINTENANCE.md) explains the separate
 60-day scheduled-workflow inactivity rule.
 
-## Citation and licence
+## Publication history\n\nOriginally published **July 16, 2025** by **Praxis Global Institute**.\nZenodo is the archive and DOI registration service for the later v0.2.0 release.\nSee [publication history and original-date evidence](docs/PUBLICATION_HISTORY.md).\n\n## Citation and licence
 
 Software citation metadata is in [CITATION.cff](CITATION.cff). Software version
 **v0.2.0** is archived on [Zenodo](https://zenodo.org/records/23309272), with
