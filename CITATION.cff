@@ -3,6 +3,7 @@ message: "If you use this pipeline, please cite the versioned software release a
 type: software
 title: "NHANES CBC and Demographics Pipeline in R"
 version: 0.2.0
+doi: 10.5281/zenodo.23309272
 date-released: 2026-10-11
 authors:
   - family-names: Aseno

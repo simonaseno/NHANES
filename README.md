@@ -130,10 +130,13 @@ archives. The [maintenance guide](docs/MAINTENANCE.md) explains the separate
 
 ## Citation and licence
 
-Software citation metadata is in [CITATION.cff](CITATION.cff). The declared
-software version is **0.2.0**; the first DOI-backed release is still pending.
-Do not cite a placeholder DOI. Cite the published software version once it is
-archived, and separately acknowledge the original CDC/NCHS data sources.
+Software citation metadata is in [CITATION.cff](CITATION.cff). Software version
+**v0.2.0** is archived on [Zenodo](https://zenodo.org/records/23309272), with
+version-specific DOI **10.5281/zenodo.23309272**. Cite this archived software
+version and separately acknowledge the original CDC/NCHS data sources.
+
+The Zenodo record preserves the source-code ZIP for release commit `e5c0a45`.
+Generated data attachments on GitHub are separate from this software archive.
 
 Project code and documentation use the [MIT License](LICENSE). CDC data and
 third-party dependencies retain their respective source terms and licences.

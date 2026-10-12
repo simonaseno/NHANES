@@ -2,12 +2,17 @@
 
 [Return to the repository overview](../README.md)
 
-## Current preparation status
+## Current release status
 
 The software declares version **0.2.0** in `DESCRIPTION` and `CITATION.cff`.
-The first GitHub release and Zenodo software DOI are pending. A version field in
-a file is not evidence that a release has been published. Keep this status
-accurate after the first archive succeeds.
+GitHub release **v0.2.0** is published and its source archive is preserved on
+[Zenodo](https://zenodo.org/records/23309272), with version-specific DOI
+**10.5281/zenodo.23309272**. The archived source commit is
+`e5c0a45a334c34da26ab9c4826662fbca42802bf`. The record contains the source-code ZIP;
+any generated data attachment on GitHub is a separate artifact.
+
+The DOI was added to main-branch citation documentation after archival. The
+published v0.2.0 tag remains unchanged.
 
 The project already has an MIT licence. Preserve `LICENSE` in the source
 archive. The licence covers this project's code and documentation; CDC data and
