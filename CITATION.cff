@@ -3,12 +3,20 @@ message: "If you use this pipeline, please cite the versioned software release a
 type: software
 title: "NHANES CBC and Demographics Pipeline in R"
 version: 0.2.0
-date-released: 2026-08-02
+date-released: 2026-10-11
 authors:
   - family-names: Aseno
     given-names: Simon
 url: "https://github.com/simonaseno/NHANES"
 repository-code: "https://github.com/simonaseno/NHANES"
+abstract: >-
+  A manifest-driven R pipeline for acquiring and preparing public-use NHANES
+  Complete Blood Count and Demographics data for 1999–2000 through 2017–2018.
+  The software records source hashes and validation summaries, separates the
+  unweighted 2001–2002 repeat examination, and preserves primary sample keys
+  when joining CBC and Demographics. It includes reproducible dependencies,
+  synthetic tests and educational documentation. Appropriate survey weights
+  and cross-cycle scientific comparability remain analyst responsibilities.
 license: MIT
 keywords:
   - NHANES
